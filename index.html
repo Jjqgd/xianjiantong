@@ -9,19 +9,18 @@
 <meta name="application-name" content="铁途学练">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='none' stroke='%23b71c1c' stroke-width='8'/><path d='M50 20 L75 35 L65 42 L50 32 L35 42 L25 35 Z' fill='%23b71c1c'/><path d='M20 80 L40 50 L50 55 L60 50 L80 80 L70 85 L58 65 L50 68 L42 65 L30 85 Z' fill='%23b71c1c'/><line x1='25' y1='55' x2='75' y2='55' stroke='%23b71c1c' stroke-width='8' stroke-linecap='round'/></svg>">
 
-<!-- 引入 Excel 解析库（采用国内极速 CDN） -->
 <script src="https://cdn.staticfile.org/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
-  /* 使用最基础、最稳定的排版 */
+  @import url('https://fonts.googleapis.com/css2?family=Zhi+Mang+Xing&display=swap');
   * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, "Microsoft YaHei", sans-serif; }
   body { background-color: #f0f4f8; color: #1e293b; padding: 15px; -webkit-tap-highlight-color: transparent; }
   
-  /* 隐藏开场动画 */
-  #splash-screen { position: fixed; top:0; left:0; right:0; bottom:0; background: #fcf9f2; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
+  /* 开场动画 */
+  #splash-screen { position: fixed; top:0; left:0; right:0; bottom:0; background: #fcf9f2; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.6s; }
   #splash-screen.hidden { opacity: 0; pointer-events: none; }
-  .calligraphy { writing-mode: vertical-rl; font-family: "KaiTi", serif; font-size: 3rem; font-weight: bold; margin-bottom: 20px; letter-spacing: 10px; color: #111; }
-  .seal { width: 70px; height: 70px; background: #b71c1c; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: "KaiTi", serif; font-size: 1rem; font-weight: bold; writing-mode: vertical-rl; letter-spacing: 2px; border: 2px solid #fff; box-shadow: 0 0 0 2px #b71c1c; transform: rotate(-5deg); }
+  .calligraphy { writing-mode: vertical-rl; font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive; font-size: 3.5rem; font-weight: bold; margin-bottom: 25px; letter-spacing: 12px; color: #1a1a1a; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
+  .seal { width: 75px; height: 75px; background: #b71c1c; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: "KaiTi", serif; font-size: 1.1rem; font-weight: bold; writing-mode: vertical-rl; letter-spacing: 3px; border: 2px solid #fff; box-shadow: 0 0 0 2px #b71c1c, 0 4px 10px rgba(0,0,0,0.2); transform: rotate(-5deg); }
 
   /* 导航 */
   .nav { background: #fff; padding: 10px 15px; border-bottom: 2px solid #b71c1c; display: flex; justify-content: space-between; align-items: center; border-radius: 10px; margin-bottom: 15px; }
@@ -29,12 +28,12 @@
   .nav-logo svg { width: 28px; height: 28px; }
   .nav-right { font-size: 0.8rem; color: #64748b; }
 
-  /* 卡片容器 */
+  /* 卡片 */
   .card { background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
   .title { font-size: 1.1rem; font-weight: bold; margin-bottom: 12px; border-left: 4px solid #b71c1c; padding-left: 8px; }
   
-  /* 提示框 */
-  .banner { background: #e0f2fe; color: #0369a1; padding: 10px; border-radius: 8px; font-size: 0.8rem; margin-bottom: 15px; line-height: 1.4; }
+  /* 提示框(移至底部) */
+  .banner { background: #e0f2fe; color: #0369a1; padding: 12px; border-radius: 8px; font-size: 0.8rem; margin-bottom: 15px; line-height: 1.5; }
 
   /* 题库列表 */
   .bank-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; }
@@ -48,13 +47,13 @@
   .stat-num { font-size: 1.2rem; font-weight: bold; color: #0d47a1; }
   .stat-label { font-size: 0.75rem; color: #64748b; }
 
-  /* 网格菜单 */
+  /* 菜单按钮 */
   .menu { display: flex; flex-wrap: wrap; gap: 10px; }
-  .menu-btn { flex: 1; min-width: 45%; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px; text-align: center; font-weight: bold; font-size: 0.95rem; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+  .menu-btn { flex: 1; min-width: 45%; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px; text-align: center; font-weight: bold; font-size: 0.95rem; cursor: pointer; }
   .menu-btn:active { background: #f1f5f9; }
 
-  /* 按钮 */
-  .btn { border: none; border-radius: 8px; padding: 10px 15px; font-size: 0.9rem; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+  /* 通用按钮 */
+  .btn { border: none; border-radius: 8px; padding: 12px 15px; font-size: 0.95rem; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; }
   .btn:active { opacity: 0.8; }
   .btn-primary { background: #0d47a1; color: #fff; }
   .btn-danger { background: #b71c1c; color: #fff; }
@@ -88,12 +87,14 @@
   .score-box { text-align: center; padding: 30px 0; }
   .score-num { font-family: "Georgia", serif; color: #d32f2f; font-size: 5rem; font-weight: bold; display: inline-block; border-bottom: 4px double #d32f2f; line-height: 1; margin-bottom: 15px; padding: 0 10px; }
   
-  /* 遮罩层 */
+  /* 底部操作栏(考试用) */
+  .bottom-actions { display: flex; gap: 10px; margin-top: 15px; }
+
+  /* 辅助类 */
   .toast { position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 0.85rem; z-index: 9999; display: none; }
   .prompt-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; }
   .prompt-box { background: #fff; padding: 20px; border-radius: 12px; width: 80%; max-width: 300px; }
   .prompt-box input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin: 15px 0; font-size: 1rem; }
-
   .footer { text-align: center; color: #94a3b8; font-size: 0.8rem; margin-top: 20px; padding-bottom: 20px; }
 </style>
 </head>
@@ -119,10 +120,7 @@
   <div class="nav-right">在线学习考核平台</div>
 </div>
 
-<!-- 主容器 -->
 <div id="app"></div>
-
-<!-- 提示框 -->
 <div id="toast" class="toast"></div>
 
 <script>
@@ -143,12 +141,8 @@ var examTimer = null, examStartTime = 0, examRemainingSeconds = 0;
 var app = document.getElementById('app');
 var toastEl = document.getElementById('toast');
 
-// 隐藏开场动画
-setTimeout(function() {
-  document.getElementById('splash-screen').classList.add('hidden');
-}, 2500);
+setTimeout(function() { document.getElementById('splash-screen').classList.add('hidden'); }, 2500);
 
-// 提示工具
 function showToast(msg, isErr) {
   toastEl.innerText = msg;
   toastEl.style.background = isErr ? '#ef4444' : 'rgba(0,0,0,0.8)';
@@ -213,11 +207,8 @@ function doLogin() {
     isAuthorized = true;
     localStorage.setItem('xjt_auth', 'true');
     currentMode = Object.keys(allBanks).length > 0 ? 'home' : 'import';
-    showToast('验证成功');
-    render();
-  } else {
-    showToast('授权码错误', true);
-  }
+    showToast('验证成功'); render();
+  } else { showToast('授权码错误', true); }
 }
 
 // ================= 2. 导入 =================
@@ -226,8 +217,7 @@ function renderImport() {
     <div class="card" style="text-align:center; padding:40px 15px;">
       <h2 style="color:#b71c1c;margin-bottom:15px;">📥 导入新题库</h2>
       <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;line-height:1.6;">
-        支持 Excel (.xlsx / .csv) 文件。<br>
-        只要包含 <b>题目</b> 和 <b>答案</b> 列，以及至少两个选项列。
+        支持 Excel (.xlsx / .csv) 文件。<br>只要包含 <b>题目</b> 和 <b>答案</b> 列，以及至少两个选项列。
       </p>
       <label class="btn btn-primary btn-block" style="cursor:pointer;padding:15px;">
         📂 选择文件导入
@@ -345,12 +335,7 @@ function renderHome() {
   var hasActive = activeBankId && allBanks[activeBankId];
   var qs = hasActive ? allBanks[activeBankId].questions : [];
   
-  var html = `
-    <div class="banner"><b>安全提示：</b>本系统采用纯本地缓存，不传云端，绝对安全。请勿清理浏览器缓存，以免题库丢失。</div>
-    
-    <div class="card">
-      <div class="title">我的题库</div>
-  `;
+  var html = `<div class="card"><div class="title">我的题库</div>`;
   
   if (bankEntries.length === 0) {
     html += `<div style="text-align:center;color:#94a3b8;font-size:0.9rem;">暂无题库</div>`;
@@ -370,7 +355,7 @@ function renderHome() {
       `;
     }
   }
-  html += `<button class="btn btn-outline btn-block" onclick="currentMode='import';render()">➕ 导入新题库</button></div>`;
+  html += `<button class="btn btn-outline btn-block" onclick="goToImport()">➕ 导入新题库</button></div>`;
 
   if (hasActive) {
     var countSingle = 0, countMulti = 0, countJudge = 0;
@@ -393,18 +378,25 @@ function renderHome() {
         
         <div class="menu">
           <div class="menu-btn" onclick="startPractice('all')">📖 顺序练习</div>
-          <div class="menu-btn" onclick="currentMode='examSetup';render()">📝 模拟考试</div>
+          <div class="menu-btn" onclick="startExamSetup()">📝 模拟考试</div>
           <div class="menu-btn" onclick="startPractice('wrong')">🔥 错题集训</div>
-          <div class="menu-btn" onclick="currentMode='review';render()">📑 错题查看</div>
+          <div class="menu-btn" onclick="openReview()">📑 错题查看</div>
         </div>
       </div>
     `;
   }
   
-  html += `<div class="footer">技术支持：秦十三郎</div>`;
+  // 安全提示移至底部
+  html += `
+    <div class="banner">
+      <b>🔒 隐私安全提示：</b>本系统采用本地缓存形式，不涉及上传云端，绝对安全。导入后请勿清理浏览器缓存，以免数据丢失。
+    </div>
+    <div class="footer">技术支持：秦十三郎</div>
+  `;
   app.innerHTML = html;
 }
 
+function goToImport() { currentMode = 'import'; render(); }
 function switchBank(id) { activeBankId = id; saveData(); render(); }
 function deleteBank(id) {
   if (confirm('确定删除该题库吗？')) {
@@ -567,6 +559,7 @@ function handlePracticeResult(q, isCorrect) {
 function nextPractice() { practiceIndex++; renderPractice(); }
 
 // ================= 5. 错题本 =================
+function openReview() { currentMode = 'review'; render(); }
 function renderReview() {
   if (wrongBook.length === 0) {
     app.innerHTML = `<div style="margin-bottom:10px;"><button class="btn btn-outline" onclick="currentMode='home';render()">⬅ 返回</button></div><div class="card" style="text-align:center;padding:30px;">🎉 暂无错题</div>`;
@@ -593,6 +586,7 @@ function renderReview() {
 }
 
 // ================= 6. 考试 =================
+function startExamSetup() { currentMode = 'examSetup'; render(); }
 function renderExamSetup() {
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
   var cS = 0, cM = 0, cJ = 0;
@@ -698,15 +692,9 @@ function renderExam() {
   var prog = (examIndex / examQuestions.length) * 100;
   
   var html = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-      <div style="display:flex;gap:10px;">
-        <button class="btn btn-danger" onclick="if(confirm('确定交卷？'))submitExam()">交卷</button>
-        <button class="btn btn-outline" onclick="if(confirm('退出考试？')){clearInterval(examTimer);examTimer=null;currentMode='home';render()}">退出</button>
-      </div>
-      <div style="text-align:right;">
-        <div id="timerDisplay" style="font-weight:bold;font-family:monospace;font-size:1.1rem;color:#0d47a1;">--:--</div>
-        <div style="font-size:0.8rem;color:#64748b;">${examIndex+1} / ${examQuestions.length}</div>
-      </div>
+    <div style="text-align:right;margin-bottom:10px;">
+      <div id="timerDisplay" style="font-weight:bold;font-family:monospace;font-size:1.2rem;color:#0d47a1;margin-bottom:5px;">--:--</div>
+      <div style="font-size:0.85rem;color:#64748b;">第 ${examIndex+1} / ${examQuestions.length} 题</div>
     </div>
     <div class="progress"><div class="progress-bar" style="width:${prog}%"></div></div>
     
@@ -714,10 +702,17 @@ function renderExam() {
       <span class="tag">${typeName}</span>
       <div class="q-text">${q.question}</div>
       ${optsHtml}
-      <div style="margin-top:20px;display:flex;gap:10px;">
-        <button class="btn btn-outline" style="flex:1;" onclick="prevExam()" ${examIndex===0?'disabled style="opacity:0.5"':''}>上一题</button>
-        <button class="btn btn-primary" style="flex:1;" onclick="nextExam()">${examIndex===examQuestions.length-1?'交卷':'下一题'}</button>
+      
+      <div class="bottom-actions">
+        <button class="btn btn-outline" style="flex:1;" onclick="prevExam()" ${examIndex===0?'disabled style="opacity:0.5"':''}>⬅ 上一题</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="nextExam()">${examIndex===examQuestions.length-1?'交卷':'下一题 ➡'}</button>
       </div>
+    </div>
+    
+    <!-- 交卷和退出移到了下方正中央 -->
+    <div style="display:flex;gap:15px;justify-content:center;margin-top:20px;">
+      <button class="btn btn-danger" onclick="if(confirm('确定交卷？'))submitExam()">🚩 交卷</button>
+      <button class="btn btn-outline" onclick="if(confirm('退出考试？')){clearInterval(examTimer);examTimer=null;currentMode='home';render()}">退出考试</button>
     </div>
   `;
   app.innerHTML = html;
