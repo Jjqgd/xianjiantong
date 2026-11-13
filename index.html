@@ -14,7 +14,6 @@
   * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, "Microsoft YaHei", sans-serif; }
   body { background-color: #f0f4f8; color: #1e293b; padding: 10px; -webkit-tap-highlight-color: transparent; }
   
-  /* 开场动画 */
   #splash-screen { position: fixed; top:0; left:0; right:0; bottom:0; background: #fcf9f2; z-index: 9999; display: flex; align-items: center; justify-content: center; transition: opacity 0.8s; }
   #splash-screen.hidden { opacity: 0; pointer-events: none; }
   .calligraphy-box { display: flex; gap: 40px; }
@@ -155,7 +154,7 @@ function showToast(msg, isErr) {
   setTimeout(function() { toastEl.style.display = 'none'; }, 2500);
 }
 
-// ================= 终极操作提示与退出机制 =================
+// 将所有的确认操作提取为全局函数，彻底解决部分浏览器点不动的问题
 function confirmExitPractice() {
   if (confirm('确定要退出当前练习吗？')) {
     currentMode = 'home';
@@ -243,7 +242,7 @@ function doLogin() {
   } else { showToast('授权码错误', true); }
 }
 
-// 终极暴力破解多次导入限制
+// 【终极暴力破解】：每次点击导入都生成全新的 DOM，阅后即焚，绝对不给浏览器记忆的机会！
 function renderImport() {
   app.innerHTML = `
     <div class="card" style="text-align:center; padding:40px 15px;">
@@ -264,7 +263,7 @@ function renderImport() {
     fileInput.type = 'file';
     fileInput.accept = '.xlsx,.xls,.csv';
     fileInput.style.position = 'absolute';
-    fileInput.style.left = '-9999px'; 
+    fileInput.style.left = '-9999px'; // 偏移出屏幕外，防止部分浏览器判定隐藏而拦截
     
     fileInput.onchange = function(e) {
       var file = e.target.files[0];
@@ -290,7 +289,7 @@ function renderImport() {
         } catch(err) {
           showToast(err.message || '解析失败，请检查表格格式', true);
         } finally {
-          document.body.removeChild(fileInput);
+          document.body.removeChild(fileInput); // 彻底销毁
         }
       };
       reader.readAsArrayBuffer(file);
