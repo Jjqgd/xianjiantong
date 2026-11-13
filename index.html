@@ -155,6 +155,35 @@ function showToast(msg, isErr) {
   setTimeout(function() { toastEl.style.display = 'none'; }, 2500);
 }
 
+// ================= 终极操作提示与退出机制 =================
+function confirmExitPractice() {
+  if (confirm('确定要退出当前练习吗？')) {
+    currentMode = 'home';
+    render();
+  }
+}
+function confirmExitExam() {
+  if (confirm('确定要退出当前考试吗？本次成绩将不保存。')) {
+    if (examTimer) clearInterval(examTimer);
+    examTimer = null;
+    currentMode = 'home';
+    render();
+  }
+}
+function confirmSubmitExam() {
+  if (confirm('确定要交卷吗？')) submitExam();
+}
+function confirmDeleteBank(id) {
+  if (confirm('确定要删除该题库吗？')) {
+    delete allBanks[id];
+    if (activeBankId === id) {
+      var keys = Object.keys(allBanks);
+      activeBankId = keys.length > 0 ? keys[0] : null;
+    }
+    saveData(); render();
+  }
+}
+
 function saveData() {
   localStorage.setItem('xjt_banks', JSON.stringify(allBanks));
   localStorage.setItem('xjt_active', activeBankId || '');
@@ -214,6 +243,7 @@ function doLogin() {
   } else { showToast('授权码错误', true); }
 }
 
+// 终极暴力破解多次导入限制
 function renderImport() {
   app.innerHTML = `
     <div class="card" style="text-align:center; padding:40px 15px;">
@@ -234,7 +264,7 @@ function renderImport() {
     fileInput.type = 'file';
     fileInput.accept = '.xlsx,.xls,.csv';
     fileInput.style.position = 'absolute';
-    fileInput.style.left = '-9999px'; // 偏移出屏幕外，防止部分浏览器拦截 display:none
+    fileInput.style.left = '-9999px'; 
     
     fileInput.onchange = function(e) {
       var file = e.target.files[0];
@@ -399,7 +429,7 @@ function renderHome() {
             <div class="bank-title">${isAct ? '✅ ' : '📁 '}${b.name}</div>
             <div class="bank-meta">共 ${b.questions.length} 题</div>
           </div>
-          <button class="btn btn-danger" style="padding:5px 10px;font-size:0.8rem;" onclick="event.stopPropagation();deleteBank('${id}')">删除</button>
+          <button class="btn btn-danger" style="padding:5px 10px;font-size:0.8rem;" onclick="event.stopPropagation();confirmDeleteBank('${id}')">删除</button>
         </div>
       `;
     }
@@ -417,16 +447,6 @@ function renderHome() {
 
 function goToImport() { currentMode = 'import'; render(); }
 function switchBank(id) { activeBankId = id; saveData(); render(); }
-function deleteBank(id) {
-  if (confirm('确定删除该题库吗？')) {
-    delete allBanks[id];
-    if (activeBankId === id) {
-      var keys = Object.keys(allBanks);
-      activeBankId = keys.length > 0 ? keys[0] : null;
-    }
-    saveData(); render();
-  }
-}
 
 // ================= 3. 答题卡组件 =================
 function buildSheetHtml(questions, currentIdx, selections, type) {
@@ -467,7 +487,7 @@ function buildSheetHtml(questions, currentIdx, selections, type) {
   return html;
 }
 
-// ================= 4. 练习模式 (完美按钮布局) =================
+// ================= 4. 练习模式 =================
 function startPractice(type) {
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
   if (type === 'wrong') {
@@ -524,7 +544,7 @@ function renderPractice() {
   var html = `
     <div class="toolbar">
       <div style="display:flex; align-items:center; gap:10px;">
-        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="if(confirm('退出练习？')){currentMode='home';render()}">⬅ 退出</button>
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="confirmExitPractice()">⬅ 退出</button>
         <div class="q-progress">${practiceIndex+1} / ${practiceQuestions.length}</div>
       </div>
       <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
@@ -780,8 +800,8 @@ function renderExam() {
     </div>
     
     <div style="display:flex;gap:15px;justify-content:center;margin-top:20px;">
-      <button class="btn btn-danger" onclick="if(confirm('确定交卷？'))submitExam()">交卷</button>
-      <button class="btn btn-outline" onclick="if(confirm('退出考试？')){clearInterval(examTimer);examTimer=null;currentMode='home';render()}">退出</button>
+      <button class="btn btn-danger" onclick="confirmSubmitExam()">交卷</button>
+      <button class="btn btn-outline" onclick="confirmExitExam()">退出</button>
     </div>
 
     <div id="sheetModal" class="sheet-mask" style="display:none;" onclick="closeSheet(event)">
@@ -811,7 +831,7 @@ function selectExam(idx) {
 }
 function nextExam() {
   if (examIndex === examQuestions.length - 1) {
-    if (confirm('确定交卷？')) submitExam();
+    confirmSubmitExam();
   } else { examIndex++; renderExam(); }
 }
 function prevExam() { if (examIndex > 0) { examIndex--; renderExam(); } }
