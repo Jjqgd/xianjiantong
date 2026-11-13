@@ -7,13 +7,7 @@
 <meta name="apple-mobile-web-app-title" content="铁途学练">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='none' stroke='%23b71c1c' stroke-width='8'/><path d='M50 20 L75 35 L65 42 L50 32 L35 42 L25 35 Z' fill='%23b71c1c'/><path d='M20 80 L40 50 L50 55 L60 50 L80 80 L70 85 L58 65 L50 68 L42 65 L30 85 Z' fill='%23b71c1c'/><line x1='25' y1='55' x2='75' y2='55' stroke='%23b71c1c' stroke-width='8' stroke-linecap='round'/></svg>">
 
-<!-- 核心解析库双源加载，预防广告拦截 -->
 <script src="https://cdn.staticfile.org/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script>
-  if (typeof XLSX === 'undefined') {
-    document.write('<script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/xlsx/0.18.5/xlsx.full.min.js"><\/script>');
-  }
-</script>
 
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Zhi+Mang+Xing&display=swap');
@@ -220,7 +214,6 @@ function doLogin() {
   } else { showToast('授权码错误', true); }
 }
 
-// 终极隔离方案
 function renderImport() {
   app.innerHTML = `
     <div class="card" style="text-align:center; padding:40px 15px;">
@@ -228,54 +221,53 @@ function renderImport() {
       <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;line-height:1.6;">
         支持 Excel (.xlsx / .csv) 文件。<br>只要包含 <b>题目</b> 和 <b>答案</b> 列，以及至少两个选项列。
       </p>
-      <button class="btn btn-primary btn-block" onclick="createFileInputAndClick()" style="padding:15px;">
+      <button id="uploadBtn" class="btn btn-primary btn-block" style="padding:15px;">
         📂 点击选择文件
       </button>
       ${Object.keys(allBanks).length > 0 ? `<button class="btn btn-outline btn-block" onclick="currentMode='home';render()" style="margin-top:20px;">返回首页</button>` : ''}
     </div>
     <div class="footer">技术支持：秦十三郎</div>
   `;
-}
 
-// 【修复核心】：不缓存，每次点击重新生成全新的 DOM
-function createFileInputAndClick() {
-  var fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.accept = '.xlsx,.xls,.csv';
-  fileInput.style.display = 'none';
-  
-  fileInput.onchange = function(e) {
-    var file = e.target.files[0];
-    if (!file) return;
-    showToast('正在解析...');
-    var reader = new FileReader();
-    reader.onload = function(evt) {
-      try {
-        var data = new Uint8Array(evt.target.result);
-        var wb = XLSX.read(data, {type: 'array'});
-        var parsed = parseExcel(wb);
-        
-        var defaultName = file.name.replace(/\.[^/.]+$/, "");
-        customPrompt('请为题库命名', defaultName, function(bankName) {
-          var newId = 'bank_' + Date.now();
-          allBanks[newId] = { name: bankName, questions: parsed };
-          activeBankId = newId;
-          saveData();
-          currentMode = 'home';
-          showToast('导入成功，共 ' + parsed.length + ' 题');
-          render();
-        });
-      } catch(err) {
-        showToast(err.message || '解析失败，请检查表格格式', true);
-      } finally {
-        document.body.removeChild(fileInput); // 用完立刻销毁，绝不占用缓存
-      }
+  document.getElementById('uploadBtn').onclick = function() {
+    var fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.xlsx,.xls,.csv';
+    fileInput.style.position = 'absolute';
+    fileInput.style.left = '-9999px'; // 偏移出屏幕外，防止部分浏览器拦截 display:none
+    
+    fileInput.onchange = function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      showToast('正在解析...');
+      var reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          var data = new Uint8Array(evt.target.result);
+          var wb = XLSX.read(data, {type: 'array'});
+          var parsed = parseExcel(wb);
+          
+          var defaultName = file.name.replace(/\.[^/.]+$/, "");
+          customPrompt('请为题库命名', defaultName, function(bankName) {
+            var newId = 'bank_' + Date.now();
+            allBanks[newId] = { name: bankName, questions: parsed };
+            activeBankId = newId;
+            saveData();
+            currentMode = 'home';
+            showToast('导入成功，共 ' + parsed.length + ' 题');
+            render();
+          });
+        } catch(err) {
+          showToast(err.message || '解析失败，请检查表格格式', true);
+        } finally {
+          document.body.removeChild(fileInput);
+        }
+      };
+      reader.readAsArrayBuffer(file);
     };
-    reader.readAsArrayBuffer(file);
+    document.body.appendChild(fileInput);
+    fileInput.click();
   };
-  
-  document.body.appendChild(fileInput);
-  fileInput.click();
 }
 
 function parseExcel(wb) {
