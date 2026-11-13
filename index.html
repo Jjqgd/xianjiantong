@@ -5,10 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>铁途学练</title>
 <meta name="apple-mobile-web-app-title" content="铁途学练">
-<!-- 直接读取您上传的同级目录下的 logo.png -->
-<link rel="apple-touch-icon" href="logo.png">
 <link rel="icon" href="logo.png">
-
 <script src="https://cdn.staticfile.org/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
@@ -16,7 +13,6 @@
   * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, "Microsoft YaHei", sans-serif; }
   body { background-color: #f0f4f8; color: #1e293b; padding: 10px; -webkit-tap-highlight-color: transparent; }
   
-  /* 开场动画 */
   #splash-screen { position: fixed; top:0; left:0; right:0; bottom:0; background: #fcf9f2; z-index: 9999; display: flex; align-items: center; justify-content: center; transition: opacity 0.8s; }
   #splash-screen.hidden { opacity: 0; pointer-events: none; }
   .calligraphy-box { display: flex; gap: 40px; }
@@ -27,7 +23,7 @@
 
   .nav { background: #fff; padding: 10px 15px; border-bottom: 2px solid #b71c1c; display: flex; justify-content: space-between; align-items: center; border-radius: 10px; margin-bottom: 10px; }
   .nav-logo { font-size: 1.2rem; font-weight: bold; color: #b71c1c; display: flex; align-items: center; gap: 8px; }
-  .nav-logo img { width: 30px; height: 30px; object-fit: contain; } /* 读取 logo.png */
+  .nav-logo img { width: 30px; height: 30px; object-fit: contain; }
   .nav-right { font-size: 0.8rem; color: #64748b; }
 
   .card { background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
@@ -101,7 +97,6 @@
   
   .toast { position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 0.85rem; z-index: 9999; display: none; }
   
-  /* 自定义弹窗，替换丑陋的网址提示 */
   .app-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; }
   .app-box { background: #fff; padding: 25px; border-radius: 16px; width: 80%; max-width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
   .app-box h3 { font-size: 1.2rem; color: #b71c1c; margin-bottom: 10px; font-weight: bold; }
@@ -160,7 +155,6 @@ function showToast(msg, isErr) {
   setTimeout(function() { toastEl.style.display = 'none'; }, 2500);
 }
 
-// 【核心修复】：替换丑陋的系统提示框
 function showAppConfirm(title, msg, okText, cancelText, onOk) {
   var mask = document.createElement('div');
   mask.className = 'app-mask';
@@ -176,33 +170,23 @@ function showAppConfirm(title, msg, okText, cancelText, onOk) {
   `;
   document.body.appendChild(mask);
   
-  document.getElementById('btnCancel').onclick = function() {
-    document.body.removeChild(mask);
-  };
-  document.getElementById('btnOk').onclick = function() {
-    document.body.removeChild(mask);
-    onOk();
-  };
+  document.getElementById('btnCancel').onclick = function() { document.body.removeChild(mask); };
+  document.getElementById('btnOk').onclick = function() { document.body.removeChild(mask); onOk(); };
 }
 
 function confirmExitPractice() {
   showAppConfirm('铁途学练', '确定要退出当前练习吗？', '退出', '取消', function() {
-    currentMode = 'home';
-    render();
+    currentMode = 'home'; render();
   });
 }
 function confirmExitExam() {
   showAppConfirm('铁途学练', '确定要退出当前考试吗？本次成绩将不保存。', '退出', '取消', function() {
-    if (examTimer) clearInterval(examTimer);
-    examTimer = null;
-    currentMode = 'home';
-    render();
+    if (examTimer) clearInterval(examTimer); examTimer = null;
+    currentMode = 'home'; render();
   });
 }
 function confirmSubmitExam() {
-  showAppConfirm('铁途学练', '确定要交卷吗？', '交卷', '取消', function() {
-    submitExam();
-  });
+  showAppConfirm('铁途学练', '确定要交卷吗？', '交卷', '取消', function() { submitExam(); });
 }
 function confirmDeleteBank(id) {
   showAppConfirm('铁途学练', '确定要删除该题库吗？删除后不可恢复。', '删除', '取消', function() {
@@ -281,52 +265,48 @@ function renderImport() {
       <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;line-height:1.6;">
         支持 Excel (.xlsx / .csv) 文件。<br>只要包含 <b>题目</b> 和 <b>答案</b> 列，以及至少两个选项列。
       </p>
-      <button id="uploadBtn" class="btn btn-primary btn-block" style="padding:15px;">
-        📂 点击选择文件
-      </button>
+      
+      <!-- 每次渲染，强制重置 file 的值，并重新挂载事件 -->
+      <div style="border: 2px dashed #0d47a1; padding: 25px 10px; border-radius: 8px; background:#eff6ff;">
+        <input type="file" id="fileUpload" accept=".xlsx,.xls,.csv" style="width: 100%; font-size: 1rem; outline: none; color: #0d47a1; font-weight: bold;">
+      </div>
+
       ${Object.keys(allBanks).length > 0 ? `<button class="btn btn-outline btn-block" onclick="currentMode='home';render()" style="margin-top:20px;">返回首页</button>` : ''}
     </div>
     <div class="footer">技术支持：秦十三郎</div>
   `;
 
-  document.getElementById('uploadBtn').onclick = function() {
-    var fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.xlsx,.xls,.csv';
-    fileInput.style.position = 'absolute';
-    fileInput.style.left = '-9999px'; 
+  // 【核心修复】：在每次渲染后，重新给 input 绑定事件。并且避免旧事件堆积。
+  var fileInput = document.getElementById('fileUpload');
+  fileInput.onchange = function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    showToast('正在解析...');
     
-    fileInput.onchange = function(e) {
-      var file = e.target.files[0];
-      if (!file) return;
-      showToast('正在解析...');
-      var reader = new FileReader();
-      reader.onload = function(evt) {
-        try {
-          var data = new Uint8Array(evt.target.result);
-          var wb = XLSX.read(data, {type: 'array'});
-          var parsed = parseExcel(wb);
-          
-          var defaultName = file.name.replace(/\.[^/.]+$/, "");
-          customPrompt('请为题库命名', defaultName, function(bankName) {
-            var newId = 'bank_' + Date.now();
-            allBanks[newId] = { name: bankName, questions: parsed };
-            activeBankId = newId;
-            saveData();
-            currentMode = 'home';
-            showToast('导入成功，共 ' + parsed.length + ' 题');
-            render();
-          });
-        } catch(err) {
-          showToast(err.message || '解析失败，请检查表格格式', true);
-        } finally {
-          document.body.removeChild(fileInput);
-        }
-      };
-      reader.readAsArrayBuffer(file);
+    // 每次重新 new 一个 FileReader，杜绝状态残留
+    var reader = new FileReader();
+    reader.onload = function(evt) {
+      try {
+        var data = new Uint8Array(evt.target.result);
+        var wb = XLSX.read(data, {type: 'array'});
+        var parsed = parseExcel(wb);
+        
+        var defaultName = file.name.replace(/\.[^/.]+$/, "");
+        customPrompt('请为题库命名', defaultName, function(bankName) {
+          var newId = 'bank_' + Date.now();
+          allBanks[newId] = { name: bankName, questions: parsed };
+          activeBankId = newId;
+          saveData();
+          currentMode = 'home';
+          showToast('导入成功，共 ' + parsed.length + ' 题');
+          render();
+        });
+      } catch(err) {
+        showToast(err.message || '解析失败，请检查表格格式', true);
+        e.target.value = ''; // 允许重新选择
+      }
     };
-    document.body.appendChild(fileInput);
-    fileInput.click();
+    reader.readAsArrayBuffer(file);
   };
 }
 
