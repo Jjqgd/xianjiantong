@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>铁途学练</title>
 
 <!-- 强制桌面端名称和图标 -->
@@ -19,6 +19,7 @@
 </script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Zhi+Mang+Xing&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap'); /* 用于小篆质感 */
 
   :root {
     --primary: #b71c1c; --secondary: #0d47a1; --bg-color: #f0f4f8;
@@ -29,7 +30,17 @@
   }
   * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-tap-highlight-color: transparent; }
   
-  body { -webkit-touch-callout: none; background-color: var(--bg-color); background-image: linear-gradient(rgba(240, 244, 248, 0.92), rgba(240, 244, 248, 0.95)), linear-gradient(90deg, transparent 49%, rgba(13, 71, 161, 0.05) 50%, transparent 51%), linear-gradient(0deg, transparent 49%, rgba(13, 71, 161, 0.05) 50%, transparent 51%); background-size: 100% 100%, 40px 40px, 40px 40px; min-height: 100vh; display: flex; flex-direction: column; color: var(--text-main); }
+  body { 
+    -webkit-touch-callout: none; 
+    background-color: var(--bg-color); 
+    background-image: linear-gradient(rgba(240, 244, 248, 0.92), rgba(240, 244, 248, 0.95)), linear-gradient(90deg, transparent 49%, rgba(13, 71, 161, 0.05) 50%, transparent 51%), linear-gradient(0deg, transparent 49%, rgba(13, 71, 161, 0.05) 50%, transparent 51%); 
+    background-size: 100% 100%, 40px 40px, 40px 40px; 
+    min-height: 100vh; 
+    display: flex; flex-direction: column; 
+    color: var(--text-main);
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 
   /* ====== 开场动画 ====== */
   #splash-screen {
@@ -37,7 +48,7 @@
     background-color: #fcf9f2;
     background-image: url('data:image/svg+xml,%3Csvg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100" height="100" filter="url(%23noise)" opacity="0.05"/%3E%3C/svg%3E');
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    z-index: 9999; transition: opacity 0.8s ease, visibility 0.8s;
+    z-index: 9999; transition: opacity 0.6s ease, visibility 0.6s;
   }
   #splash-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
   
@@ -45,25 +56,34 @@
   .calligraphy-text { font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive; font-size: 3.5rem; color: #1a1a1a; line-height: 1.5; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); animation: inkReveal 2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; transform: scale(0.9); }
   .calligraphy-sub { font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive; font-size: 2rem; color: var(--primary); margin-left: 30px; animation: inkReveal 2s 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; transform: scale(0.9); }
   
-  /* 真正的古风小篆印章 */
+  /* 全新设计的真·古风印章 */
   .seal {
-    width: 76px; height: 76px;
-    background: #c62828; /* 印泥红 */
+    width: 80px; height: 80px;
+    background: #b71c1c;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 4px 15px rgba(183,28,28,0.4);
     animation: stamp 0.6s 2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
     opacity: 0; transform: scale(2) rotate(-15deg);
     position: relative; overflow: hidden;
+    /* 使用字体模拟小篆，添加白色文字 */
+    color: #fff;
+    font-family: 'Ma Shan Zheng', 'STXingkai', cursive;
+    font-size: 1.2rem;
+    font-weight: bold;
+    writing-mode: vertical-rl;
+    letter-spacing: 2px;
+    padding: 8px;
+    text-align: center;
+    line-height: 1.2;
   }
-  /* 印章外圈做旧脱墨效果 */
-  .seal::after {
+  /* 模拟印章盖上去的斑驳印泥 */
+  .seal::before {
     content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
-    background-image: url('data:image/svg+xml,%3Csvg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="n"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100" height="100" filter="url(%23n)" opacity="0.3"/%3E%3C/svg%3E');
+    background-image: url('data:image/svg+xml,%3Csvg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="n"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100" height="100" filter="url(%23n)" opacity="0.6"/%3E%3C/svg%3E');
     mix-blend-mode: multiply;
+    pointer-events: none;
   }
-  /* 内部九叠篆风格的 SVG 文字 */
-  .seal svg { width: 56px; height: 56px; z-index: 1; }
 
   @keyframes inkReveal { 0% { opacity: 0; transform: scale(0.9); filter: blur(10px); } 100% { opacity: 1; transform: scale(1); filter: blur(0); } }
   @keyframes stamp { 0% { opacity: 0; transform: scale(2) rotate(-15deg); } 100% { opacity: 1; transform: scale(1) rotate(-5deg); } }
@@ -185,16 +205,8 @@
     <div class="calligraphy-sub">勤学练兵</div>
   </div>
   
-  <!-- 古风小篆印章 -->
-  <div class="seal">
-    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <!-- 模拟小篆的九叠篆线条 -->
-      <path d="M20 20 L80 20 L80 80 L20 80 Z M25 25 L75 25 L75 75 L25 75 Z" fill="#fff" opacity="0.8" />
-      <path d="M20 20 L40 20 M60 20 L80 20 M20 80 L40 80 M60 80 L80 80 M20 20 L20 40 M20 60 L20 80 M80 20 L80 40 M80 60 L80 80" stroke="#fff" stroke-width="3" />
-      <path d="M35 35 L35 45 M45 35 L45 45 M55 35 L55 45 M65 35 L65 45 M35 55 L35 65 M45 55 L45 65 M55 55 L55 65 M65 55 L65 65" stroke="#fff" stroke-width="3" />
-      <path d="M30 30 L45 45 M55 55 L70 70 M70 30 L55 45 M45 55 L30 70" stroke="#fff" stroke-width="3" />
-    </svg>
-  </div>
+  <!-- 优化后的小篆风格印章 -->
+  <div class="seal">铁途学练</div>
 </div>
 
 <!-- 顶部导航 -->
@@ -743,7 +755,7 @@ window.selectOptionPractice = function(idx) {
     practiceSelections[practiceIndex] = [idx];
     q.isAnswered = true;
     const isCorrect = q.answer.length === 1 && q.answer[0] === idx;
-    handlePracticeResult(q, isCorrect);
+    window.handlePracticeResult(q, isCorrect);
     window.renderPractice();
     
     if (isCorrect) {
@@ -760,7 +772,7 @@ window.confirmMultiPractice = function() {
   const selections = practiceSelections[practiceIndex] || [];
   const isCorrect = selections.length === q.answer.length && selections.every(v => q.answer.includes(v));
   
-  handlePracticeResult(q, isCorrect);
+  window.handlePracticeResult(q, isCorrect);
   window.renderPractice();
 }
 
