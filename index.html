@@ -6,8 +6,15 @@
 <title>铁途学练</title>
 <meta name="apple-mobile-web-app-title" content="铁途学练">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='none' stroke='%23b71c1c' stroke-width='8'/><path d='M50 20 L75 35 L65 42 L50 32 L35 42 L25 35 Z' fill='%23b71c1c'/><path d='M20 80 L40 50 L50 55 L60 50 L80 80 L70 85 L58 65 L50 68 L42 65 L30 85 Z' fill='%23b71c1c'/><line x1='25' y1='55' x2='75' y2='55' stroke='%23b71c1c' stroke-width='8' stroke-linecap='round'/></svg>">
-<!-- 使用国内最稳定节点，尽可能规避广告拦截 -->
-<script src="https://cdn.bootcdn.net/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<!-- 核心解析库双源加载，预防广告拦截 -->
+<script src="https://cdn.staticfile.org/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+  if (typeof XLSX === 'undefined') {
+    document.write('<script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/xlsx/0.18.5/xlsx.full.min.js"><\/script>');
+  }
+</script>
+
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Zhi+Mang+Xing&display=swap');
   * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, "Microsoft YaHei", sans-serif; }
@@ -57,15 +64,21 @@
   .toolbar { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 10px 15px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
   .timer { font-family: monospace; font-size: 1.1rem; font-weight: bold; color: #ef4444; }
   .q-progress { font-size: 0.85rem; color: #64748b; font-weight: bold; }
-  
+
+  /* 折叠面板题型样式 */
   .sheet-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.6); z-index: 999; display: flex; align-items: flex-end; transition: opacity 0.2s; }
-  .sheet-content { background: #f0f4f8; width: 100%; max-height: 70vh; border-radius: 20px 20px 0 0; padding: 20px; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s; }
+  .sheet-content { background: #f8fafc; width: 100%; max-height: 75vh; border-radius: 20px 20px 0 0; padding: 20px; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s; }
   .sheet-mask.show .sheet-content { transform: translateY(0); }
-  .sheet-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; }
-  .sheet-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
-  .sheet-num { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff; border-radius: 8px; font-weight: bold; font-size: 1rem; color: #1e293b; border: 1px solid #cbd5e1; cursor: pointer; }
-  .sheet-num.done { background: #0d47a1; color: #fff; border-color: #0d47a1; }
-  .sheet-num .q-type { font-size: 0.6rem; opacity: 0.7; font-weight: normal; margin-top: -2px; }
+  .sheet-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+  
+  /* 分类折叠面板 */
+  .acc-group { margin-bottom: 12px; background: #fff; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
+  .acc-header { padding: 12px 15px; background: #f1f5f9; font-weight: bold; font-size: 0.95rem; color: #0d47a1; display: flex; justify-content: space-between; cursor: pointer; }
+  .acc-header span { font-size: 0.8rem; color: #64748b; font-weight: normal; }
+  .acc-body { padding: 15px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; border-top: 1px solid #e2e8f0; }
+  .acc-body.hidden { display: none; }
+  .num-btn { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: #f8fafc; border-radius: 6px; font-weight: bold; color: #1e293b; border: 1px solid #cbd5e1; cursor: pointer; }
+  .num-btn.done { background: #0d47a1; color: #fff; border-color: #0d47a1; }
 
   .tag { display: inline-block; padding: 2px 8px; background: #0d47a1; color: #fff; border-radius: 4px; font-size: 0.75rem; font-weight: bold; margin-bottom: 10px; }
   .q-text { font-size: 1.05rem; font-weight: bold; line-height: 1.5; margin-bottom: 15px; }
@@ -87,15 +100,14 @@
   .score-num { font-family: "Georgia", serif; color: #d32f2f; font-size: 5rem; font-weight: bold; display: inline-block; border-bottom: 4px double #d32f2f; line-height: 1; margin-bottom: 15px; padding: 0 10px; }
   .bottom-actions { display: flex; gap: 10px; margin-top: 20px; }
   
+  .maoti-result { font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive; font-size: 2.2rem; color: #0d47a1; text-align: center; margin: 20px 0; line-height: 1.4; }
+  .maoti-result.full { color: #b71c1c; }
+  
   .toast { position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 0.85rem; z-index: 9999; display: none; }
   .prompt-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; }
   .prompt-box { background: #fff; padding: 20px; border-radius: 12px; width: 80%; max-width: 300px; }
   .prompt-box input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin: 15px 0; font-size: 1rem; }
   .footer { text-align: center; color: #94a3b8; font-size: 0.8rem; margin-top: 20px; padding-bottom: 20px; }
-
-  /* 毛体结果语 */
-  .maoti-result { font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive; font-size: 2.2rem; color: #0d47a1; text-align: center; margin: 20px 0; line-height: 1.4; }
-  .maoti-result.full { color: #b71c1c; }
 </style>
 </head>
 <body>
@@ -215,46 +227,50 @@ function renderImport() {
       <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;line-height:1.6;">
         支持 Excel (.xlsx / .csv) 文件。<br>只要包含 <b>题目</b> 和 <b>答案</b> 列，以及至少两个选项列。
       </p>
-      <label class="btn btn-primary btn-block" style="cursor:pointer;padding:15px;">
+      <button class="btn btn-primary btn-block" onclick="triggerFileInput()" style="padding:15px;">
         📂 选择文件导入
-        <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleFile(event)">
-      </label>
+      </button>
       ${Object.keys(allBanks).length > 0 ? `<button class="btn btn-outline btn-block" onclick="currentMode='home';render()">返回首页</button>` : ''}
     </div>
     <div class="footer">技术支持：秦十三郎</div>
   `;
 }
 
-function handleFile(e) {
-  var file = e.target.files[0];
-  if (!file) return;
-  showToast('正在解析...');
-  var reader = new FileReader();
-  reader.onload = function(evt) {
-    try {
-      var data = new Uint8Array(evt.target.result);
-      var wb = XLSX.read(data, {type: 'array'});
-      var parsed = parseExcel(wb);
-      
-      var defaultName = file.name.replace(/\.[^/.]+$/, "");
-      customPrompt('请为题库命名', defaultName, function(bankName) {
-        var newId = 'bank_' + Date.now();
-        allBanks[newId] = { name: bankName, questions: parsed };
-        activeBankId = newId;
-        saveData();
-        currentMode = 'home';
-        showToast('导入成功，共 ' + parsed.length + ' 题');
-        render();
-      });
-    } catch(err) {
-      showToast(err.message || '解析失败，请检查表格格式', true);
-    }
+// 彻底解决二次导入失效与广告拦截问题：动态创建 input
+function triggerFileInput() {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.xlsx,.xls,.csv';
+  input.onchange = function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    showToast('正在解析...');
+    var reader = new FileReader();
+    reader.onload = function(evt) {
+      try {
+        var data = new Uint8Array(evt.target.result);
+        var wb = XLSX.read(data, {type: 'array'});
+        var parsed = parseExcel(wb);
+        
+        var defaultName = file.name.replace(/\.[^/.]+$/, "");
+        customPrompt('请为题库命名', defaultName, function(bankName) {
+          var newId = 'bank_' + Date.now();
+          allBanks[newId] = { name: bankName, questions: parsed };
+          activeBankId = newId;
+          saveData();
+          currentMode = 'home';
+          showToast('导入成功，共 ' + parsed.length + ' 题');
+          render();
+        });
+      } catch(err) {
+        showToast(err.message || '解析失败，请检查表格格式', true);
+      }
+    };
+    reader.readAsArrayBuffer(file);
   };
-  reader.readAsArrayBuffer(file);
-  e.target.value = '';
+  input.click();
 }
 
-// 增强版判断题识别
 function parseExcel(wb) {
   var allParsed = [];
   var sheetName = wb.SheetNames[0];
@@ -413,30 +429,46 @@ function deleteBank(id) {
   }
 }
 
-// ================= 3. 答题卡组件 =================
+// ================= 3. 全新答题卡组件 =================
 function buildSheetHtml(questions, currentIdx, selections, type) {
-  var html = '<div class="sheet-grid">';
+  var groups = { single: [], multiple: [], judge: [] };
   for (var k = 0; k < questions.length; k++) {
-    var isDone = false;
-    if (type === 'practice') {
-      isDone = questions[k].isAnswered;
-    } else {
-      isDone = (selections[k] && selections[k].length > 0);
-    }
-    var cls = 'sheet-num' + (isDone ? ' done' : '');
-    var jumpFn = type === 'practice' ? 'jumpPractice' : 'jumpExam';
-    
-    // 题型文字简写
-    var t = questions[k].type;
-    var tTxt = t === 'single' ? '单' : t === 'multiple' ? '多' : '判';
-    
-    html += `<div class="${cls}" onclick="${jumpFn}(${k})">${k+1}<div class="q-type">${tTxt}</div></div>`;
+    groups[questions[k].type].push({ idx: k, q: questions[k] });
   }
-  html += '</div>';
+  
+  var html = '';
+  var types = ['single', 'multiple', 'judge'];
+  var typeNames = { single: '单选题', multiple: '多选题', judge: '判断题' };
+  var jumpFn = type === 'practice' ? 'jumpPractice' : 'jumpExam';
+  
+  for (var t = 0; t < types.length; t++) {
+    var tp = types[t];
+    var items = groups[tp];
+    if (items.length === 0) continue;
+    
+    html += `<div class="acc-group">`;
+    html += `<div class="acc-header" onclick="this.nextElementSibling.classList.toggle('hidden')"><span style="font-size:1.1rem;">${typeNames[tp]}</span><span>共 ${items.length} 题 (点击折叠/展开)</span></div>`;
+    html += `<div class="acc-body">`;
+    
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var isDone = false;
+      if (type === 'practice') {
+        isDone = item.q.isAnswered;
+      } else {
+        isDone = (selections[item.idx] && selections[item.idx].length > 0);
+      }
+      var cls = 'num-btn' + (isDone ? ' done' : '');
+      html += `<div class="${cls}" onclick="${jumpFn}(${item.idx})">${item.idx+1}</div>`;
+    }
+    
+    html += `</div></div>`;
+  }
+  
   return html;
 }
 
-// ================= 4. 练习模式 (修复退出，恢复下一题) =================
+// ================= 4. 练习模式 =================
 function startPractice(type) {
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
   if (type === 'wrong') {
