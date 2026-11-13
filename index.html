@@ -5,10 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>铁途学练</title>
 
-<!-- 1. 强制桌面端名称 -->
+<!-- 强制桌面端名称和图标 -->
 <meta name="apple-mobile-web-app-title" content="铁途学练">
 <meta name="application-name" content="铁途学练">
-<!-- 2. 桌面端图标（若您上传了 icon.png 则自动生效，否则显示 SVG 默认路徽） -->
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='none' stroke='%23b71c1c' stroke-width='8'/><path d='M50 20 L75 35 L65 42 L50 32 L35 42 L25 35 Z' fill='%23b71c1c'/><path d='M20 80 L40 50 L50 55 L60 50 L80 80 L70 85 L58 65 L50 68 L42 65 L30 85 Z' fill='%23b71c1c'/><line x1='25' y1='55' x2='75' y2='55' stroke='%23b71c1c' stroke-width='8' stroke-linecap='round'/></svg>">
 
@@ -19,7 +18,6 @@
   }
 </script>
 <style>
-  /* 引入一款具有毛笔风格的免费开源字体（Zhi Mang Xing） */
   @import url('https://fonts.googleapis.com/css2?family=Zhi+Mang+Xing&display=swap');
 
   :root {
@@ -33,7 +31,7 @@
   
   body { -webkit-touch-callout: none; background-color: var(--bg-color); background-image: linear-gradient(rgba(240, 244, 248, 0.92), rgba(240, 244, 248, 0.95)), linear-gradient(90deg, transparent 49%, rgba(13, 71, 161, 0.05) 50%, transparent 51%), linear-gradient(0deg, transparent 49%, rgba(13, 71, 161, 0.05) 50%, transparent 51%); background-size: 100% 100%, 40px 40px, 40px 40px; min-height: 100vh; display: flex; flex-direction: column; color: var(--text-main); }
 
-  /* ====== 开场动画（毛体书法） ====== */
+  /* ====== 开场动画 ====== */
   #splash-screen {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background-color: #fcf9f2;
@@ -47,25 +45,31 @@
   .calligraphy-text { font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive; font-size: 3.5rem; color: #1a1a1a; line-height: 1.5; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); animation: inkReveal 2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; transform: scale(0.9); }
   .calligraphy-sub { font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive; font-size: 2rem; color: var(--primary); margin-left: 30px; animation: inkReveal 2s 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; transform: scale(0.9); }
   
-  /* 圆形朱文印章效果 */
+  /* 真正的古风小篆印章 */
   .seal {
-    width: 70px; height: 70px; 
-    background: linear-gradient(135deg, #d32f2f, #b71c1c);
-    border-radius: 50%; /* 圆形 */
-    color: #fff; font-size: 0.85rem; font-family: "KaiTi", serif; font-weight: bold;
-    display: flex; align-items: center; justify-content: center; text-align: center;
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.2), 0 4px 10px rgba(183,28,28,0.4);
-    border: 2px solid #fff; outline: 2px solid #b71c1c; /* 双线边框增加立体感 */
-    writing-mode: vertical-rl; letter-spacing: 2px;
+    width: 76px; height: 76px;
+    background: #c62828; /* 印泥红 */
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 15px rgba(183,28,28,0.4);
     animation: stamp 0.6s 2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
     opacity: 0; transform: scale(2) rotate(-15deg);
+    position: relative; overflow: hidden;
   }
+  /* 印章外圈做旧脱墨效果 */
+  .seal::after {
+    content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
+    background-image: url('data:image/svg+xml,%3Csvg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="n"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100" height="100" filter="url(%23n)" opacity="0.3"/%3E%3C/svg%3E');
+    mix-blend-mode: multiply;
+  }
+  /* 内部九叠篆风格的 SVG 文字 */
+  .seal svg { width: 56px; height: 56px; z-index: 1; }
 
   @keyframes inkReveal { 0% { opacity: 0; transform: scale(0.9); filter: blur(10px); } 100% { opacity: 1; transform: scale(1); filter: blur(0); } }
   @keyframes stamp { 0% { opacity: 0; transform: scale(2) rotate(-15deg); } 100% { opacity: 1; transform: scale(1) rotate(-5deg); } }
 
   /* ====== 主界面 ====== */
-  .top-nav { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0,0,0,0.05); padding: 0 20px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .top-nav { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0,0,0,0.05); padding: 0 20px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
   .logo-area { display: flex; align-items: center; gap: 10px; }
   .logo-icon { width: 32px; height: 32px; }
   .logo-text { font-size: 1.25rem; font-weight: 800; color: var(--primary); letter-spacing: 1px; }
@@ -180,8 +184,17 @@
     <div class="calligraphy-text">铁道征途</div>
     <div class="calligraphy-sub">勤学练兵</div>
   </div>
-  <!-- 优化后的圆形印章 -->
-  <div class="seal">铁途学练</div>
+  
+  <!-- 古风小篆印章 -->
+  <div class="seal">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <!-- 模拟小篆的九叠篆线条 -->
+      <path d="M20 20 L80 20 L80 80 L20 80 Z M25 25 L75 25 L75 75 L25 75 Z" fill="#fff" opacity="0.8" />
+      <path d="M20 20 L40 20 M60 20 L80 20 M20 80 L40 80 M60 80 L80 80 M20 20 L20 40 M20 60 L20 80 M80 20 L80 40 M80 60 L80 80" stroke="#fff" stroke-width="3" />
+      <path d="M35 35 L35 45 M45 35 L45 45 M55 35 L55 45 M65 35 L65 45 M35 55 L35 65 M45 55 L45 65 M55 55 L55 65 M65 55 L65 65" stroke="#fff" stroke-width="3" />
+      <path d="M30 30 L45 45 M55 55 L70 70 M70 30 L55 45 M45 55 L30 70" stroke="#fff" stroke-width="3" />
+    </svg>
+  </div>
 </div>
 
 <!-- 顶部导航 -->
@@ -236,7 +249,7 @@ setTimeout(() => {
   document.getElementById('splash-screen').classList.add('hidden');
 }, 3000);
 
-function showToast(msg, isError = false) {
+window.showToast = function(msg, isError = false) {
   toastEl.textContent = msg;
   toastEl.style.background = isError ? '#ef4444' : 'rgba(30,41,59,0.9)';
   toastEl.classList.add('show');
@@ -244,7 +257,7 @@ function showToast(msg, isError = false) {
 }
 
 /* ================= 授权验证 ================= */
-function checkAuth() {
+window.checkAuth = function() {
   if (isAuthorized) {
     currentMode = Object.keys(allBanks).length > 0 ? 'home' : 'import';
   } else {
@@ -253,7 +266,7 @@ function checkAuth() {
 }
 
 /* ================= 本地缓存管理 ================= */
-function saveData() {
+window.saveData = function() {
   try {
     localStorage.setItem('xianjiantong_all_banks', JSON.stringify(allBanks));
     localStorage.setItem('xianjiantong_active_id', activeBankId || '');
@@ -261,7 +274,7 @@ function saveData() {
   } catch(e) { console.warn('保存缓存失败', e); }
 }
 
-function loadData() {
+window.loadData = function() {
   try {
     const b = localStorage.getItem('xianjiantong_all_banks');
     const a = localStorage.getItem('xianjiantong_active_id');
@@ -276,13 +289,13 @@ function loadData() {
   } catch(e) { console.warn('读取缓存失败', e); }
 }
 
-function getCurrentBankQuestions() {
+window.getCurrentBankQuestions = function() {
   if (!activeBankId || !allBanks[activeBankId]) return [];
   return allBanks[activeBankId].questions;
 }
 
 /* ================= 自定义输入弹窗 ================= */
-function customPrompt(title, defaultValue, callback) {
+window.customPrompt = function(title, defaultValue, callback) {
   const mask = document.createElement('div');
   mask.className = 'custom-prompt-mask';
   mask.innerHTML = `
@@ -302,15 +315,15 @@ function customPrompt(title, defaultValue, callback) {
   document.getElementById('promptCancel').onclick = close;
   document.getElementById('promptOk').onclick = () => {
     const val = input.value.trim();
-    if (!val) { showToast('名称不能为空', true); return; }
+    if (!val) { window.showToast('名称不能为空', true); return; }
     close();
     callback(val);
   };
   input.onkeydown = (e) => { if (e.key === 'Enter') document.getElementById('promptOk').click(); };
 }
 
-/* ================= 智能 Excel解析（只要有 题目 和 答案 关键词即可） ================= */
-function parseExcel(wb) {
+/* ================= 智能 Excel解析 ================= */
+window.parseExcel = function(wb) {
   const allParsed = [];
   wb.SheetNames.forEach(sheetName => {
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '', raw: false });
@@ -318,9 +331,8 @@ function parseExcel(wb) {
 
     const header = rows[0].map(c => String(c ?? '').trim().toLowerCase());
     
-    // 智能查找列索引（不再要求严格匹配表头）
     let colQ = -1, colAns = -1, colT = -1, colAna = -1;
-    let optCols = []; // 存储选项列的索引
+    let optCols = []; 
     
     for (let i = 0; i < header.length; i++) {
       const h = header[i];
@@ -333,7 +345,6 @@ function parseExcel(wb) {
       }
     }
 
-    // 如果连核心的"题目"和"答案"都没找到，直接跳过该表
     if (colQ === -1 || colAns === -1) return;
 
     for (let i = 1; i < rows.length; i++) {
@@ -360,7 +371,7 @@ function parseExcel(wb) {
       }
 
       if (type === 'judge') opts = ['正确', '错误'];
-      if (opts.length < 2) continue; // 选项不够，跳过
+      if (opts.length < 2) continue; 
 
       let ansIndices = [];
       if (type === 'judge') {
@@ -375,7 +386,7 @@ function parseExcel(wb) {
       }
       
       if (type === 'single' && ansIndices.length > 1) type = 'multiple';
-      if (ansIndices.length === 0) continue; // 无效答案
+      if (ansIndices.length === 0) continue; 
       
       ansIndices.sort((a,b)=>a-b);
 
@@ -396,21 +407,21 @@ function parseExcel(wb) {
 }
 
 /* ================= 路由渲染 ================= */
-function render() {
-  checkAuth(); 
+window.render = function() {
+  window.checkAuth(); 
 
-  if (currentMode === 'login') renderLogin();
-  else if (currentMode === 'import') renderImport();
-  else if (currentMode === 'home') renderHome();
-  else if (currentMode === 'practice') renderPractice();
-  else if (currentMode === 'examSetup') renderExamSetup();
-  else if (currentMode === 'exam') renderExam();
-  else if (currentMode === 'result') renderResult();
-  else if (currentMode === 'review') renderReview();
+  if (currentMode === 'login') window.renderLogin();
+  else if (currentMode === 'import') window.renderImport();
+  else if (currentMode === 'home') window.renderHome();
+  else if (currentMode === 'practice') window.renderPractice();
+  else if (currentMode === 'examSetup') window.renderExamSetup();
+  else if (currentMode === 'exam') window.renderExam();
+  else if (currentMode === 'result') window.renderResult();
+  else if (currentMode === 'review') window.renderReview();
 }
 
 /* ---------- 登录页 ---------- */
-function renderLogin() {
+window.renderLogin = function() {
   app.innerHTML = `
     <div class="login-box">
       <h2>🔐 身份验证</h2>
@@ -433,28 +444,28 @@ window.verifyAuth = function() {
     isAuthorized = true;
     localStorage.setItem('xjt_auth', 'true');
     currentMode = Object.keys(allBanks).length > 0 ? 'home' : 'import';
-    showToast('授权成功，欢迎使用！');
-    render();
+    window.showToast('授权成功，欢迎使用！');
+    window.render();
   } else {
-    showToast('授权码错误，请重试', true);
+    window.showToast('授权码错误，请重试', true);
   }
 }
 
 /* ---------- 导入页 ---------- */
-function renderImport() {
+window.renderImport = function() {
   app.innerHTML = `
     <div class="card" style="text-align:center; padding:40px 20px;">
       <h2 style="color:var(--primary); margin-bottom:16px; font-weight:800;">📥 导入新题库</h2>
       <p style="color:var(--text-sub); margin-bottom:24px; line-height:1.6; font-size:0.9rem;">
         支持 Excel (.xlsx / .xls / .csv) 文件。<br>
-        只需有 <b>题目、答案</b> 列，以及至少两个选项列（如选项A、选项B）。<br>
+        只需有 <b>题目、答案</b> 列，以及至少两个选项列。<br>
         <span style="font-size:0.8rem; color:#94a3b8;">(无需专门指定题型，系统会自动识别)</span>
       </p>
       <label class="btn btn-primary btn-block" style="cursor:pointer; padding:16px; font-size:1rem;">
         📂 选择文件导入
         <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" hidden>
       </label>
-      ${Object.keys(allBanks).length > 0 ? `<button class="btn btn-outline btn-block" style="margin-top:12px;" onclick="currentMode='home';render()">返回首页</button>` : ''}
+      ${Object.keys(allBanks).length > 0 ? `<button class="btn btn-outline btn-block" style="margin-top:12px;" onclick="currentMode='home';window.render()">返回首页</button>` : ''}
     </div>
     <div class="footer-info">技术支持：秦十三郎</div>
   `;
@@ -462,30 +473,30 @@ function renderImport() {
     const file = e.target.files[0];
     if (!file) return;
     try {
-      showToast('正在解析...');
+      window.showToast('正在解析...');
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf, { type: 'array' });
-      const parsedQuestions = parseExcel(wb);
+      const parsedQuestions = window.parseExcel(wb);
       
-      customPrompt('请为这本题库命名', file.name.replace(/\.[^/.]+$/, ""), (bankName) => {
+      window.customPrompt('请为这本题库命名', file.name.replace(/\.[^/.]+$/, ""), (bankName) => {
         const newBankId = 'bank_' + Date.now();
         allBanks[newBankId] = { name: bankName, questions: parsedQuestions };
         activeBankId = newBankId;
-        saveData();
+        window.saveData();
         currentMode = 'home';
-        showToast(`导入成功，共 ${parsedQuestions.length} 题`);
-        render();
+        window.showToast(`导入成功，共 ${parsedQuestions.length} 题`);
+        window.render();
       });
     } catch (err) {
-      showToast(err.message || '导入失败', true);
+      window.showToast(err.message || '导入失败', true);
     } finally {
       e.target.value = '';
     }
   });
 }
 
-/* ---------- 首页（已修复无法点击的Bug） ---------- */
-function renderHome() {
+/* ---------- 首页 ---------- */
+window.renderHome = function() {
   const bankEntries = Object.entries(allBanks);
   const hasActiveBank = activeBankId && allBanks[activeBankId];
   const currentQuestions = hasActiveBank ? allBanks[activeBankId].questions : [];
@@ -519,7 +530,7 @@ function renderHome() {
     <div class="card">
       <div class="section-header">我的题库</div>
       ${bankEntries.length === 0 ? '<div style="color:#94a3b8; font-size:0.9rem; text-align:center; padding:10px;">暂无题库，请先导入</div>' : banksHtml}
-      <button class="btn btn-outline btn-block" style="margin-top:12px; border-style:dashed;" onclick="currentMode='import';render()">➕ 导入新题库</button>
+      <button class="btn btn-outline btn-block" style="margin-top:12px; border-style:dashed;" onclick="currentMode='import';window.render()">➕ 导入新题库</button>
     </div>
 
     ${hasActiveBank ? `
@@ -558,7 +569,7 @@ function renderHome() {
           <div class="menu-title">顺序练习</div>
           <div class="menu-desc">答对自动跳转，答错看解析</div>
         </div>
-        <div class="menu-card" onclick="currentMode='examSetup';render()">
+        <div class="menu-card" onclick="currentMode='examSetup';window.render()">
           <div class="menu-icon">📝</div>
           <div class="menu-title">模拟考试</div>
           <div class="menu-desc">随机组卷，交卷出分</div>
@@ -568,7 +579,7 @@ function renderHome() {
           <div class="menu-title">错题集训</div>
           <div class="menu-desc">连续答对5次自动移出</div>
         </div>
-        <div class="menu-card" onclick="currentMode='review';render()">
+        <div class="menu-card" onclick="currentMode='review';window.render()">
           <div class="menu-icon">📑</div>
           <div class="menu-title">错题查看</div>
           <div class="menu-desc">回顾错题及完整解析</div>
@@ -595,8 +606,8 @@ function renderHome() {
 
 window.switchBank = function(id) {
   activeBankId = id;
-  saveData();
-  render();
+  window.saveData();
+  window.render();
 }
 
 window.deleteBank = function(id) {
@@ -605,22 +616,22 @@ window.deleteBank = function(id) {
     if (activeBankId === id) {
       activeBankId = Object.keys(allBanks).length > 0 ? Object.keys(allBanks)[0] : null;
     }
-    saveData();
+    window.saveData();
     if (Object.keys(allBanks).length === 0) currentMode = 'import';
-    render();
+    window.render();
   }
 }
 
 /* ---------- 练习模式 ---------- */
 window.startPractice = function(type) {
-  const currentQuestions = getCurrentBankQuestions();
+  const currentQuestions = window.getCurrentBankQuestions();
   
   if (type === 'wrong') {
-    if (wrongBook.length === 0) return showToast('错题本为空，先去练习吧', true);
+    if (wrongBook.length === 0) return window.showToast('错题本为空，先去练习吧', true);
     practiceQuestions = [...wrongBook];
     isWrongPracticeMode = true;
   } else {
-    if (currentQuestions.length === 0) return showToast('当前题库为空', true);
+    if (currentQuestions.length === 0) return window.showToast('当前题库为空', true);
     if (type === 'all') {
       practiceQuestions = [...currentQuestions];
     } else {
@@ -629,7 +640,7 @@ window.startPractice = function(type) {
     isWrongPracticeMode = false;
   }
   
-  if (practiceQuestions.length === 0) return showToast('该分类下暂无题目', true);
+  if (practiceQuestions.length === 0) return window.showToast('该分类下暂无题目', true);
   
   practiceIndex = 0;
   practiceSelections = [];
@@ -638,17 +649,17 @@ window.startPractice = function(type) {
     if (q.streak === undefined) q.streak = 0;
   });
   currentMode = 'practice';
-  render();
+  window.render();
 }
 
-function renderPractice() {
+window.renderPractice = function() {
   if (practiceIndex >= practiceQuestions.length) {
     app.innerHTML = `
       <div class="card" style="text-align:center; padding:40px 15px;">
         <div style="font-size:4rem; margin-bottom:15px;">🎉</div>
         <h2 style="color:var(--secondary); margin-bottom:10px;">练习完成</h2>
         <p style="color:var(--text-sub); margin-bottom:24px;">${isWrongPracticeMode ? '本轮错题集训已结束，继续保持！' : '你已完成本轮所有题目练习。'}</p>
-        <button class="btn btn-primary btn-block" onclick="currentMode='home';render()">返回首页</button>
+        <button class="btn btn-primary btn-block" onclick="currentMode='home';window.render()">返回首页</button>
       </div>`;
     return;
   }
@@ -685,7 +696,7 @@ function renderPractice() {
 
   app.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-      <button class="btn btn-outline btn-sm" onclick="currentMode='home';render()">⬅ 退出</button>
+      <button class="btn btn-outline btn-sm" onclick="currentMode='home';window.render()">⬅ 退出</button>
       <span style="font-size:0.9rem; color:var(--text-sub); font-weight:600;">第 ${practiceIndex + 1} / ${practiceQuestions.length} 题</span>
     </div>
     
@@ -727,13 +738,13 @@ window.selectOptionPractice = function(idx) {
     if (pos > -1) selections.splice(pos, 1);
     else selections.push(idx);
     practiceSelections[practiceIndex] = selections;
-    renderPractice();
+    window.renderPractice();
   } else {
     practiceSelections[practiceIndex] = [idx];
     q.isAnswered = true;
     const isCorrect = q.answer.length === 1 && q.answer[0] === idx;
     handlePracticeResult(q, isCorrect);
-    renderPractice();
+    window.renderPractice();
     
     if (isCorrect) {
       if (!isWrongPracticeMode) {
@@ -750,16 +761,16 @@ window.confirmMultiPractice = function() {
   const isCorrect = selections.length === q.answer.length && selections.every(v => q.answer.includes(v));
   
   handlePracticeResult(q, isCorrect);
-  renderPractice();
+  window.renderPractice();
 }
 
-function handlePracticeResult(q, isCorrect) {
+window.handlePracticeResult = function(q, isCorrect) {
   if (isWrongPracticeMode) {
     if (isCorrect) {
       q.streak = (q.streak || 0) + 1;
       if (q.streak >= 5) {
         wrongBook = wrongBook.filter(item => item.id !== q.id);
-        showToast('🎉 连对5次，已移出错题本！');
+        window.showToast('🎉 连对5次，已移出错题本！');
         if (wrongBook.length === 0) {
            practiceIndex = practiceQuestions.length; 
         }
@@ -767,13 +778,13 @@ function handlePracticeResult(q, isCorrect) {
     } else {
       q.streak = 0;
     }
-    saveData();
+    window.saveData();
   } else {
     if (!isCorrect) {
       const exist = wrongBook.find(item => item.id === q.id);
       if (!exist) {
         wrongBook.push({ ...q, streak: 0 });
-        saveData();
+        window.saveData();
       }
     }
   }
@@ -781,14 +792,14 @@ function handlePracticeResult(q, isCorrect) {
 
 window.nextPractice = function() {
   practiceIndex++;
-  renderPractice();
+  window.renderPractice();
 }
 
 /* ---------- 错题本查看 ---------- */
-function renderReview() {
+window.renderReview = function() {
   if (wrongBook.length === 0) {
     app.innerHTML = `
-      <div style="margin-bottom:16px;"><button class="btn btn-outline btn-sm" onclick="currentMode='home';render()">⬅ 返回首页</button></div>
+      <div style="margin-bottom:16px;"><button class="btn btn-outline btn-sm" onclick="currentMode='home';window.render()">⬅ 返回首页</button></div>
       <div class="card" style="text-align:center; padding:40px; color:var(--text-sub);">🎉 暂无错题，继续保持！</div>
       <div class="footer-info">技术支持：秦十三郎</div>`;
     return;
@@ -810,7 +821,7 @@ function renderReview() {
   app.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
       <h2 style="color:var(--text-main); font-size:1.1rem; font-weight:800;">错题本 (${wrongBook.length})</h2>
-      <button class="btn btn-outline btn-sm" onclick="currentMode='home';render()">⬅ 返回</button>
+      <button class="btn btn-outline btn-sm" onclick="currentMode='home';window.render()">⬅ 返回</button>
     </div>
     <div>${listHtml}</div>
     <div class="footer-info">技术支持：秦十三郎</div>
@@ -818,8 +829,8 @@ function renderReview() {
 }
 
 /* ---------- 考试组卷 ---------- */
-function renderExamSetup() {
-  const currentQuestions = getCurrentBankQuestions();
+window.renderExamSetup = function() {
+  const currentQuestions = window.getCurrentBankQuestions();
   const counts = { single:0, multiple:0, judge:0 };
   currentQuestions.forEach(q => counts[q.type]++);
   
@@ -832,7 +843,7 @@ function renderExamSetup() {
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:12px; margin-bottom:12px;">
         <h2 style="color:var(--primary); font-size:1.1rem; font-weight:800;">📝 考试组卷</h2>
-        <button class="btn btn-outline btn-sm" onclick="currentMode='home';render()">✕ 退出</button>
+        <button class="btn btn-outline btn-sm" onclick="currentMode='home';window.render()">✕ 退出</button>
       </div>
       
       <div class="form-row">
@@ -870,13 +881,13 @@ function renderExamSetup() {
 }
 
 window.startExam = function() {
-  const currentQuestions = getCurrentBankQuestions();
+  const currentQuestions = window.getCurrentBankQuestions();
   const sCount = parseInt(document.getElementById('cfgSingle').value) || 0;
   const mCount = parseInt(document.getElementById('cfgMultiple').value) || 0;
   const jCount = parseInt(document.getElementById('cfgJudge').value) || 0;
   const tLimit = parseInt(document.getElementById('cfgTimeLimit').value) || 60;
   
-  if (sCount + mCount + jCount === 0) return showToast('请至少选择一道题', true);
+  if (sCount + mCount + jCount === 0) return window.showToast('请至少选择一道题', true);
 
   const shuffle = arr => arr.sort(() => Math.random() - 0.5);
   examQuestions = [
@@ -904,7 +915,7 @@ window.startExam = function() {
     if (examRemainingSeconds <= 0) {
       clearInterval(examTimer);
       examTimer = null;
-      showToast('考试时间到，自动交卷！', true);
+      window.showToast('考试时间到，自动交卷！', true);
       window.submitExam();
     } else {
       const timerEl = document.getElementById('examTimerDisplay');
@@ -919,11 +930,11 @@ window.startExam = function() {
   }, 1000);
 
   currentMode = 'exam';
-  render();
+  window.render();
 }
 
 /* ---------- 考试答题 ---------- */
-function renderExam() {
+window.renderExam = function() {
   if (examIndex >= examQuestions.length) return window.submitExam();
 
   const q = examQuestions[examIndex];
@@ -950,7 +961,7 @@ function renderExam() {
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
       <div style="display:flex; gap:8px;">
         <button class="btn btn-danger btn-sm" onclick="if(confirm('确定交卷吗？'))window.submitExam()">交卷</button>
-        <button class="btn btn-outline btn-sm" onclick="if(confirm('确定要退出考试吗？本次成绩将不保存。')){clearInterval(examTimer);examTimer=null;currentMode='home';render()}">退出</button>
+        <button class="btn btn-outline btn-sm" onclick="if(confirm('确定要退出考试吗？本次成绩将不保存。')){clearInterval(examTimer);examTimer=null;currentMode='home';window.render()}">退出</button>
       </div>
       <div style="display:flex; gap:12px; align-items:center;">
         <span id="examTimerDisplay" class="${examRemainingSeconds < 60 ? 'timer-warning' : ''}" style="font-family:monospace; font-size:1.1rem; font-weight:bold; color:var(--secondary);">${timerText}</span>
@@ -986,7 +997,7 @@ window.selectOptionExam = function(idx) {
     selections = [idx];
   }
   examSelections[examIndex] = selections;
-  renderExam();
+  window.renderExam();
 }
 
 window.nextExam = function() {
@@ -994,12 +1005,12 @@ window.nextExam = function() {
     if (confirm('确定要交卷吗？')) window.submitExam();
   } else {
     examIndex++;
-    renderExam();
+    window.renderExam();
   }
 }
 
 window.prevExam = function() {
-  if (examIndex > 0) { examIndex--; renderExam(); }
+  if (examIndex > 0) { examIndex--; window.renderExam(); }
 }
 
 /* ---------- 考试成绩 ---------- */
@@ -1027,17 +1038,17 @@ window.submitExam = function() {
       const exist = wrongBook.find(item => item.id === q.id);
       if (!exist) {
         wrongBook.push({ ...q, streak: 0 });
-        saveData();
+        window.saveData();
       }
     }
   });
 
   examScore = { got: gotScore, total: totalScore, usedTime: usedTimeStr };
   currentMode = 'result';
-  render();
+  window.render();
 }
 
-function renderResult() {
+window.renderResult = function() {
   const isFull = examScore.got === examScore.total;
   const message = isFull ? '你真棒，继续加油！' : '不要气馁，再去多刷刷题，满分等着你！';
 
@@ -1055,8 +1066,8 @@ function renderResult() {
       </div>
       
       <div style="display:flex; gap:12px; justify-content:center;">
-        <button class="btn btn-primary" onclick="currentMode='home';render()">返回首页</button>
-        <button class="btn btn-outline" onclick="currentMode='review';render()">查看错题</button>
+        <button class="btn btn-primary" onclick="currentMode='home';window.render()">返回首页</button>
+        <button class="btn btn-outline" onclick="currentMode='review';window.render()">查看错题</button>
       </div>
     </div>
     <div class="footer-info">技术支持：秦十三郎</div>
@@ -1064,8 +1075,8 @@ function renderResult() {
 }
 
 /* ================= 启动 ================= */
-loadData();
-render();
+window.loadData();
+window.render();
 </script>
 </body>
 </html>
