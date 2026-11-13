@@ -6,10 +6,7 @@
 <title>铁途学练</title>
 <meta name="apple-mobile-web-app-title" content="铁途学练">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='none' stroke='%23b71c1c' stroke-width='8'/><path d='M50 20 L75 35 L65 42 L50 32 L35 42 L25 35 Z' fill='%23b71c1c'/><path d='M20 80 L40 50 L50 55 L60 50 L80 80 L70 85 L58 65 L50 68 L42 65 L30 85 Z' fill='%23b71c1c'/><line x1='25' y1='55' x2='75' y2='55' stroke='%23b71c1c' stroke-width='8' stroke-linecap='round'/></svg>">
-
-<!-- 采用国内极速节点 -->
 <script src="https://cdn.staticfile.org/xlsx/0.18.5/xlsx.full.min.js"></script>
-
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Zhi+Mang+Xing&display=swap');
   * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, "Microsoft YaHei", sans-serif; }
@@ -93,7 +90,6 @@
   .score-box { text-align: center; padding: 30px 0; }
   .score-num { font-family: "Georgia", serif; color: #d32f2f; font-size: 5rem; font-weight: bold; display: inline-block; border-bottom: 4px double #d32f2f; line-height: 1; margin-bottom: 15px; padding: 0 10px; }
   
-  /* 完美的按钮布局 */
   .bottom-actions { display: flex; gap: 10px; margin-top: 20px; }
   .bottom-actions .btn { flex: 1; }
   
@@ -105,6 +101,9 @@
   .prompt-box { background: #fff; padding: 20px; border-radius: 12px; width: 80%; max-width: 300px; }
   .prompt-box input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin: 15px 0; font-size: 1rem; }
   .footer { text-align: center; color: #94a3b8; font-size: 0.8rem; margin-top: 20px; padding-bottom: 20px; }
+  
+  /* 原生文件上传按钮样式修正 */
+  input[type=file]::-webkit-file-upload-button { cursor: pointer; }
 </style>
 </head>
 <body>
@@ -132,9 +131,6 @@
 <div id="app"></div>
 <div id="toast" class="toast"></div>
 
-<!-- 永久固定的上传框，彻底规避广告拦截动态创建 -->
-<input type="file" id="excelFileFixed" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleFileUpload(event)">
-
 <script>
 var AUTH_CODE = "QIN13";
 var isAuthorized = localStorage.getItem('xjt_auth') === 'true';
@@ -151,7 +147,6 @@ var examTimer = null, examStartTime = 0, examRemainingSeconds = 0;
 
 var app = document.getElementById('app');
 var toastEl = document.getElementById('toast');
-var fileInput = document.getElementById('excelFileFixed');
 
 setTimeout(function() { document.getElementById('splash-screen').classList.add('hidden'); }, 2800);
 
@@ -221,6 +216,7 @@ function doLogin() {
   } else { showToast('授权码错误', true); }
 }
 
+// 强行显示原生上传框，绕过任何拦截
 function renderImport() {
   app.innerHTML = `
     <div class="card" style="text-align:center; padding:40px 15px;">
@@ -228,18 +224,13 @@ function renderImport() {
       <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;line-height:1.6;">
         支持 Excel (.xlsx / .csv) 文件。<br>只要包含 <b>题目</b> 和 <b>答案</b> 列，以及至少两个选项列。
       </p>
-      <button class="btn btn-primary btn-block" onclick="triggerImport()" style="padding:15px;">
-        📂 选择文件导入
-      </button>
-      ${Object.keys(allBanks).length > 0 ? `<button class="btn btn-outline btn-block" onclick="currentMode='home';render()">返回首页</button>` : ''}
+      <div style="border: 2px dashed #0d47a1; padding: 20px; border-radius: 8px; background:#eff6ff;">
+        <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" onchange="handleFileUpload(event)" style="width: 100%; font-size: 1rem; outline: none;">
+      </div>
+      ${Object.keys(allBanks).length > 0 ? `<button class="btn btn-outline btn-block" onclick="currentMode='home';render()" style="margin-top:20px;">返回首页</button>` : ''}
     </div>
     <div class="footer">技术支持：秦十三郎</div>
   `;
-}
-
-function triggerImport() {
-  fileInput.value = ''; // 核心：清空之前的值，允许重复选择同一个文件
-  fileInput.click();
 }
 
 function handleFileUpload(e) {
@@ -265,6 +256,7 @@ function handleFileUpload(e) {
       });
     } catch(err) {
       showToast(err.message || '解析失败，请检查表格格式', true);
+      e.target.value = ''; // 允许重新选择
     }
   };
   reader.readAsArrayBuffer(file);
@@ -404,6 +396,7 @@ function renderHome() {
       `;
     }
   }
+  // 首页的导入也改为直接跳转到带有原生上传框的页面
   html += `<button class="btn btn-outline btn-block" onclick="goToImport()">➕ 导入新题库</button></div>`;
   
   html += `
@@ -467,7 +460,7 @@ function buildSheetHtml(questions, currentIdx, selections, type) {
   return html;
 }
 
-// ================= 4. 练习模式 (修复按钮布局) =================
+// ================= 4. 练习模式 (完美按钮布局) =================
 function startPractice(type) {
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
   if (type === 'wrong') {
@@ -542,6 +535,7 @@ function renderPractice() {
         ${isWrongPracticeMode && !isCorrect ? `<div style="color:#ef4444;font-weight:bold;">❌ 答错了，连对重置</div>` : ''}
       </div>
       
+      <!-- 完美按钮布局 -->
       <div class="bottom-actions">
         <button class="btn btn-outline" onclick="prevPractice()" ${practiceIndex===0?'disabled style="opacity:0.5"':''}>⬅ 上一题</button>
         
