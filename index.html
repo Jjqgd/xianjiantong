@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>铁途学练</title>
 <meta name="apple-mobile-web-app-title" content="铁途学练">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='none' stroke='%23b71c1c' stroke-width='8'/><path d='M50 20 L75 35 L65 42 L50 32 L35 42 L25 35 Z' fill='%23b71c1c'/><path d='M20 80 L40 50 L50 55 L60 50 L80 80 L70 85 L58 65 L50 68 L42 65 L30 85 Z' fill='%23b71c1c'/><line x1='25' y1='55' x2='75' y2='55' stroke='%23b71c1c' stroke-width='8' stroke-linecap='round'/></svg>">
+<!-- 直接读取您上传的同级目录下的 logo.png -->
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="icon" href="logo.png">
 
 <script src="https://cdn.staticfile.org/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -14,6 +16,7 @@
   * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, "Microsoft YaHei", sans-serif; }
   body { background-color: #f0f4f8; color: #1e293b; padding: 10px; -webkit-tap-highlight-color: transparent; }
   
+  /* 开场动画 */
   #splash-screen { position: fixed; top:0; left:0; right:0; bottom:0; background: #fcf9f2; z-index: 9999; display: flex; align-items: center; justify-content: center; transition: opacity 0.8s; }
   #splash-screen.hidden { opacity: 0; pointer-events: none; }
   .calligraphy-box { display: flex; gap: 40px; }
@@ -24,7 +27,7 @@
 
   .nav { background: #fff; padding: 10px 15px; border-bottom: 2px solid #b71c1c; display: flex; justify-content: space-between; align-items: center; border-radius: 10px; margin-bottom: 10px; }
   .nav-logo { font-size: 1.2rem; font-weight: bold; color: #b71c1c; display: flex; align-items: center; gap: 8px; }
-  .nav-logo svg { width: 28px; height: 28px; }
+  .nav-logo img { width: 30px; height: 30px; object-fit: contain; } /* 读取 logo.png */
   .nav-right { font-size: 0.8rem; color: #64748b; }
 
   .card { background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
@@ -97,6 +100,15 @@
   .maoti-result.full { color: #b71c1c; }
   
   .toast { position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 0.85rem; z-index: 9999; display: none; }
+  
+  /* 自定义弹窗，替换丑陋的网址提示 */
+  .app-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+  .app-box { background: #fff; padding: 25px; border-radius: 16px; width: 80%; max-width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+  .app-box h3 { font-size: 1.2rem; color: #b71c1c; margin-bottom: 10px; font-weight: bold; }
+  .app-box p { font-size: 0.95rem; color: #475569; margin-bottom: 20px; line-height: 1.5; }
+  .app-box .actions { display: flex; gap: 10px; }
+  .app-box .btn { flex: 1; padding: 10px; font-size: 0.95rem; border-radius: 8px; }
+  
   .prompt-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; }
   .prompt-box { background: #fff; padding: 20px; border-radius: 12px; width: 80%; max-width: 300px; }
   .prompt-box input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin: 15px 0; font-size: 1rem; }
@@ -114,13 +126,7 @@
 
 <div class="nav">
   <div class="nav-logo">
-    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="50" cy="50" r="45" fill="none" stroke="#b71c1c" stroke-width="8"/>
-      <path d="M50 20 L75 35 L65 42 L50 32 L35 42 L25 35 Z" fill="#b71c1c"/>
-      <path d="M20 80 L40 50 L50 55 L60 50 L80 80 L70 85 L58 65 L50 68 L42 65 L30 85 Z" fill="#b71c1c"/>
-      <line x1="25" y1="55" x2="75" y2="55" stroke="#b71c1c" stroke-width="8" stroke-linecap="round"/>
-    </svg>
-    铁途学练
+    <img src="logo.png" onerror="this.style.display='none'"> 铁途学练
   </div>
   <div class="nav-right">在线学习考核平台</div>
 </div>
@@ -154,33 +160,59 @@ function showToast(msg, isErr) {
   setTimeout(function() { toastEl.style.display = 'none'; }, 2500);
 }
 
-// 将所有的确认操作提取为全局函数，彻底解决部分浏览器点不动的问题
+// 【核心修复】：替换丑陋的系统提示框
+function showAppConfirm(title, msg, okText, cancelText, onOk) {
+  var mask = document.createElement('div');
+  mask.className = 'app-mask';
+  mask.innerHTML = `
+    <div class="app-box">
+      <h3>${title}</h3>
+      <p>${msg}</p>
+      <div class="actions">
+        <button class="btn btn-outline" id="btnCancel">${cancelText}</button>
+        <button class="btn btn-primary" id="btnOk">${okText}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(mask);
+  
+  document.getElementById('btnCancel').onclick = function() {
+    document.body.removeChild(mask);
+  };
+  document.getElementById('btnOk').onclick = function() {
+    document.body.removeChild(mask);
+    onOk();
+  };
+}
+
 function confirmExitPractice() {
-  if (confirm('确定要退出当前练习吗？')) {
+  showAppConfirm('铁途学练', '确定要退出当前练习吗？', '退出', '取消', function() {
     currentMode = 'home';
     render();
-  }
+  });
 }
 function confirmExitExam() {
-  if (confirm('确定要退出当前考试吗？本次成绩将不保存。')) {
+  showAppConfirm('铁途学练', '确定要退出当前考试吗？本次成绩将不保存。', '退出', '取消', function() {
     if (examTimer) clearInterval(examTimer);
     examTimer = null;
     currentMode = 'home';
     render();
-  }
+  });
 }
 function confirmSubmitExam() {
-  if (confirm('确定要交卷吗？')) submitExam();
+  showAppConfirm('铁途学练', '确定要交卷吗？', '交卷', '取消', function() {
+    submitExam();
+  });
 }
 function confirmDeleteBank(id) {
-  if (confirm('确定要删除该题库吗？')) {
+  showAppConfirm('铁途学练', '确定要删除该题库吗？删除后不可恢复。', '删除', '取消', function() {
     delete allBanks[id];
     if (activeBankId === id) {
       var keys = Object.keys(allBanks);
       activeBankId = keys.length > 0 ? keys[0] : null;
     }
     saveData(); render();
-  }
+  });
 }
 
 function saveData() {
@@ -242,7 +274,6 @@ function doLogin() {
   } else { showToast('授权码错误', true); }
 }
 
-// 【终极暴力破解】：每次点击导入都生成全新的 DOM，阅后即焚，绝对不给浏览器记忆的机会！
 function renderImport() {
   app.innerHTML = `
     <div class="card" style="text-align:center; padding:40px 15px;">
@@ -263,7 +294,7 @@ function renderImport() {
     fileInput.type = 'file';
     fileInput.accept = '.xlsx,.xls,.csv';
     fileInput.style.position = 'absolute';
-    fileInput.style.left = '-9999px'; // 偏移出屏幕外，防止部分浏览器判定隐藏而拦截
+    fileInput.style.left = '-9999px'; 
     
     fileInput.onchange = function(e) {
       var file = e.target.files[0];
@@ -289,7 +320,7 @@ function renderImport() {
         } catch(err) {
           showToast(err.message || '解析失败，请检查表格格式', true);
         } finally {
-          document.body.removeChild(fileInput); // 彻底销毁
+          document.body.removeChild(fileInput);
         }
       };
       reader.readAsArrayBuffer(file);
