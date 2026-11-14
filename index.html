@@ -148,6 +148,21 @@ var toastEl = document.getElementById('toast');
 
 setTimeout(function() { document.getElementById('splash-screen').classList.add('hidden'); }, 2800);
 
+// 【核心修复】：每次加载首页时，检查是否有刚导入的题库
+function checkNewImport() {
+  var newBankStr = localStorage.getItem('xjt_new_import');
+  if (newBankStr) {
+    try {
+      var newBank = JSON.parse(newBankStr);
+      allBanks[newBank.id] = { name: newBank.name, questions: newBank.questions };
+      activeBankId = newBank.id;
+      localStorage.removeItem('xjt_new_import');
+      saveData();
+      showToast('导入成功，共 ' + newBank.questions.length + ' 题');
+    } catch(e) {}
+  }
+}
+
 function showToast(msg, isErr) {
   toastEl.innerText = msg;
   toastEl.style.background = isErr ? '#ef4444' : 'rgba(0,0,0,0.8)';
@@ -175,7 +190,7 @@ function showAppConfirm(title, msg, okText, cancelText, onOk) {
 }
 
 function confirmExitPractice() {
-  showAppConfirm('铁途学练', '确定要退出当前练习吗？', '退出', '取消', function() {
+  showAppConfirm('铁途学练', '确定要退出当前练习吗？(进度会自动保存)', '退出', '取消', function() {
     currentMode = 'home'; render();
   });
 }
@@ -204,6 +219,42 @@ function saveData() {
   localStorage.setItem('xjt_active', activeBankId || '');
   localStorage.setItem('xjt_wrong', JSON.stringify(wrongBook));
 }
+
+// 【核心修复】：断点续答功能
+function savePracticeProgress() {
+  if (currentMode === 'practice') {
+    localStorage.setItem('xjt_practice_progress', JSON.stringify({
+      questions: practiceQuestions,
+      index: practiceIndex,
+      selections: practiceSelections,
+      isWrong: isWrongPracticeMode
+    }));
+  } else {
+    localStorage.removeItem('xjt_practice_progress');
+  }
+}
+function restorePracticeProgress() {
+  var pStr = localStorage.getItem('xjt_practice_progress');
+  if (pStr) {
+    try {
+      var p = JSON.parse(pStr);
+      if (p.questions && p.questions.length > 0) {
+        // 询问用户是否恢复
+        showAppConfirm('铁途学练', '检测到上次未完成的练习，是否继续？', '继续', '放弃', function() {
+          practiceQuestions = p.questions;
+          practiceIndex = p.index;
+          practiceSelections = p.selections;
+          isWrongPracticeMode = p.isWrong;
+          currentMode = 'practice';
+          render();
+        }, function() {
+          localStorage.removeItem('xjt_practice_progress');
+        });
+      }
+    } catch(e) {}
+  }
+}
+
 function loadData() {
   try {
     var b = localStorage.getItem('xjt_banks');
@@ -258,131 +309,27 @@ function doLogin() {
   } else { showToast('授权码错误', true); }
 }
 
+// 【核心修复】：导入直接跳转到独立页面 import.html
 function renderImport() {
   app.innerHTML = `
     <div class="card" style="text-align:center; padding:40px 15px;">
       <h2 style="color:#b71c1c;margin-bottom:15px;">📥 导入新题库</h2>
       <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;line-height:1.6;">
-        支持 Excel (.xlsx / .csv) 文件。<br>只要包含 <b>题目</b> 和 <b>答案</b> 列，以及至少两个选项列。
+        系统将跳转至独立导入页面。<br>只要包含 <b>题目</b> 和 <b>答案</b> 列，以及至少两个选项列。
       </p>
-      
-      <!-- 这里彻底放弃动态 label，直接使用绝对定位的透明文件框覆盖在按钮上 -->
-      <div style="position: relative; width: 100%; height: 50px; margin-top: 10px;">
-        <button class="btn btn-primary" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:1;">📂 点击选择文件</button>
-        <input type="file" id="fileUpload" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; z-index:2; cursor:pointer;">
-      </div>
-
+      <button class="btn btn-primary btn-block" style="padding:15px;" onclick="window.location.href='import.html'">
+        📂 前往导入页面
+      </button>
       ${Object.keys(allBanks).length > 0 ? `<button class="btn btn-outline btn-block" onclick="currentMode='home';render()" style="margin-top:20px;">返回首页</button>` : ''}
     </div>
     <div class="footer">技术支持：秦十三郎</div>
   `;
 }
 
-// 【核心修复】：完全抛弃之前所有的文件重置逻辑。每次选文件时，直接把整个 input 节点从 DOM 树中拔掉！
-// 这样浏览器底层再也找不到这个旧节点，下次点击时必定重新触发！这招叫物理拔除！
-function handleFileSelect(e) {
-  var file = e.target.files[0];
-  if (!file) return;
-  
-  // 立刻断绝关系，防止浏览器记录状态
-  e.target.parentNode.removeChild(e.target);
-
-  showToast('正在解析...');
-  var reader = new FileReader();
-  reader.onload = function(evt) {
-    try {
-      var data = new Uint8Array(evt.target.result);
-      var wb = XLSX.read(data, {type: 'array'});
-      var parsed = parseExcel(wb);
-      
-      var defaultName = file.name.replace(/\.[^/.]+$/, "");
-      customPrompt('请为题库命名', defaultName, function(bankName) {
-        var newId = 'bank_' + Date.now();
-        allBanks[newId] = { name: bankName, questions: parsed };
-        activeBankId = newId;
-        saveData();
-        currentMode = 'home';
-        showToast('导入成功，共 ' + parsed.length + ' 题');
-        render();
-      });
-    } catch(err) {
-      showToast(err.message || '解析失败，请检查表格格式', true);
-      // 报错时重新渲染一遍页面，保证输入框还在
-      render();
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-function parseExcel(wb) {
-  var allParsed = [];
-  var sheetName = wb.SheetNames[0];
-  var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '', raw: false });
-  if (!rows || rows.length < 2) throw new Error('表格数据太少');
-  
-  var header = rows[0].map(function(c){ return String(c).trim().toLowerCase(); });
-  var colQ = -1, colAns = -1, optCols = [];
-  
-  for (var i = 0; i < header.length; i++) {
-    var h = header[i];
-    if (colQ === -1 && (h.indexOf('题目') > -1 || h.indexOf('问题') > -1 || h.indexOf('question') > -1)) colQ = i;
-    else if (colAns === -1 && (h.indexOf('答案') > -1 || h.indexOf('answer') > -1 || h === '正确')) colAns = i;
-    else if (h.indexOf('选项') > -1 || /^[a-g]$/i.test(h) || /^[a-g]选项$/i.test(h)) optCols.push(i);
-  }
-  
-  if (colQ === -1) throw new Error('未能找到【题目】列');
-  if (colAns === -1) throw new Error('未能找到【答案】列');
-  
-  for (var r = 1; r < rows.length; r++) {
-    var row = rows[r];
-    if (!row || !row[colQ]) continue;
-    
-    var opts = [];
-    for (var o = 0; o < optCols.length; o++) {
-      var val = String(row[optCols[o]] || '').trim();
-      if (val) opts.push(val);
-    }
-    
-    var ansRaw = String(row[colAns] || '').trim().toUpperCase();
-    var type = 'single';
-    var ansIndices = [];
-    
-    var judgeT = ['正确','对','T','TRUE','Y','YES','√','V','是','A'];
-    var judgeF = ['错误','错','不对','F','FALSE','N','NO','×','X','否','B'];
-    
-    if ((judgeT.indexOf(ansRaw) > -1 || judgeF.indexOf(ansRaw) > -1) && opts.length < 2) {
-      type = 'judge';
-      opts = ['正确', '错误'];
-      if (judgeT.indexOf(ansRaw) > -1) ansIndices = [0];
-      else ansIndices = [1];
-    } else {
-      if (opts.length < 2) continue;
-      if (ansRaw.indexOf(',') > -1 || ansRaw.indexOf('，') > -1 || ansRaw.indexOf('#') > -1 || ansRaw.length > 1) {
-        type = 'multiple';
-      }
-      var letters = ansRaw.match(/[A-G]/g) || [];
-      for (var l = 0; l < letters.length; l++) {
-        var idx = letters[l].charCodeAt(0) - 65;
-        if (idx < opts.length && ansIndices.indexOf(idx) === -1) ansIndices.push(idx);
-      }
-      ansIndices.sort();
-    }
-    
-    if (ansIndices.length === 0) continue;
-    
-    allParsed.push({
-      id: 'q_' + r + '_' + Date.now(),
-      question: String(row[colQ]).trim(),
-      type: type,
-      options: opts,
-      answer: ansIndices,
-      analysis: '',
-      streak: 0
-    });
-  }
-  
-  if (allParsed.length === 0) throw new Error('未能解析出有效题目，请检查表格数据');
-  return allParsed;
+function saveData() {
+  localStorage.setItem('xjt_banks', JSON.stringify(allBanks));
+  localStorage.setItem('xjt_active', activeBankId || '');
+  localStorage.setItem('xjt_wrong', JSON.stringify(wrongBook));
 }
 
 // ================= 2. 首页 =================
@@ -459,7 +406,7 @@ function renderHome() {
   app.innerHTML = html;
 }
 
-function goToImport() { currentMode = 'import'; render(); }
+function goToImport() { window.location.href='import.html'; }
 function switchBank(id) { activeBankId = id; saveData(); render(); }
 
 // ================= 3. 答题卡组件 =================
@@ -524,11 +471,13 @@ function startPractice(type) {
     if (practiceQuestions[i].streak === undefined) practiceQuestions[i].streak = 0;
   }
   currentMode = 'practice';
+  savePracticeProgress(); // 记录初始状态
   render();
 }
 
 function renderPractice() {
   if (practiceIndex >= practiceQuestions.length) {
+    localStorage.removeItem('xjt_practice_progress'); // 练习完成清除
     app.innerHTML = `<div class="card" style="text-align:center;padding:40px;"><h2 style="color:#0d47a1;margin-bottom:15px;">🎉 练习完成</h2><p style="color:#64748b;margin-bottom:20px;">您已完成本轮练习。</p><button class="btn btn-primary btn-block" onclick="currentMode='home';render()">返回首页</button></div>`;
     return;
   }
@@ -600,8 +549,8 @@ function renderPractice() {
 
 function openSheet() { document.getElementById('sheetModal').style.display='flex'; setTimeout(function(){document.getElementById('sheetModal').classList.add('show');},10); }
 function closeSheet(e) { if(e.target.id==='sheetModal'){ document.getElementById('sheetModal').classList.remove('show'); setTimeout(function(){document.getElementById('sheetModal').style.display='none';},300); } }
-function jumpPractice(idx) { practiceIndex = idx; closeSheet({target:{id:'sheetModal'}}); renderPractice(); }
-function prevPractice() { if(practiceIndex > 0) { practiceIndex--; renderPractice(); } }
+function jumpPractice(idx) { practiceIndex = idx; closeSheet({target:{id:'sheetModal'}}); savePracticeProgress(); renderPractice(); }
+function prevPractice() { if(practiceIndex > 0) { practiceIndex--; savePracticeProgress(); renderPractice(); } }
 
 function selectPractice(idx) {
   var q = practiceQuestions[practiceIndex];
@@ -613,12 +562,14 @@ function selectPractice(idx) {
     if (pos > -1) sels.splice(pos, 1);
     else sels.push(idx);
     practiceSelections[practiceIndex] = sels;
+    savePracticeProgress(); // 每次选择保存进度
     renderPractice();
   } else {
     practiceSelections[practiceIndex] = [idx];
     q.isAnswered = true;
     var isCorrect = q.answer.length === 1 && q.answer[0] === idx;
     handlePracticeResult(q, isCorrect);
+    savePracticeProgress(); // 每次答题保存进度
     renderPractice();
   }
 }
@@ -629,6 +580,7 @@ function confirmMultiPractice() {
   var sels = practiceSelections[practiceIndex] || [];
   var isCorrect = sels.length === q.answer.length && sels.every(function(v){ return q.answer.indexOf(v) > -1; });
   handlePracticeResult(q, isCorrect);
+  savePracticeProgress(); // 确认答案保存进度
   renderPractice();
 }
 
@@ -654,7 +606,7 @@ function handlePracticeResult(q, isCorrect) {
   }
 }
 
-function nextPractice() { if(practiceIndex < practiceQuestions.length) { practiceIndex++; renderPractice(); } }
+function nextPractice() { if(practiceIndex < practiceQuestions.length) { practiceIndex++; savePracticeProgress(); renderPractice(); } }
 
 // ================= 5. 错题本 =================
 function openReview() { currentMode = 'review'; render(); }
@@ -925,7 +877,9 @@ function customPrompt(title, defaultValue, callback) {
 }
 
 loadData();
+checkNewImport();
 render();
+restorePracticeProgress(); // 尝试恢复
 </script>
 </body>
 </html>
