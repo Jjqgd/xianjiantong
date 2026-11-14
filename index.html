@@ -150,7 +150,6 @@
 // ================= 1. 防白嫖极限授权系统 =================
 var isAuthorized = localStorage.getItem('xjt_offline_auth') === 'true';
 
-// 校验是否篡改时间
 var expireTime = localStorage.getItem('xjt_expire_time');
 if (expireTime) {
   var exp = parseInt(expireTime);
@@ -196,14 +195,12 @@ function doLogin() {
   var devSuffix = parts[2];
   var inputHash = parts[3];
 
-  // 获取当前设备后缀
   var myDevSuffix = myDevId.substring(4, 8);
 
   if (devSuffix !== myDevSuffix) {
     return showToast('该注册码不属于当前设备', true);
   }
 
-  // 计算哈希 (和算码器保持一致)
   var salt = "TieTuXueLian2024Qin";
   var raw = myDevSuffix + salt + durCode; 
   var hash = 0;
@@ -214,7 +211,6 @@ function doLogin() {
     return showToast('注册码无效或已损坏', true);
   }
 
-  // 验证通过，分配时间
   isAuthorized = true;
   localStorage.setItem('xjt_offline_auth', 'true');
   
@@ -522,6 +518,19 @@ function renderPractice() {
   var streakHtml = isWrongPracticeMode ? `<span style="float:right;font-size:0.8rem;color:#ef4444;font-weight:bold;">🔥连对: ${q.streak}/5</span>` : '';
   var sheetHtml = buildSheetHtml(practiceQuestions, practiceIndex, practiceSelections, 'practice');
   
+  // 【核心修复】：只要有解析，就必须展示出来
+  var analysisHtml = '';
+  if (showAns) {
+    analysisHtml = `
+      <div class="analysis ${isCorrect ? 'success' : 'error'} show">
+        <div style="font-weight:bold;margin-bottom:5px;">正确答案：<span style="color:#10b981;">${q.answer.map(function(i){ return String.fromCharCode(65+i); }).join(', ')}</span></div>
+        ${q.analysis ? `<div style="margin-top:8px; font-weight:bold; color:#0d47a1;">解析：</div><div style="color:#475569; margin-top:4px;">${q.analysis}</div>` : ''}
+        ${isWrongPracticeMode && isCorrect ? `<div style="color:#10b981;font-weight:bold;margin-top:8px;">✅ 连对次数 +1</div>` : ''}
+        ${isWrongPracticeMode && !isCorrect ? `<div style="color:#ef4444;font-weight:bold;margin-top:8px;">❌ 答错了，连对重置</div>` : ''}
+      </div>
+    `;
+  }
+  
   appContainer.innerHTML = `
     <div class="toolbar">
       <div style="display:flex; align-items:center; gap:10px;">
@@ -533,11 +542,7 @@ function renderPractice() {
     <div class="card">
       <span class="tag">${typeName}</span>${streakHtml}
       <div class="q-text">${q.question}</div>${optsHtml}
-      <div class="analysis ${showAns ? (isCorrect ? 'success' : 'error') : ''}" style="display:${showAns ? 'block' : 'none'};">
-        <div style="font-weight:bold;margin-bottom:5px;">正确答案：<span style="color:#10b981;">${q.answer.map(function(i){ return String.fromCharCode(65+i); }).join(', ')}</span></div>
-        ${isWrongPracticeMode && isCorrect ? `<div style="color:#10b981;font-weight:bold;">✅ 连对次数 +1</div>` : ''}
-        ${isWrongPracticeMode && !isCorrect ? `<div style="color:#ef4444;font-weight:bold;">❌ 答错了，连对重置</div>` : ''}
-      </div>
+      ${analysisHtml}
       <div class="bottom-actions">
         <button class="btn btn-outline" onclick="prevPractice()" ${practiceIndex===0?'disabled style="opacity:0.5"':''}>⬅ 上一题</button>
         ${(!showAns && q.type === 'multiple') ? `<button class="btn btn-primary" onclick="confirmMultiPractice()" ${sels.length===0?'disabled style="opacity:0.5"':''}>确认答案</button>` : ''}
@@ -594,7 +599,7 @@ function handlePracticeResult(q, isCorrect) {
   } else {
     if (!isCorrect) {
       var exist = false; for (var i=0; i<wrongBook.length; i++) { if (wrongBook[i].id === q.id) exist = true; }
-      if (!exist) { wrongBook.push({ id: q.id, question: q.question, type: q.type, options: q.options, answer: q.answer, streak: 0 }); saveData(); }
+      if (!exist) { wrongBook.push({ id: q.id, question: q.question, type: q.type, options: q.options, answer: q.answer, analysis: q.analysis, streak: 0 }); saveData(); }
     }
   }
 }
@@ -617,7 +622,8 @@ function renderReview() {
         </div>
         <div style="font-weight:bold;font-size:0.95rem;margin-bottom:10px;">${q.question}</div>
         <div style="font-size:0.85rem;color:#10b981;margin-bottom:5px;font-weight:bold;">正确答案：${q.answer.map(function(idx){ return String.fromCharCode(65+idx); }).join(', ')}</div>
-        <div style="font-size:0.85rem;color:#64748b;line-height:1.5;">${q.options.map(function(o,idx){ return String.fromCharCode(65+idx) + '. ' + o; }).join('<br>')}</div>
+        <div style="font-size:0.85rem;color:#64748b;line-height:1.5; margin-bottom:8px;">${q.options.map(function(o,idx){ return String.fromCharCode(65+idx) + '. ' + o; }).join('<br>')}</div>
+        ${q.analysis ? `<div class="analysis" style="margin-top:0;"><strong>解析：</strong>${q.analysis}</div>` : ''}
       </div>
     `;
   }
@@ -723,7 +729,7 @@ function submitExam() {
     var ans = q.answer.slice().sort(); var sel = (examSelections[i] || []).slice().sort();
     var isCorrect = ans.length === sel.length && ans.every(function(v,idx){ return v === sel[idx]; });
     if (isCorrect) got += pts;
-    else { var exist = false; for (var j=0; j<wrongBook.length; j++) { if (wrongBook[j].id === q.id) exist = true; } if (!exist) { wrongBook.push({ id: q.id, question: q.question, type: q.type, options: q.options, answer: q.answer, streak: 0 }); } }
+    else { var exist = false; for (var j=0; j<wrongBook.length; j++) { if (wrongBook[j].id === q.id) exist = true; } if (!exist) { wrongBook.push({ id: q.id, question: q.question, type: q.type, options: q.options, answer: q.answer, analysis: q.analysis, streak: 0 }); } }
   }
   saveData(); examScore = { got: got, total: total, usedTime: usedTimeStr }; currentMode = 'result'; render();
 }
