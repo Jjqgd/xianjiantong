@@ -150,20 +150,17 @@
 // ================= 1. 防白嫖极限授权系统 =================
 var isAuthorized = localStorage.getItem('xjt_offline_auth') === 'true';
 
-// 【防破解1】：校验是否篡改时间
+// 校验是否篡改时间
 var expireTime = localStorage.getItem('xjt_expire_time');
 if (expireTime) {
   var exp = parseInt(expireTime);
   var now = new Date().getTime();
-  // 如果当前时间大于过期时间，说明已过期
   if (now > exp) {
     localStorage.removeItem('xjt_offline_auth'); 
     localStorage.removeItem('xjt_expire_time');
     isAuthorized = false;
     setTimeout(function() { showAppConfirm('试用期已结束', '您的体验期已结束，请联系客服购买正式版。', '知道了', '关闭', function() {}, function() {}); }, 3000);
-  } 
-  // 如果检测到时间倒退（比如原来记录到期是明天，现在手机时间变成了昨天），直接锁死
-  else if (now < parseInt(localStorage.getItem('xjt_last_check_time') || 0)) {
+  } else if (now < parseInt(localStorage.getItem('xjt_last_check_time') || 0)) {
     localStorage.removeItem('xjt_offline_auth'); 
     localStorage.removeItem('xjt_expire_time');
     isAuthorized = false;
@@ -186,20 +183,10 @@ function getDeviceId() {
   return devId;
 }
 
-// 时长对应的毫秒数 (8h, 24h, 48h, 7d, 永久)
-var TIME_MAP = {
-  "0": 8 * 60 * 60 * 1000,
-  "1": 24 * 60 * 60 * 1000,
-  "2": 48 * 60 * 60 * 1000,
-  "3": 7 * 24 * 60 * 60 * 1000,
-  "4": 9999999999999 // 永久
-};
-
 function doLogin() {
   var inputCode = document.getElementById('regCodeInput').value.trim().toUpperCase();
   var myDevId = getDeviceId();
   
-  // 解析输入的注册码：TT-时长码-设备后缀-哈希
   var parts = inputCode.split('-');
   if (parts.length !== 4 || parts[0] !== 'TT') {
     return showToast('注册码格式错误，请联系客服', true);
@@ -209,14 +196,16 @@ function doLogin() {
   var devSuffix = parts[2];
   var inputHash = parts[3];
 
-  // 校验设备码后缀是否匹配
-  if (devSuffix !== myDevId.substring(4, 8)) {
+  // 获取当前设备后缀
+  var myDevSuffix = myDevId.substring(4, 8);
+
+  if (devSuffix !== myDevSuffix) {
     return showToast('该注册码不属于当前设备', true);
   }
 
-  // 校验哈希防伪造
+  // 计算哈希 (和算码器保持一致)
   var salt = "TieTuXueLian2024Qin";
-  var raw = myDevId + salt + durCode;
+  var raw = myDevSuffix + salt + durCode; 
   var hash = 0;
   for (var i = 0; i < raw.length; i++) { hash = ((hash << 5) - hash) + raw.charCodeAt(i); hash |= 0; }
   var correctHash = Math.abs(hash).toString(16).toUpperCase().padStart(8, '0').substring(0, 6);
@@ -230,15 +219,13 @@ function doLogin() {
   localStorage.setItem('xjt_offline_auth', 'true');
   
   if (durCode === "4") {
-    // 永久
     localStorage.removeItem('xjt_expire_time');
     showToast('永久授权激活成功，欢迎使用！');
   } else {
-    // 限时
-    var durationMs = TIME_MAP[durCode];
+    var TIME_MAP = { "0": 8, "1": 24, "2": 48, "3": 168 };
+    var durationMs = TIME_MAP[durCode] * 60 * 60 * 1000;
     var now = new Date().getTime();
-    var exp = now + durationMs;
-    localStorage.setItem('xjt_expire_time', exp);
+    localStorage.setItem('xjt_expire_time', now + durationMs);
     localStorage.setItem('xjt_last_check_time', now);
     
     var textDur = durCode === '0' ? '8小时' : durCode === '1' ? '24小时' : durCode === '2' ? '48小时' : '7天';
