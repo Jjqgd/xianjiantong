@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-title" content="铁途学练">
 <link rel="icon" href="logo.png">
 
-<!-- 防盗锁（如果不需要，可以保留也可以删掉，这里为您保留着） -->
+<!-- 防盗锁 -->
 <script>
   (function() {
     var allowedDomains = ["jjqgd.github.io", "localhost", "127.0.0.1"];
@@ -197,7 +197,6 @@ function showAppConfirm(title, msg, okText, cancelText, onOk, onCancel) {
   };
 }
 
-// 【修复1】：在答题页面主动点退出时，彻底删除断点记录，保证首页退出不弹窗
 function confirmExitPractice() {
   showAppConfirm('铁途学练', '确定要退出当前练习吗？(退出后进度将不再保留)', '退出', '取消', function() {
     localStorage.removeItem('xjt_practice_progress'); 
@@ -589,6 +588,13 @@ function selectPractice(idx) {
     handlePracticeResult(q, isCorrect);
     savePracticeProgress(); 
     renderPractice();
+
+    // 【核心修复】：单选题/判断题答对后，延迟 600 毫秒自动跳转下一题
+    if (isCorrect && !isWrongPracticeMode && practiceIndex < practiceQuestions.length - 1) {
+      setTimeout(function() {
+        nextPractice();
+      }, 600);
+    }
   }
 }
 
@@ -898,10 +904,8 @@ loadData();
 checkNewImport();
 render();
 
-// 【修复2】：延迟3秒等开场动画放完，再检查是否恢复进度
+// 延迟3秒等开场动画放完，再检查是否恢复进度
 setTimeout(function() {
-  // 如果当前模式是 practice，说明是刷新恢复；
-  // 如果是正常进入，检查本地是否存有断点，有才恢复。
   if (currentMode === 'home') {
     restorePracticeProgress();
   }
