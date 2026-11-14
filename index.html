@@ -267,7 +267,7 @@ function renderImport() {
         支持 Excel (.xlsx / .csv) 文件。<br>只要包含 <b>题目</b> 和 <b>答案</b> 列，以及至少两个选项列。
       </p>
       
-      <!-- 去掉动态内存，直接使用 label 包裹。这是原生 HTML 的标准做法，不可能失效！ -->
+      <!-- 这里恢复成用户最喜欢的漂亮蓝色按钮，采用 label 原生触发 -->
       <label class="btn btn-primary btn-block" style="padding:15px; cursor:pointer;">
         📂 点击选择文件
         <input type="file" id="fileUpload" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)" style="display:none;">
@@ -279,8 +279,6 @@ function renderImport() {
   `;
 }
 
-// 【核心修复】：彻底清理缓存。每次选完文件后，必须强制将 input.value 清空。
-// 否则浏览器会认为你选的是同一个文件，直接吞掉事件，导致第二套题库点不出来！
 function handleFileSelect(e) {
   var file = e.target.files[0];
   if (!file) return;
@@ -305,7 +303,7 @@ function handleFileSelect(e) {
     } catch(err) {
       showToast(err.message || '解析失败，请检查表格格式', true);
     } finally {
-      // 【绝对关键】：必须在这里清空，否则第二次点不动
+      // 关键：选完后立刻把 input 置空，保证下次点击还能触发
       e.target.value = ''; 
     }
   };
