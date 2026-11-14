@@ -55,7 +55,6 @@
     cursor: pointer;
   }
 
-  /* 错误提示弹窗样式 */
   .modal-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.6); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
   .modal-box { background: #fff; border-radius: 12px; width: 100%; max-width: 500px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; }
   .modal-header { padding: 15px; background: #ffebee; color: #b71c1c; font-weight: bold; border-bottom: 1px solid #ffcdd2; }
@@ -75,7 +74,7 @@
 <div class="card" style="text-align:center; padding:40px 15px;">
   <h2 style="color:#b71c1c;margin-bottom:15px;">📥 上传文件</h2>
   <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;line-height:1.6;">
-    支持 Excel (.xlsx / .csv) 文件。<br>系统自带超强字典，自动匹配各种表头。
+    最严格的强制对齐解析。<br>有任何格式错位，系统会直接拦截并告知。
   </p>
   
   <input type="file" id="fileUpload" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)">
@@ -86,7 +85,6 @@
 </div>
 <div class="footer">技术支持：秦十三郎</div>
 
-<!-- 弹窗容器 -->
 <div id="errorModal" class="modal-mask" style="display:none;">
   <div class="modal-box">
     <div class="modal-header" id="modalTitle">⚠️ 部分题目导入失败</div>
@@ -177,7 +175,7 @@ function closeErrorModal() {
   }
 }
 
-// ================= 终极严格版抓取引擎（超强字典） =================
+// ================= 最严丝合缝版（拒绝乱猜，绝对对齐） =================
 function parseExcel(wb) {
   var allParsed = [];
   var errorList = []; 
@@ -190,7 +188,7 @@ function parseExcel(wb) {
     var optCols = [];
     var headerRowIndex = -1;
 
-    // 1. 扫描前20行，锁定表头
+    // 1. 扫描前20行，死磕表头（严格按顺序对齐）
     for (var r = 0; r < Math.min(rows.length, 20); r++) {
       var row = rows[r];
       if (!row || row.length === 0) continue;
@@ -202,26 +200,11 @@ function parseExcel(wb) {
         var h = String(row[c] || '').trim().toLowerCase();
         if (!h) continue;
 
-        // 🔥 题目类字典
-        if (tempQ === -1 && (h.indexOf('题目') > -1 || h.indexOf('题干') > -1 || h.indexOf('试题') > -1 || h.indexOf('问题') > -1 || h.indexOf('内容') > -1 || h === 'question')) {
-          tempQ = c;
-        }
-        // 🔥 答案类字典
-        else if (tempAns === -1 && (h.indexOf('答案') > -1 || h.indexOf('正确答案') > -1 || h.indexOf('标准答案') > -1 || h.indexOf('参考答案') > -1 || h === 'answer')) {
-          tempAns = c;
-        }
-        // 🔥 解析类字典
-        else if (tempAna === -1 && (h.indexOf('解析') > -1 || h.indexOf('说明') > -1 || h.indexOf('备注') > -1 || h.indexOf('出处') > -1 || h.indexOf('分析') > -1 || h.indexOf('详解') > -1 || h === 'explanation')) {
-          tempAna = c;
-        }
-        // 🔥 题型类字典
-        else if (tempType === -1 && (h.indexOf('题型') > -1 || h.indexOf('类型') > -1 || h === 'type')) {
-          tempType = c;
-        }
-        // 🔥 选项类字典
-        else if (h.indexOf('选项') > -1 || /^[a-g]$/i.test(h) || /^[a-g]选项$/i.test(h) || h === '备选项') {
-          tempOpts.push(c);
-        }
+        if (tempQ === -1 && (h.indexOf('题目') > -1 || h.indexOf('题干') > -1 || h.indexOf('试题') > -1 || h.indexOf('问题') > -1 || h === 'question')) tempQ = c;
+        else if (tempAns === -1 && (h.indexOf('答案') > -1 || h.indexOf('answer') > -1)) tempAns = c;
+        else if (tempAna === -1 && (h.indexOf('解析') > -1 || h.indexOf('说明') > -1 || h.indexOf('备注') > -1 || h.indexOf('出处') > -1 || h.indexOf('分析') > -1)) tempAna = c;
+        else if (tempType === -1 && (h.indexOf('题型') > -1 || h.indexOf('类型') > -1 || h === 'type')) tempType = c;
+        else if (h.indexOf('选项') > -1 || /^[a-g]$/i.test(h) || /^[a-g]选项$/i.test(h)) tempOpts.push(c);
       }
 
       if (tempQ !== -1 && tempAns !== -1) {
@@ -233,7 +216,7 @@ function parseExcel(wb) {
 
     if (headerRowIndex === -1) return; 
 
-    // 2. 逐行严格抓取并校验
+    // 2. 严格提取数据
     for (var r = headerRowIndex + 1; r < rows.length; r++) {
       var row = rows[r];
       if (!row || row.length === 0) continue;
@@ -252,8 +235,9 @@ function parseExcel(wb) {
       var typeStr = colType !== -1 ? String(row[colType] || '').trim().toLowerCase() : '';
       var excelRow = r + 1; 
 
+      // 拦截规则：答案必须存在
       if (!ansRaw) {
-        errorList.push({ pos: `工作表[${sheetName}] 第 ${excelRow} 行`, msg: `题目【${qText.substring(0,10)}...】的答案为空` });
+        errorList.push({ pos: `工作表[${sheetName}] 第 ${excelRow} 行`, msg: `题目【${qText.substring(0,10)}...】缺少答案` });
         continue;
       }
 
@@ -264,6 +248,7 @@ function parseExcel(wb) {
       var judgeT = ['正确','对','T','TRUE','Y','YES','√','V','是','A'];
       var judgeF = ['错误','错','不对','F','FALSE','N','NO','×','X','否','B'];
 
+      // 判断题型
       if (typeStr.indexOf('判') > -1 || judgeT.indexOf(ansRaw) > -1 || judgeF.indexOf(ansRaw) > -1) {
         type = 'judge';
         opts = ['正确', '错误']; 
@@ -283,14 +268,16 @@ function parseExcel(wb) {
         ansIndices.sort();
       }
 
+      // 拦截规则：答案必须有字母
       if (ansIndices.length === 0) {
-        errorList.push({ pos: `工作表[${sheetName}] 第 ${excelRow} 行`, msg: `题目【${qText.substring(0,10)}...】的答案【${ansRaw}】无法识别` });
+        errorList.push({ pos: `工作表[${sheetName}] 第 ${excelRow} 行`, msg: `题目【${qText.substring(0,10)}...】的答案【${ansRaw}】无法解析为字母` });
         continue;
       }
 
+      // 拦截规则：答案字母必须和选项数量匹配
       var maxAns = Math.max.apply(null, ansIndices);
       if (opts.length <= maxAns && type !== 'judge') {
-         errorList.push({ pos: `工作表[${sheetName}] 第 ${excelRow} 行`, msg: `题目【${qText.substring(0,10)}...】选了 ${String.fromCharCode(65+maxAns)}，但表格缺失该选项` });
+         errorList.push({ pos: `工作表[${sheetName}] 第 ${excelRow} 行`, msg: `题目【${qText.substring(0,10)}...】答案选了 ${String.fromCharCode(65+maxAns)}，但表格里这一行没有该选项` });
          continue;
       }
 
