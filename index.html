@@ -267,48 +267,49 @@ function renderImport() {
         支持 Excel (.xlsx / .csv) 文件。<br>只要包含 <b>题目</b> 和 <b>答案</b> 列，以及至少两个选项列。
       </p>
       
-      <!-- 每次点击导入，直接渲染原生 file input，彻底告别一切 JS 缓存问题 -->
-      <div id="inputWrapper" style="border: 2px dashed #0d47a1; padding: 25px 10px; border-radius: 8px; background:#eff6ff;">
-        <input type="file" id="fileUpload" accept=".xlsx,.xls,.csv" style="width: 100%; font-size: 1rem; outline: none; color: #0d47a1; font-weight: bold;">
-      </div>
+      <!-- 去掉动态内存，直接使用 label 包裹。这是原生 HTML 的标准做法，不可能失效！ -->
+      <label class="btn btn-primary btn-block" style="padding:15px; cursor:pointer;">
+        📂 点击选择文件
+        <input type="file" id="fileUpload" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)" style="display:none;">
+      </label>
 
       ${Object.keys(allBanks).length > 0 ? `<button class="btn btn-outline btn-block" onclick="currentMode='home';render()" style="margin-top:20px;">返回首页</button>` : ''}
     </div>
     <div class="footer">技术支持：秦十三郎</div>
   `;
+}
 
-  // 在页面渲染完毕后，直接绑定新的 onchange 事件。
-  var fileInput = document.getElementById('fileUpload');
-  fileInput.onchange = function(e) {
-    var file = e.target.files[0];
-    if (!file) return;
-    showToast('正在解析...');
-    
-    // 每次重新 new 一个 FileReader
-    var reader = new FileReader();
-    reader.onload = function(evt) {
-      try {
-        var data = new Uint8Array(evt.target.result);
-        var wb = XLSX.read(data, {type: 'array'});
-        var parsed = parseExcel(wb);
-        
-        var defaultName = file.name.replace(/\.[^/.]+$/, "");
-        customPrompt('请为题库命名', defaultName, function(bankName) {
-          var newId = 'bank_' + Date.now();
-          allBanks[newId] = { name: bankName, questions: parsed };
-          activeBankId = newId;
-          saveData();
-          currentMode = 'home';
-          showToast('导入成功，共 ' + parsed.length + ' 题');
-          render();
-        });
-      } catch(err) {
-        showToast(err.message || '解析失败，请检查表格格式', true);
-        e.target.value = ''; // 允许重新选择
-      }
-    };
-    reader.readAsArrayBuffer(file);
+// 【核心修复】：彻底清理缓存。每次选完文件后，必须强制将 input.value 清空。
+// 否则浏览器会认为你选的是同一个文件，直接吞掉事件，导致第二套题库点不出来！
+function handleFileSelect(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  showToast('正在解析...');
+  var reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      var data = new Uint8Array(evt.target.result);
+      var wb = XLSX.read(data, {type: 'array'});
+      var parsed = parseExcel(wb);
+      
+      var defaultName = file.name.replace(/\.[^/.]+$/, "");
+      customPrompt('请为题库命名', defaultName, function(bankName) {
+        var newId = 'bank_' + Date.now();
+        allBanks[newId] = { name: bankName, questions: parsed };
+        activeBankId = newId;
+        saveData();
+        currentMode = 'home';
+        showToast('导入成功，共 ' + parsed.length + ' 题');
+        render();
+      });
+    } catch(err) {
+      showToast(err.message || '解析失败，请检查表格格式', true);
+    } finally {
+      // 【绝对关键】：必须在这里清空，否则第二次点不动
+      e.target.value = ''; 
+    }
   };
+  reader.readAsArrayBuffer(file);
 }
 
 function parseExcel(wb) {
