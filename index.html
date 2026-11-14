@@ -13,7 +13,6 @@
   * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, "Microsoft YaHei", sans-serif; }
   body { background-color: #f0f4f8; color: #1e293b; padding: 10px; -webkit-tap-highlight-color: transparent; }
   
-  /* 开场动画 */
   #splash-screen { position: fixed; top:0; left:0; right:0; bottom:0; background: #fcf9f2; z-index: 9999; display: flex; align-items: center; justify-content: center; transition: opacity 0.8s; }
   #splash-screen.hidden { opacity: 0; pointer-events: none; }
   .calligraphy-box { display: flex; gap: 40px; }
@@ -267,7 +266,6 @@ function renderImport() {
         支持 Excel (.xlsx / .csv) 文件。<br>只要包含 <b>题目</b> 和 <b>答案</b> 列，以及至少两个选项列。
       </p>
       
-      <!-- 这里恢复成用户最喜欢的漂亮蓝色按钮，采用 label 原生触发 -->
       <label class="btn btn-primary btn-block" style="padding:15px; cursor:pointer;">
         📂 点击选择文件
         <input type="file" id="fileUpload" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)" style="display:none;">
@@ -303,7 +301,6 @@ function handleFileSelect(e) {
     } catch(err) {
       showToast(err.message || '解析失败，请检查表格格式', true);
     } finally {
-      // 关键：选完后立刻把 input 置空，保证下次点击还能触发
       e.target.value = ''; 
     }
   };
@@ -455,7 +452,16 @@ function renderHome() {
   app.innerHTML = html;
 }
 
-function goToImport() { currentMode = 'import'; render(); }
+// 【换思路核心】：在这里彻底清空之前可能遗留的任何文件输入框缓存
+function goToImport() { 
+  // 暴力清空可能存在的所有文件输入框的值
+  var inputs = document.querySelectorAll('input[type="file"]');
+  for(var i=0; i<inputs.length; i++) {
+    inputs[i].value = '';
+  }
+  currentMode = 'import'; 
+  render(); 
+}
 function switchBank(id) { activeBankId = id; saveData(); render(); }
 
 // ================= 3. 答题卡组件 =================
