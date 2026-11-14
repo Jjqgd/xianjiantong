@@ -7,22 +7,7 @@
 <meta name="apple-mobile-web-app-title" content="铁途学练">
 <link rel="icon" href="logo.png">
 
-<!-- 防盗锁 -->
-<script>
-  (function() {
-    var allowedDomains = ["jjqgd.github.io", "localhost", "127.0.0.1"];
-    var host = window.location.hostname;
-    var isAllowed = false;
-    for (var i = 0; i < allowedDomains.length; i++) {
-      if (host === allowedDomains[i] || host.endsWith("." + allowedDomains[i])) { isAllowed = true; break; }
-    }
-    if (!isAllowed) {
-      document.documentElement.innerHTML = '<div style="text-align:center; margin-top:50px; font-size:20px; color:red; font-weight:bold;">🛑 未经授权，禁止盗用本系统！</div>';
-      throw new Error("Unauthorized Domain");
-    }
-  })();
-</script>
-
+<script src="https://static.cloudbase.net/cloudbase-js-sdk/1.7.2/cloudbase.full.js"></script>
 <script src="https://cdn.staticfile.org/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
@@ -147,20 +132,73 @@
 <div id="toast" class="toast"></div>
 
 <script>
-var AUTH_CODE = "QIN13";
-var isAuthorized = localStorage.getItem('xjt_auth') === 'true';
-var allBanks = {};
-var activeBankId = null;
-var wrongBook = [];
-var currentMode = 'login';
+// ================= 1. 初始化云端配置 =================
+var LC_ENV = "qinshisanlang-d1g8sen6s54caccf5";
+var LC_KEY = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjJlZGYwNzNmLTBjMGEtNDE4ZS1hOWViLTk4ZWVjYjJkNDY3YiJ9.eyJpc3MiOiJodHRwczovL3FpbnNoaXNhbmxhbmctZDFnOHNlbjZzNTRjYWNjZjUuYXAtc2hhbmdoYWkudGNiLWFwaS50ZW5jZW50Y2xvdWRhcGkuY29tIiwic3ViIjoiYW5vbiIsImF1ZCI6InFpbnNoaXNhbmxhbmctZDFnOHNlbjZzNTRjYWNjZjUiLCJleHAiOjQwOTgzNDkzNjcsImlhdCI6MTc5NDY2NjE2Nywibm9uY2UiOiJQSFFqQnoyc1E0eVMxMlhZMDNmSFhnIiwiYXRfaGFzaCI6IlBIUWpCejJzUTR5UzEyWFkwM2ZIWGciLCJuYW1lIjoiQW5vbnltb3VzIiwic2NvcGUiOiJhbm9ueW1vdXMiLCJwcm9qZWN0X2lkIjoicWluc2hpc2FubGFuZy1kMWc4c2VuNnM1NGNhY2NmNSIsIm1ldGEiOnsicGxhdGZvcm0iOiJQdWJsaXNoYWJsZUtleSJ9LCJyb2xlIjoiYW5vbiIsImlzX2Fub255bW91cyI6dHJ1ZSwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiYW5vbnltb3VzIiwicHJvdmlkZXJzIjpbImFub255bW91cyJdfSwidXNlcl9tZXRhZGF0YSI6eyJuYW1lIjoiQW5vbnltb3VzIn0sInVzZXJfdHlwZSI6IiIsImNsaWVudF90eXBlIjoiY2xpZW50X3VzZXIiLCJpc19zeXN0ZW1fYWRtaW4iOmZhbHNlfQ.Smm1vGReMVO-FXNhmKNKrUsIZ5BpvX5d86WzNt1fhF_ELJ8huqwk3_9ofOnpW63_4lPJeRJZ1RBkxWeIIY726pEoQyltgi2eScmBiKxXI9dQKyV1DWTDa5NmJguZ4g1DlzaVRZJESh_o35UrkumhMCvDzznYWTETjRW6XfI2NxlT9zDWcAXhJ1CbYb7D9jg5woRhzsMEQH9L83xjQKQdfO1OYgMlmeTJ7sGDzGV0GSDu-k-b1KQAjjjBbk47j9a11Uf6HnsPyoQpfvza4_KN62XOxqkhPP72cg5fmb9qV1Sb3zJhlxf8R3lX8TJGGt0gdOGGkcEGJpLaxNtYKUaHUQ";
 
+var app = null;
+if (typeof cloudbase !== 'undefined') {
+  app = cloudbase.init({ env: LC_ENV, accessKey: LC_KEY });
+}
+
+var isAuthorized = localStorage.getItem('xjt_auth_code') !== null;
+
+function getDeviceId() {
+  var devId = localStorage.getItem('xjt_device_id');
+  if (devId) return devId;
+  var nav = window.navigator;
+  var raw = nav.userAgent + nav.language + screen.width + screen.height;
+  var hash = 0;
+  for (var i = 0; i < raw.length; i++) { hash = ((hash << 5) - hash) + raw.charCodeAt(i); hash |= 0; }
+  devId = 'DEV-' + Math.abs(hash).toString(16) + '-' + Math.floor(Math.random()*10000);
+  localStorage.setItem('xjt_device_id', devId);
+  return devId;
+}
+
+function doLogin() {
+  var val = document.getElementById('authInput').value.trim();
+  if (!val) return showToast('请输入授权码', true);
+  if (!app) return showToast('云端组件加载失败，请刷新', true);
+
+  var btn = document.querySelector('.btn-primary');
+  btn.innerText = '验证中...'; btn.disabled = true;
+  var deviceId = getDeviceId();
+  
+  app.database().from('auth_codes').where({ code: val }).get().then(function(res) {
+    if (!res.data || res.data.length === 0) throw new Error('授权码不存在');
+    var record = res.data[0];
+    var boundDevice = record.deviceId;
+
+    if (boundDevice && boundDevice !== deviceId) throw new Error('该码已在其他设备绑定');
+
+    if (!boundDevice) {
+      return app.database().from('auth_codes').where({ code: val }).update({ deviceId: deviceId }).then(function() { loginSuccess(val); });
+    } else {
+      loginSuccess(val);
+    }
+  }).catch(function(err) {
+    btn.innerText = '进入系统'; btn.disabled = false;
+    showToast(err.message || '网络异常', true);
+  });
+}
+
+function loginSuccess(code) {
+  isAuthorized = true;
+  localStorage.setItem('xjt_auth_code', code);
+  currentMode = Object.keys(allBanks).length > 0 ? 'home' : 'import';
+  showToast('授权成功，欢迎使用！');
+  render();
+}
+
+// ================= 2. 业务逻辑区 =================
+var allBanks = {}; var activeBankId = null; var wrongBook = []; var currentMode = 'login';
 var practiceQuestions = [], practiceIndex = 0, practiceSelections = [], isWrongPracticeMode = false;
 var examQuestions = [], examIndex = 0, examSelections = [];
 var examConfig = { single: 0, multiple: 0, judge: 0, scoreSingle: 2, scoreMultiple: 4, scoreJudge: 2, timeLimit: 60 };
 var examScore = { got: 0, total: 0, usedTime: '0分0秒' };
 var examTimer = null, examStartTime = 0, examRemainingSeconds = 0;
 
-var app = document.getElementById('app');
+var appContainer = document.getElementById('app');
 var toastEl = document.getElementById('toast');
 
 setTimeout(function() { document.getElementById('splash-screen').classList.add('hidden'); }, 2800);
@@ -186,41 +224,25 @@ function showAppConfirm(title, msg, okText, cancelText, onOk, onCancel) {
     </div>
   `;
   document.body.appendChild(mask);
-  
-  document.getElementById('btnCancel').onclick = function() { 
-    document.body.removeChild(mask); 
-    if (onCancel) onCancel(); 
-  };
-  document.getElementById('btnOk').onclick = function() { 
-    document.body.removeChild(mask); 
-    if (onOk) onOk(); 
-  };
+  document.getElementById('btnCancel').onclick = function() { document.body.removeChild(mask); if(onCancel) onCancel(); };
+  document.getElementById('btnOk').onclick = function() { document.body.removeChild(mask); if(onOk) onOk(); };
 }
 
 function confirmExitPractice() {
-  showAppConfirm('铁途学练', '确定要退出当前练习吗？(退出后进度将不再保留)', '退出', '取消', function() {
-    localStorage.removeItem('xjt_practice_progress'); 
-    currentMode = 'home'; 
-    render();
+  showAppConfirm('铁途学练', '确定要退出当前练习吗？(进度将不再保留)', '退出', '取消', function() {
+    localStorage.removeItem('xjt_practice_progress'); currentMode = 'home'; render();
   });
 }
-
 function confirmExitExam() {
-  showAppConfirm('铁途学练', '确定要退出当前考试吗？本次成绩将不保存。', '退出', '取消', function() {
-    if (examTimer) clearInterval(examTimer); examTimer = null;
-    currentMode = 'home'; render();
+  showAppConfirm('铁途学练', '确定退出考试？成绩不保存。', '退出', '取消', function() {
+    if(examTimer) clearInterval(examTimer); examTimer = null; currentMode = 'home'; render();
   });
 }
-function confirmSubmitExam() {
-  showAppConfirm('铁途学练', '确定要交卷吗？', '交卷', '取消', function() { submitExam(); });
-}
+function confirmSubmitExam() { showAppConfirm('铁途学练', '确定要交卷吗？', '交卷', '取消', function() { submitExam(); }); }
 function confirmDeleteBank(id) {
-  showAppConfirm('铁途学练', '确定要删除该题库吗？删除后不可恢复。', '删除', '取消', function() {
+  showAppConfirm('铁途学练', '确定删除该题库？', '删除', '取消', function() {
     delete allBanks[id];
-    if (activeBankId === id) {
-      var keys = Object.keys(allBanks);
-      activeBankId = keys.length > 0 ? keys[0] : null;
-    }
+    if (activeBankId === id) { var keys = Object.keys(allBanks); activeBankId = keys.length > 0 ? keys[0] : null; }
     saveData(); render();
   });
 }
@@ -231,19 +253,12 @@ function saveData() {
   localStorage.setItem('xjt_wrong', JSON.stringify(wrongBook));
 }
 
-// 保存断点进度
 function savePracticeProgress() {
   if (currentMode === 'practice') {
-    localStorage.setItem('xjt_practice_progress', JSON.stringify({
-      questions: practiceQuestions,
-      index: practiceIndex,
-      selections: practiceSelections,
-      isWrong: isWrongPracticeMode
-    }));
+    localStorage.setItem('xjt_practice_progress', JSON.stringify({ questions: practiceQuestions, index: practiceIndex, selections: practiceSelections, isWrong: isWrongPracticeMode }));
   }
 }
 
-// 恢复断点进度
 function restorePracticeProgress() {
   var pStr = localStorage.getItem('xjt_practice_progress');
   if (pStr) {
@@ -251,15 +266,9 @@ function restorePracticeProgress() {
       var p = JSON.parse(pStr);
       if (p.questions && p.questions.length > 0) {
         showAppConfirm('铁途学练', '检测到上次未完成的练习，是否继续？', '继续', '放弃', function() {
-          practiceQuestions = p.questions;
-          practiceIndex = p.index;
-          practiceSelections = p.selections;
-          isWrongPracticeMode = p.isWrong;
-          currentMode = 'practice';
-          render();
-        }, function() {
-          localStorage.removeItem('xjt_practice_progress');
-        });
+          practiceQuestions = p.questions; practiceIndex = p.index; practiceSelections = p.selections; isWrongPracticeMode = p.isWrong;
+          currentMode = 'practice'; render();
+        }, function() { localStorage.removeItem('xjt_practice_progress'); });
       }
     } catch(e) {}
   }
@@ -267,17 +276,9 @@ function restorePracticeProgress() {
 
 function loadData() {
   try {
-    var b = localStorage.getItem('xjt_banks');
-    var a = localStorage.getItem('xjt_active');
-    var w = localStorage.getItem('xjt_wrong');
-    if (b) allBanks = JSON.parse(b);
-    if (a) activeBankId = a;
-    if (w) {
-      wrongBook = JSON.parse(w);
-      for (var i=0; i<wrongBook.length; i++) {
-        if (wrongBook[i].streak === undefined) wrongBook[i].streak = 0;
-      }
-    }
+    var b = localStorage.getItem('xjt_banks'); var a = localStorage.getItem('xjt_active'); var w = localStorage.getItem('xjt_wrong');
+    if (b) allBanks = JSON.parse(b); if (a) activeBankId = a;
+    if (w) { wrongBook = JSON.parse(w); for (var i=0; i<wrongBook.length; i++) { if (wrongBook[i].streak === undefined) wrongBook[i].streak = 0; } }
     if (activeBankId && !allBanks[activeBankId]) activeBankId = null;
   } catch(e) {}
 }
@@ -288,9 +289,7 @@ function checkNewImport() {
     try {
       var newBank = JSON.parse(newBankStr);
       allBanks[newBank.id] = { name: newBank.name, questions: newBank.questions };
-      activeBankId = newBank.id;
-      localStorage.removeItem('xjt_new_import');
-      saveData();
+      activeBankId = newBank.id; localStorage.removeItem('xjt_new_import'); saveData();
       showToast('导入成功，共 ' + newBank.questions.length + ' 题');
     } catch(e) {}
   }
@@ -311,78 +310,60 @@ function render() {
   else if (currentMode === 'review') renderReview();
 }
 
-// ================= 1. 登录 & 导入 =================
+// ================= 3. 页面渲染区 =================
 function renderLogin() {
-  app.innerHTML = `
+  appContainer.innerHTML = `
     <div class="card" style="text-align:center; margin-top:20%;">
       <h2 style="color:#b71c1c;margin-bottom:10px;">🔐 身份验证</h2>
-      <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;">请输入系统授权码</p>
+      <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;">请输入一机一码授权</p>
       <input type="password" id="authInput" style="width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:8px;text-align:center;font-size:1.1rem;margin-bottom:20px;">
       <button class="btn btn-primary btn-block" onclick="doLogin()">进入系统</button>
     </div>
     <div class="footer">技术支持：秦十三郎</div>
   `;
 }
-function doLogin() {
-  var val = document.getElementById('authInput').value;
-  if (val === AUTH_CODE) {
-    isAuthorized = true;
-    localStorage.setItem('xjt_auth', 'true');
-    currentMode = Object.keys(allBanks).length > 0 ? 'home' : 'import';
-    showToast('验证成功'); render();
-  } else { showToast('授权码错误', true); }
-}
 
 function renderImport() {
-  app.innerHTML = `
+  appContainer.innerHTML = `
     <div class="card" style="text-align:center; padding:40px 15px;">
       <h2 style="color:#b71c1c;margin-bottom:15px;">📥 导入新题库</h2>
       <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;line-height:1.6;">
-        系统将跳转至独立导入页面。<br>支持 Excel (.xlsx / .csv) 文件。
+        系统将跳转至独立导入页面。
       </p>
-      <button class="btn btn-primary btn-block" style="padding:15px;" onclick="window.location.href='import.html'">
-        📂 前往导入页面
-      </button>
+      <button class="btn btn-primary btn-block" style="padding:15px;" onclick="window.location.href='import.html'">📂 前往导入页面</button>
       ${Object.keys(allBanks).length > 0 ? `<button class="btn btn-outline btn-block" onclick="currentMode='home';render()" style="margin-top:20px;">返回首页</button>` : ''}
     </div>
     <div class="footer">技术支持：秦十三郎</div>
   `;
 }
 
-// ================= 2. 首页 =================
 function renderHome() {
   var bankEntries = Object.keys(allBanks);
   var hasActive = activeBankId && allBanks[activeBankId];
   var qs = hasActive ? allBanks[activeBankId].questions : [];
-  
   var html = '';
 
   if (hasActive) {
-    var countSingle = 0, countMulti = 0, countJudge = 0;
+    var cS = 0, cM = 0, cJ = 0;
     for (var j = 0; j < qs.length; j++) {
-      if (qs[j].type === 'single') countSingle++;
-      else if (qs[j].type === 'multiple') countMulti++;
-      else if (qs[j].type === 'judge') countJudge++;
+      if (qs[j].type === 'single') cS++; else if (qs[j].type === 'multiple') cM++; else if (qs[j].type === 'judge') cJ++;
     }
-    
     html += `
       <div class="card">
         <div class="title">当前训练：${allBanks[activeBankId].name}</div>
         <div class="stats">
           <div class="stat-item"><div class="stat-num" style="color:#b71c1c;">${qs.length}</div><div class="stat-label">总题量</div></div>
-          <div class="stat-item"><div class="stat-num">${countSingle}</div><div class="stat-label">单选</div></div>
-          <div class="stat-item"><div class="stat-num">${countMulti}</div><div class="stat-label">多选</div></div>
-          <div class="stat-item"><div class="stat-num">${countJudge}</div><div class="stat-label">判断</div></div>
+          <div class="stat-item"><div class="stat-num">${cS}</div><div class="stat-label">单选</div></div>
+          <div class="stat-item"><div class="stat-num">${cM}</div><div class="stat-label">多选</div></div>
+          <div class="stat-item"><div class="stat-num">${cJ}</div><div class="stat-label">判断</div></div>
           <div class="stat-item" style="background:#fef2f2;"><div class="stat-num" style="color:#ef4444;">${wrongBook.length}</div><div class="stat-label" style="color:#b91c1c;">错题数</div></div>
         </div>
-        
         <div class="menu">
           <div class="menu-btn" onclick="startPractice('all')">📖 顺序练习</div>
           <div class="menu-btn" onclick="startExamSetup()">📝 模拟考试</div>
           <div class="menu-btn" onclick="startPractice('wrong')">🔥 错题集训</div>
           <div class="menu-btn" onclick="openReview()">📑 错题查看</div>
         </div>
-
         <div class="sub-menu">
           <button class="btn btn-outline" onclick="startPractice('single')">专项：单选</button>
           <button class="btn btn-outline" onclick="startPractice('multiple')">专项：多选</button>
@@ -393,14 +374,11 @@ function renderHome() {
   }
 
   html += `<div class="card"><div class="title">我的题库</div>`;
-  
   if (bankEntries.length === 0) {
     html += `<div style="text-align:center;color:#94a3b8;font-size:0.9rem;">暂无题库</div>`;
   } else {
     for (var i = 0; i < bankEntries.length; i++) {
-      var id = bankEntries[i];
-      var b = allBanks[id];
-      var isAct = id === activeBankId;
+      var id = bankEntries[i]; var b = allBanks[id]; var isAct = id === activeBankId;
       html += `
         <div class="bank-item ${isAct ? 'active' : ''}" onclick="switchBank('${id}')">
           <div>
@@ -420,108 +398,66 @@ function renderHome() {
     </div>
     <div class="footer">技术支持：秦十三郎</div>
   `;
-  app.innerHTML = html;
+  appContainer.innerHTML = html;
 }
 
 function goToImport() { window.location.href='import.html'; }
 function switchBank(id) { activeBankId = id; saveData(); render(); }
 
-// ================= 3. 答题卡组件 =================
 function buildSheetHtml(questions, currentIdx, selections, type) {
   var groups = { single: [], multiple: [], judge: [] };
-  for (var k = 0; k < questions.length; k++) {
-    groups[questions[k].type].push({ idx: k, q: questions[k] });
-  }
-  
-  var html = '';
-  var types = ['single', 'multiple', 'judge'];
-  var typeNames = { single: '单选题', multiple: '多选题', judge: '判断题' };
+  for (var k = 0; k < questions.length; k++) groups[questions[k].type].push({ idx: k, q: questions[k] });
+  var html = ''; var types = ['single', 'multiple', 'judge']; var typeNames = { single: '单选题', multiple: '多选题', judge: '判断题' };
   var jumpFn = type === 'practice' ? 'jumpPractice' : 'jumpExam';
-  
   for (var t = 0; t < types.length; t++) {
-    var tp = types[t];
-    var items = groups[tp];
-    if (items.length === 0) continue;
-    
-    html += `<div class="acc-group">`;
-    html += `<div class="acc-header" onclick="this.nextElementSibling.classList.toggle('hidden')"><span style="font-size:1.1rem;">${typeNames[tp]}</span><span>共 ${items.length} 题 (点击折叠/展开)</span></div>`;
-    html += `<div class="acc-body">`;
-    
+    var tp = types[t]; var items = groups[tp]; if (items.length === 0) continue;
+    html += `<div class="acc-group"><div class="acc-header" onclick="this.nextElementSibling.classList.toggle('hidden')"><span style="font-size:1.1rem;">${typeNames[tp]}</span><span>共 ${items.length} 题 (点击折叠/展开)</span></div><div class="acc-body">`;
     for (var i = 0; i < items.length; i++) {
       var item = items[i];
-      var isDone = false;
-      if (type === 'practice') {
-        isDone = item.q.isAnswered;
-      } else {
-        isDone = (selections[item.idx] && selections[item.idx].length > 0);
-      }
-      var cls = 'num-btn' + (isDone ? ' done' : '');
-      html += `<div class="${cls}" onclick="${jumpFn}(${item.idx})">${item.idx+1}</div>`;
+      var isDone = type === 'practice' ? item.q.isAnswered : (selections[item.idx] && selections[item.idx].length > 0);
+      html += `<div class="num-btn ${isDone ? 'done' : ''}" onclick="${jumpFn}(${item.idx})">${item.idx+1}</div>`;
     }
-    
     html += `</div></div>`;
   }
-  
   return html;
 }
 
-// ================= 4. 练习模式 =================
 function startPractice(type) {
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
   if (type === 'wrong') {
     if (wrongBook.length === 0) return showToast('错题本为空', true);
-    practiceQuestions = wrongBook.slice();
-    isWrongPracticeMode = true;
+    practiceQuestions = wrongBook.slice(); isWrongPracticeMode = true;
   } else {
     if (qs.length === 0) return showToast('题库为空', true);
-    if (type === 'all') practiceQuestions = qs.slice();
-    else practiceQuestions = qs.filter(function(q){ return q.type === type; });
+    practiceQuestions = type === 'all' ? qs.slice() : qs.filter(function(q){ return q.type === type; });
     isWrongPracticeMode = false;
   }
-  
   if (practiceQuestions.length === 0) return showToast('该分类下暂无题目', true);
-  
-  practiceIndex = 0;
-  practiceSelections = [];
-  for (var i = 0; i < practiceQuestions.length; i++) {
-    practiceQuestions[i].isAnswered = false;
-    if (practiceQuestions[i].streak === undefined) practiceQuestions[i].streak = 0;
-  }
-  currentMode = 'practice';
-  savePracticeProgress(); 
-  render();
+  practiceIndex = 0; practiceSelections = [];
+  for (var i = 0; i < practiceQuestions.length; i++) { practiceQuestions[i].isAnswered = false; if (practiceQuestions[i].streak === undefined) practiceQuestions[i].streak = 0; }
+  currentMode = 'practice'; savePracticeProgress(); render();
 }
 
 function renderPractice() {
   if (practiceIndex >= practiceQuestions.length) {
     localStorage.removeItem('xjt_practice_progress'); 
-    app.innerHTML = `<div class="card" style="text-align:center;padding:40px;"><h2 style="color:#0d47a1;margin-bottom:15px;">🎉 练习完成</h2><p style="color:#64748b;margin-bottom:20px;">您已完成本轮练习。</p><button class="btn btn-primary btn-block" onclick="currentMode='home';render()">返回首页</button></div>`;
+    appContainer.innerHTML = `<div class="card" style="text-align:center;padding:40px;"><h2 style="color:#0d47a1;margin-bottom:15px;">🎉 练习完成</h2><p style="color:#64748b;margin-bottom:20px;">您已完成本轮练习。</p><button class="btn btn-primary btn-block" onclick="currentMode='home';render()">返回首页</button></div>`;
     return;
   }
-  
-  var q = practiceQuestions[practiceIndex];
-  var sels = practiceSelections[practiceIndex] || [];
-  var showAns = q.isAnswered;
-  var isCorrect = showAns && sels.length === q.answer.length && sels.every(function(v){ return q.answer.indexOf(v) > -1; });
-  
+  var q = practiceQuestions[practiceIndex]; var sels = practiceSelections[practiceIndex] || [];
+  var showAns = q.isAnswered; var isCorrect = showAns && sels.length === q.answer.length && sels.every(function(v){ return q.answer.indexOf(v) > -1; });
   var optsHtml = '';
   for (var i = 0; i < q.options.length; i++) {
     var cls = 'opt';
-    if (showAns) {
-      if (q.answer.indexOf(i) > -1) cls += ' correct';
-      else if (sels.indexOf(i) > -1) cls += ' wrong';
-    } else if (sels.indexOf(i) > -1) {
-      cls += ' selected';
-    }
+    if (showAns) { if (q.answer.indexOf(i) > -1) cls += ' correct'; else if (sels.indexOf(i) > -1) cls += ' wrong'; }
+    else if (sels.indexOf(i) > -1) cls += ' selected';
     optsHtml += `<div class="${cls}" onclick="selectPractice(${i})"><div class="opt-prefix">${String.fromCharCode(65+i)}</div><div>${q.options[i]}</div></div>`;
   }
-  
   var typeName = q.type === 'single' ? '单选题' : q.type === 'multiple' ? '多选题' : '判断题';
   var streakHtml = isWrongPracticeMode ? `<span style="float:right;font-size:0.8rem;color:#ef4444;font-weight:bold;">🔥连对: ${q.streak}/5</span>` : '';
-  
   var sheetHtml = buildSheetHtml(practiceQuestions, practiceIndex, practiceSelections, 'practice');
   
-  var html = `
+  appContainer.innerHTML = `
     <div class="toolbar">
       <div style="display:flex; align-items:center; gap:10px;">
         <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="confirmExitPractice()">⬅ 退出</button>
@@ -529,39 +465,26 @@ function renderPractice() {
       </div>
       <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
     </div>
-    
     <div class="card">
-      <span class="tag">${typeName}</span>
-      ${streakHtml}
-      <div class="q-text">${q.question}</div>
-      ${optsHtml}
-      
+      <span class="tag">${typeName}</span>${streakHtml}
+      <div class="q-text">${q.question}</div>${optsHtml}
       <div class="analysis ${showAns ? (isCorrect ? 'success' : 'error') : ''}" style="display:${showAns ? 'block' : 'none'};">
         <div style="font-weight:bold;margin-bottom:5px;">正确答案：<span style="color:#10b981;">${q.answer.map(function(i){ return String.fromCharCode(65+i); }).join(', ')}</span></div>
         ${isWrongPracticeMode && isCorrect ? `<div style="color:#10b981;font-weight:bold;">✅ 连对次数 +1</div>` : ''}
         ${isWrongPracticeMode && !isCorrect ? `<div style="color:#ef4444;font-weight:bold;">❌ 答错了，连对重置</div>` : ''}
       </div>
-      
       <div class="bottom-actions">
         <button class="btn btn-outline" onclick="prevPractice()" ${practiceIndex===0?'disabled style="opacity:0.5"':''}>⬅ 上一题</button>
-        
-        ${(!showAns && q.type === 'multiple') ? 
-          `<button class="btn btn-primary" onclick="confirmMultiPractice()" ${sels.length===0?'disabled style="opacity:0.5"':''}>确认答案</button>` : 
-          ``
-        }
-        
+        ${(!showAns && q.type === 'multiple') ? `<button class="btn btn-primary" onclick="confirmMultiPractice()" ${sels.length===0?'disabled style="opacity:0.5"':''}>确认答案</button>` : ''}
         <button class="btn btn-primary" onclick="nextPractice()">${practiceIndex === practiceQuestions.length-1 ? '完成' : '下一题 ➡'}</button>
       </div>
     </div>
-
     <div id="sheetModal" class="sheet-mask" style="display:none;" onclick="closeSheet(event)">
       <div class="sheet-content" onclick="event.stopPropagation()">
-        <div class="sheet-title">答题卡 <span style="font-size:0.85rem;color:#64748b;font-weight:normal;">(点击题号跳转)</span></div>
-        ${sheetHtml}
+        <div class="sheet-title">答题卡 <span style="font-size:0.85rem;color:#64748b;font-weight:normal;">(点击题号跳转)</span></div>${sheetHtml}
       </div>
     </div>
   `;
-  app.innerHTML = html;
 }
 
 function openSheet() { document.getElementById('sheetModal').style.display='flex'; setTimeout(function(){document.getElementById('sheetModal').classList.add('show');},10); }
@@ -570,42 +493,26 @@ function jumpPractice(idx) { practiceIndex = idx; closeSheet({target:{id:'sheetM
 function prevPractice() { if(practiceIndex > 0) { practiceIndex--; savePracticeProgress(); renderPractice(); } }
 
 function selectPractice(idx) {
-  var q = practiceQuestions[practiceIndex];
-  if (q.isAnswered) return;
+  var q = practiceQuestions[practiceIndex]; if (q.isAnswered) return;
   var sels = practiceSelections[practiceIndex] || [];
-  
   if (q.type === 'multiple') {
-    var pos = sels.indexOf(idx);
-    if (pos > -1) sels.splice(pos, 1);
-    else sels.push(idx);
-    practiceSelections[practiceIndex] = sels;
-    savePracticeProgress(); 
-    renderPractice();
+    var pos = sels.indexOf(idx); if (pos > -1) sels.splice(pos, 1); else sels.push(idx);
+    practiceSelections[practiceIndex] = sels; savePracticeProgress(); renderPractice();
   } else {
-    practiceSelections[practiceIndex] = [idx];
-    q.isAnswered = true;
+    practiceSelections[practiceIndex] = [idx]; q.isAnswered = true;
     var isCorrect = q.answer.length === 1 && q.answer[0] === idx;
-    handlePracticeResult(q, isCorrect);
-    savePracticeProgress(); 
-    renderPractice();
-
-    // 【核心修复】：单选题/判断题答对后，延迟 600 毫秒自动跳转下一题
+    handlePracticeResult(q, isCorrect); savePracticeProgress(); renderPractice();
     if (isCorrect && !isWrongPracticeMode && practiceIndex < practiceQuestions.length - 1) {
-      setTimeout(function() {
-        nextPractice();
-      }, 600);
+      setTimeout(function() { nextPractice(); }, 600);
     }
   }
 }
 
 function confirmMultiPractice() {
-  var q = practiceQuestions[practiceIndex];
-  q.isAnswered = true;
+  var q = practiceQuestions[practiceIndex]; q.isAnswered = true;
   var sels = practiceSelections[practiceIndex] || [];
   var isCorrect = sels.length === q.answer.length && sels.every(function(v){ return q.answer.indexOf(v) > -1; });
-  handlePracticeResult(q, isCorrect);
-  savePracticeProgress(); 
-  renderPractice();
+  handlePracticeResult(q, isCorrect); savePracticeProgress(); renderPractice();
 }
 
 function handlePracticeResult(q, isCorrect) {
@@ -617,14 +524,11 @@ function handlePracticeResult(q, isCorrect) {
         showToast('🎉 连对5次，已移出错题本');
         if (wrongBook.length === 0) practiceIndex = practiceQuestions.length;
       }
-    } else {
-      q.streak = 0;
-    }
+    } else { q.streak = 0; }
     saveData();
   } else {
     if (!isCorrect) {
-      var exist = false;
-      for (var i=0; i<wrongBook.length; i++) { if (wrongBook[i].id === q.id) exist = true; }
+      var exist = false; for (var i=0; i<wrongBook.length; i++) { if (wrongBook[i].id === q.id) exist = true; }
       if (!exist) { wrongBook.push({ id: q.id, question: q.question, type: q.type, options: q.options, answer: q.answer, streak: 0 }); saveData(); }
     }
   }
@@ -632,22 +536,19 @@ function handlePracticeResult(q, isCorrect) {
 
 function nextPractice() { if(practiceIndex < practiceQuestions.length) { practiceIndex++; savePracticeProgress(); renderPractice(); } }
 
-// ================= 5. 错题本 =================
 function openReview() { currentMode = 'review'; render(); }
 function renderReview() {
   if (wrongBook.length === 0) {
-    app.innerHTML = `<div style="margin-bottom:10px;"><button class="btn btn-outline" onclick="currentMode='home';render()">⬅ 返回</button></div><div class="card" style="text-align:center;padding:30px;">🎉 暂无错题</div>`;
+    appContainer.innerHTML = `<div style="margin-bottom:10px;"><button class="btn btn-outline" onclick="currentMode='home';render()">⬅ 返回</button></div><div class="card" style="text-align:center;padding:30px;">🎉 暂无错题</div>`;
     return;
   }
   var html = `<div style="display:flex;justify-content:space-between;margin-bottom:15px;"><h3>错题本 (${wrongBook.length})</h3><button class="btn btn-outline" onclick="currentMode='home';render()">返回</button></div>`;
-  
   for (var i = 0; i < wrongBook.length; i++) {
     var q = wrongBook[i];
     html += `
       <div class="card" style="border-left:4px solid #ef4444;">
         <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:8px;">
-          <span class="tag">${q.type==='single'?'单选':q.type==='multiple'?'多选':'判断'}</span>
-          <span style="color:#ef4444;font-weight:bold;">连对: ${q.streak||0}/5</span>
+          <span class="tag">${q.type==='single'?'单选':q.type==='multiple'?'多选':'判断'}</span><span style="color:#ef4444;font-weight:bold;">连对: ${q.streak||0}/5</span>
         </div>
         <div style="font-weight:bold;font-size:0.95rem;margin-bottom:10px;">${q.question}</div>
         <div style="font-size:0.85rem;color:#10b981;margin-bottom:5px;font-weight:bold;">正确答案：${q.answer.map(function(idx){ return String.fromCharCode(65+idx); }).join(', ')}</div>
@@ -655,121 +556,63 @@ function renderReview() {
       </div>
     `;
   }
-  html += `<div class="footer">技术支持：秦十三郎</div>`;
-  app.innerHTML = html;
+  appContainer.innerHTML = html + `<div class="footer">技术支持：秦十三郎</div>`;
 }
 
-// ================= 6. 考试 =================
 function startExamSetup() { currentMode = 'examSetup'; render(); }
 function renderExamSetup() {
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
   var cS = 0, cM = 0, cJ = 0;
-  for (var i=0; i<qs.length; i++) {
-    if (qs[i].type === 'single') cS++;
-    else if (qs[i].type === 'multiple') cM++;
-    else if (qs[i].type === 'judge') cJ++;
-  }
-  
-  var html = `
+  for (var i=0; i<qs.length; i++) { if (qs[i].type === 'single') cS++; else if (qs[i].type === 'multiple') cM++; else if (qs[i].type === 'judge') cJ++; }
+  appContainer.innerHTML = `
     <div class="card">
-      <div style="display:flex;justify-content:space-between;margin-bottom:15px;">
-        <h3>📝 考试组卷</h3>
-        <button class="btn btn-outline" onclick="currentMode='home';render()">退出</button>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;">
-        <span>单选题 (共${cS}题)</span>
-        <div>抽 <input type="number" id="cS" value="${Math.min(5,cS)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pS" value="2" style="width:40px;text-align:center;"> 分</div>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;">
-        <span>多选题 (共${cM}题)</span>
-        <div>抽 <input type="number" id="cM" value="${Math.min(2,cM)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pM" value="4" style="width:40px;text-align:center;"> 分</div>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;">
-        <span>判断题 (共${cJ}题)</span>
-        <div>抽 <input type="number" id="cJ" value="${Math.min(3,cJ)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pJ" value="2" style="width:40px;text-align:center;"> 分</div>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;">
-        <span>考试时长</span>
-        <div><input type="number" id="tLimit" value="60" style="width:50px;text-align:center;"> 分钟</div>
-      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:15px;"><h3>📝 考试组卷</h3><button class="btn btn-outline" onclick="currentMode='home';render()">退出</button></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;"><span>单选题 (共${cS}题)</span><div>抽 <input type="number" id="cS" value="${Math.min(5,cS)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pS" value="2" style="width:40px;text-align:center;"> 分</div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;"><span>多选题 (共${cM}题)</span><div>抽 <input type="number" id="cM" value="${Math.min(2,cM)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pM" value="4" style="width:40px;text-align:center;"> 分</div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;"><span>判断题 (共${cJ}题)</span><div>抽 <input type="number" id="cJ" value="${Math.min(3,cJ)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pJ" value="2" style="width:40px;text-align:center;"> 分</div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;"><span>考试时长</span><div><input type="number" id="tLimit" value="60" style="width:50px;text-align:center;"> 分钟</div></div>
     </div>
     <button class="btn btn-primary btn-block" onclick="startExam()">开始考试</button>
   `;
-  app.innerHTML = html;
 }
 
 function startExam() {
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
-  var cS = parseInt(document.getElementById('cS').value) || 0;
-  var cM = parseInt(document.getElementById('cM').value) || 0;
-  var cJ = parseInt(document.getElementById('cJ').value) || 0;
-  var tLimit = parseInt(document.getElementById('tLimit').value) || 60;
-  
+  var cS = parseInt(document.getElementById('cS').value) || 0; var cM = parseInt(document.getElementById('cM').value) || 0;
+  var cJ = parseInt(document.getElementById('cJ').value) || 0; var tLimit = parseInt(document.getElementById('tLimit').value) || 60;
   if (cS + cM + cJ === 0) return showToast('请至少选择一题', true);
-  
   var sQS = qs.filter(function(q){ return q.type === 'single'; }).sort(function(){ return 0.5 - Math.random(); });
   var mQS = qs.filter(function(q){ return q.type === 'multiple'; }).sort(function(){ return 0.5 - Math.random(); });
   var jQS = qs.filter(function(q){ return q.type === 'judge'; }).sort(function(){ return 0.5 - Math.random(); });
-  
   examQuestions = sQS.slice(0, cS).concat(mQS.slice(0, cM)).concat(jQS.slice(0, cJ));
-  
-  examConfig = {
-    scoreSingle: parseInt(document.getElementById('pS').value) || 1,
-    scoreMultiple: parseInt(document.getElementById('pM').value) || 1,
-    scoreJudge: parseInt(document.getElementById('pJ').value) || 1,
-    timeLimit: tLimit
-  };
-  
-  examIndex = 0;
-  examSelections = [];
-  for (var i=0; i<examQuestions.length; i++) examSelections.push([]);
-  
-  examStartTime = Date.now();
-  examRemainingSeconds = tLimit * 60;
-  
+  examConfig = { scoreSingle: parseInt(document.getElementById('pS').value) || 1, scoreMultiple: parseInt(document.getElementById('pM').value) || 1, scoreJudge: parseInt(document.getElementById('pJ').value) || 1, timeLimit: tLimit };
+  examIndex = 0; examSelections = []; for (var i=0; i<examQuestions.length; i++) examSelections.push([]);
+  examStartTime = Date.now(); examRemainingSeconds = tLimit * 60;
   if (examTimer) clearInterval(examTimer);
   examTimer = setInterval(function() {
     examRemainingSeconds--;
-    if (examRemainingSeconds <= 0) {
-      clearInterval(examTimer);
-      examTimer = null;
-      showToast('时间到，自动交卷', true);
-      submitExam();
-    } else {
+    if (examRemainingSeconds <= 0) { clearInterval(examTimer); examTimer = null; showToast('时间到，自动交卷', true); submitExam(); }
+    else {
       var tEl = document.getElementById('timerDisplay');
       if (tEl) {
-        var m = Math.floor(examRemainingSeconds / 60);
-        var s = examRemainingSeconds % 60;
+        var m = Math.floor(examRemainingSeconds / 60); var s = examRemainingSeconds % 60;
         tEl.innerText = (m<10?'0':'') + m + ':' + (s<10?'0':'') + s;
         if (examRemainingSeconds < 60) tEl.style.color = '#ef4444';
       }
     }
   }, 1000);
-  
-  currentMode = 'exam';
-  render();
+  currentMode = 'exam'; render();
 }
 
 function renderExam() {
   if (examIndex >= examQuestions.length) return submitExam();
-  
-  var q = examQuestions[examIndex];
-  var sels = examSelections[examIndex] || [];
-  var optsHtml = '';
-  
-  for (var i=0; i<q.options.length; i++) {
-    var cls = 'opt' + (sels.indexOf(i) > -1 ? ' selected' : '');
-    optsHtml += `<div class="${cls}" onclick="selectExam(${i})"><div class="opt-prefix">${String.fromCharCode(65+i)}</div><div>${q.options[i]}</div></div>`;
-  }
-  
+  var q = examQuestions[examIndex]; var sels = examSelections[examIndex] || []; var optsHtml = '';
+  for (var i=0; i<q.options.length; i++) { var cls = 'opt' + (sels.indexOf(i) > -1 ? ' selected' : ''); optsHtml += `<div class="${cls}" onclick="selectExam(${i})"><div class="opt-prefix">${String.fromCharCode(65+i)}</div><div>${q.options[i]}</div></div>`; }
   var typeName = q.type === 'single' ? '单选题' : q.type === 'multiple' ? '多选题' : '判断题';
   var sheetHtml = buildSheetHtml(examQuestions, examIndex, examSelections, 'exam');
+  var m = Math.floor(examRemainingSeconds / 60); var s = examRemainingSeconds % 60; var timerStr = (m<10?'0':'') + m + ':' + (s<10?'0':'') + s;
   
-  var m = Math.floor(examRemainingSeconds / 60);
-  var s = examRemainingSeconds % 60;
-  var timerStr = (m<10?'0':'') + m + ':' + (s<10?'0':'') + s;
-  
-  var html = `
+  appContainer.innerHTML = `
     <div class="toolbar">
       <div>
         <div id="timerDisplay" class="timer" style="${examRemainingSeconds < 60 ? 'color:#ef4444;' : ''}">${timerStr}</div>
@@ -777,98 +620,60 @@ function renderExam() {
       </div>
       <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
     </div>
-    
     <div class="card">
-      <span class="tag">${typeName}</span>
-      <div class="q-text">${q.question}</div>
-      ${optsHtml}
-      
+      <span class="tag">${typeName}</span><div class="q-text">${q.question}</div>${optsHtml}
       <div class="bottom-actions">
         <button class="btn btn-outline" onclick="prevExam()" ${examIndex===0?'disabled style="opacity:0.5"':''}>⬅ 上一题</button>
         <button class="btn btn-primary" onclick="nextExam()">${examIndex===examQuestions.length-1?'交卷':'下一题 ➡'}</button>
       </div>
     </div>
-    
     <div style="display:flex;gap:15px;justify-content:center;margin-top:20px;">
       <button class="btn btn-danger" onclick="confirmSubmitExam()">交卷</button>
       <button class="btn btn-outline" onclick="confirmExitExam()">退出</button>
     </div>
-
     <div id="sheetModal" class="sheet-mask" style="display:none;" onclick="closeSheet(event)">
       <div class="sheet-content" onclick="event.stopPropagation()">
-        <div class="sheet-title">答题卡 <span style="font-size:0.85rem;color:#64748b;font-weight:normal;">(点击题号跳转)</span></div>
-        ${sheetHtml}
+        <div class="sheet-title">答题卡 <span style="font-size:0.85rem;color:#64748b;font-weight:normal;">(点击题号跳转)</span></div>${sheetHtml}
       </div>
     </div>
   `;
-  app.innerHTML = html;
 }
 
 function jumpExam(idx) { examIndex = idx; closeSheet({target:{id:'sheetModal'}}); renderExam(); }
-
 function selectExam(idx) {
-  var q = examQuestions[examIndex];
-  var sels = examSelections[examIndex] || [];
-  if (q.type === 'multiple') {
-    var pos = sels.indexOf(idx);
-    if (pos > -1) sels.splice(pos, 1);
-    else sels.push(idx);
-  } else {
-    sels = [idx];
-  }
-  examSelections[examIndex] = sels;
-  renderExam();
+  var q = examQuestions[examIndex]; var sels = examSelections[examIndex] || [];
+  if (q.type === 'multiple') { var pos = sels.indexOf(idx); if (pos > -1) sels.splice(pos, 1); else sels.push(idx); }
+  else { sels = [idx]; }
+  examSelections[examIndex] = sels; renderExam();
 }
-function nextExam() {
-  if (examIndex === examQuestions.length - 1) {
-    confirmSubmitExam();
-  } else { examIndex++; renderExam(); }
-}
+function nextExam() { if (examIndex === examQuestions.length - 1) { confirmSubmitExam(); } else { examIndex++; renderExam(); } }
 function prevExam() { if (examIndex > 0) { examIndex--; renderExam(); } }
 
 function submitExam() {
   if (examTimer) { clearInterval(examTimer); examTimer = null; }
-  var usedSec = Math.floor((Date.now() - examStartTime) / 1000);
-  var usedTimeStr = Math.floor(usedSec/60) + '分' + (usedSec%60) + '秒';
-  
+  var usedSec = Math.floor((Date.now() - examStartTime) / 1000); var usedTimeStr = Math.floor(usedSec/60) + '分' + (usedSec%60) + '秒';
   var got = 0, total = 0;
   for (var i=0; i<examQuestions.length; i++) {
-    var q = examQuestions[i];
-    var pts = q.type==='single' ? examConfig.scoreSingle : q.type==='multiple' ? examConfig.scoreMultiple : examConfig.scoreJudge;
-    total += pts;
-    
-    var ans = q.answer.slice().sort();
-    var sel = (examSelections[i] || []).slice().sort();
+    var q = examQuestions[i]; var pts = q.type==='single' ? examConfig.scoreSingle : q.type==='multiple' ? examConfig.scoreMultiple : examConfig.scoreJudge; total += pts;
+    var ans = q.answer.slice().sort(); var sel = (examSelections[i] || []).slice().sort();
     var isCorrect = ans.length === sel.length && ans.every(function(v,idx){ return v === sel[idx]; });
-    
     if (isCorrect) got += pts;
-    else {
-      var exist = false;
-      for (var j=0; j<wrongBook.length; j++) { if (wrongBook[j].id === q.id) exist = true; }
-      if (!exist) { wrongBook.push({ id: q.id, question: q.question, type: q.type, options: q.options, answer: q.answer, streak: 0 }); }
-    }
+    else { var exist = false; for (var j=0; j<wrongBook.length; j++) { if (wrongBook[j].id === q.id) exist = true; } if (!exist) { wrongBook.push({ id: q.id, question: q.question, type: q.type, options: q.options, answer: q.answer, streak: 0 }); } }
   }
-  saveData();
-  examScore = { got: got, total: total, usedTime: usedTimeStr };
-  currentMode = 'result';
-  render();
+  saveData(); examScore = { got: got, total: total, usedTime: usedTimeStr }; currentMode = 'result'; render();
 }
 
 function renderResult() {
   var isFull = examScore.got === examScore.total && examScore.total > 0;
   var msg = isFull ? '你真棒，继续加油！' : '不要气馁，再去多刷刷题，满分等着你！';
   var msgClass = isFull ? 'maoti-result full' : 'maoti-result';
-  
-  app.innerHTML = `
+  appContainer.innerHTML = `
     <div class="card score-box">
       <h2 style="color:#0d47a1;margin-bottom:20px;">📊 考试成绩</h2>
       <div class="score-num">${examScore.got}</div>
       <div style="font-size:1.1rem;color:#64748b;font-weight:bold;margin-bottom:20px;">总分：${examScore.total} 分</div>
-      
       <div class="${msgClass}">${msg}</div>
-      
       <div style="color:#64748b;font-size:0.9rem;margin-bottom:30px;">本次用时：${examScore.usedTime}</div>
-      
       <div style="display:flex;gap:10px;">
         <button class="btn btn-primary" style="flex:1;" onclick="currentMode='home';render()">返回首页</button>
         <button class="btn btn-outline" style="flex:1;" onclick="currentMode='review';render()">查看错题</button>
@@ -877,39 +682,10 @@ function renderResult() {
   `;
 }
 
-function customPrompt(title, defaultValue, callback) {
-  var mask = document.createElement('div');
-  mask.className = 'prompt-mask';
-  mask.innerHTML = `
-    <div class="prompt-box">
-      <h3 style="font-size:1.1rem;margin-bottom:5px;">${title}</h3>
-      <input type="text" id="promptVal" value="${defaultValue}">
-      <div style="display:flex;justify-content:flex-end;gap:10px;">
-        <button class="btn btn-outline" onclick="this.parentNode.parentNode.parentNode.remove()">取消</button>
-        <button class="btn btn-primary" id="promptOk">确定</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(mask);
-  document.getElementById('promptVal').focus();
-  document.getElementById('promptOk').onclick = function() {
-    var v = document.getElementById('promptVal').value.trim();
-    if (!v) return showToast('不能为空', true);
-    document.body.removeChild(mask);
-    callback(v);
-  };
-}
-
 loadData();
 checkNewImport();
 render();
-
-// 延迟3秒等开场动画放完，再检查是否恢复进度
-setTimeout(function() {
-  if (currentMode === 'home') {
-    restorePracticeProgress();
-  }
-}, 3000);
+setTimeout(function() { if (currentMode === 'home') restorePracticeProgress(); }, 3000);
 </script>
 </body>
 </html>
