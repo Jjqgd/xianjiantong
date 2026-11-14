@@ -147,53 +147,106 @@
 <div id="toast" class="toast"></div>
 
 <script>
-// ================= 1. 单机离线注册码系统 =================
+// ================= 1. 防白嫖极限授权系统 =================
 var isAuthorized = localStorage.getItem('xjt_offline_auth') === 'true';
 
-// 获取用户的设备码（全自动生成）
+// 【防破解1】：校验是否篡改时间
+var expireTime = localStorage.getItem('xjt_expire_time');
+if (expireTime) {
+  var exp = parseInt(expireTime);
+  var now = new Date().getTime();
+  // 如果当前时间大于过期时间，说明已过期
+  if (now > exp) {
+    localStorage.removeItem('xjt_offline_auth'); 
+    localStorage.removeItem('xjt_expire_time');
+    isAuthorized = false;
+    setTimeout(function() { showAppConfirm('试用期已结束', '您的体验期已结束，请联系客服购买正式版。', '知道了', '关闭', function() {}, function() {}); }, 3000);
+  } 
+  // 如果检测到时间倒退（比如原来记录到期是明天，现在手机时间变成了昨天），直接锁死
+  else if (now < parseInt(localStorage.getItem('xjt_last_check_time') || 0)) {
+    localStorage.removeItem('xjt_offline_auth'); 
+    localStorage.removeItem('xjt_expire_time');
+    isAuthorized = false;
+    setTimeout(function() { showAppConfirm('安全警告', '检测到系统时间异常，授权失效，请联系客服！', '知道了', '关闭', function() {}, function() {}); }, 3000);
+  } else {
+    localStorage.setItem('xjt_last_check_time', now);
+  }
+}
+
 function getDeviceId() {
   var devId = localStorage.getItem('xjt_device_id');
   if (devId) return devId;
   var nav = window.navigator;
   var raw = nav.userAgent + nav.language + screen.width + screen.height;
   var hash = 0;
-  for (var i = 0; i < raw.length; i++) {
-    hash = ((hash << 5) - hash) + raw.charCodeAt(i);
-    hash |= 0;
-  }
+  for (var i = 0; i < raw.length; i++) { hash = ((hash << 5) - hash) + raw.charCodeAt(i); hash |= 0; }
   var hex = Math.abs(hash).toString(16).toUpperCase().padStart(8, '0');
   devId = 'DEV-' + hex.substring(0,4) + '-' + hex.substring(4,8);
   localStorage.setItem('xjt_device_id', devId);
   return devId;
 }
 
-// 校验算法（必须和您的手机生成器一模一样）
-function generateSecretKey(deviceId) {
-  var salt = "TieTuXueLian2024Qin"; // 🔒 您的独家暗号
-  var raw = deviceId + salt;
-  var hash = 0;
-  for (var i = 0; i < raw.length; i++) {
-    hash = ((hash << 5) - hash) + raw.charCodeAt(i);
-    hash |= 0;
-  }
-  var hex = Math.abs(hash).toString(16).toUpperCase().padStart(8, '0');
-  return 'TT-' + hex.substring(0,4) + '-' + hex.substring(4,8);
-}
+// 时长对应的毫秒数 (8h, 24h, 48h, 7d, 永久)
+var TIME_MAP = {
+  "0": 8 * 60 * 60 * 1000,
+  "1": 24 * 60 * 60 * 1000,
+  "2": 48 * 60 * 60 * 1000,
+  "3": 7 * 24 * 60 * 60 * 1000,
+  "4": 9999999999999 // 永久
+};
 
 function doLogin() {
   var inputCode = document.getElementById('regCodeInput').value.trim().toUpperCase();
   var myDevId = getDeviceId();
-  var correctCode = generateSecretKey(myDevId);
-
-  if (inputCode === correctCode) {
-    isAuthorized = true;
-    localStorage.setItem('xjt_offline_auth', 'true');
-    currentMode = Object.keys(allBanks).length > 0 ? 'home' : 'import';
-    showToast('激活成功，欢迎使用！');
-    render();
-  } else {
-    showToast('注册码错误，请检查输入或联系客服', true);
+  
+  // 解析输入的注册码：TT-时长码-设备后缀-哈希
+  var parts = inputCode.split('-');
+  if (parts.length !== 4 || parts[0] !== 'TT') {
+    return showToast('注册码格式错误，请联系客服', true);
   }
+
+  var durCode = parts[1];
+  var devSuffix = parts[2];
+  var inputHash = parts[3];
+
+  // 校验设备码后缀是否匹配
+  if (devSuffix !== myDevId.substring(4, 8)) {
+    return showToast('该注册码不属于当前设备', true);
+  }
+
+  // 校验哈希防伪造
+  var salt = "TieTuXueLian2024Qin";
+  var raw = myDevId + salt + durCode;
+  var hash = 0;
+  for (var i = 0; i < raw.length; i++) { hash = ((hash << 5) - hash) + raw.charCodeAt(i); hash |= 0; }
+  var correctHash = Math.abs(hash).toString(16).toUpperCase().padStart(8, '0').substring(0, 6);
+
+  if (inputHash !== correctHash) {
+    return showToast('注册码无效或已损坏', true);
+  }
+
+  // 验证通过，分配时间
+  isAuthorized = true;
+  localStorage.setItem('xjt_offline_auth', 'true');
+  
+  if (durCode === "4") {
+    // 永久
+    localStorage.removeItem('xjt_expire_time');
+    showToast('永久授权激活成功，欢迎使用！');
+  } else {
+    // 限时
+    var durationMs = TIME_MAP[durCode];
+    var now = new Date().getTime();
+    var exp = now + durationMs;
+    localStorage.setItem('xjt_expire_time', exp);
+    localStorage.setItem('xjt_last_check_time', now);
+    
+    var textDur = durCode === '0' ? '8小时' : durCode === '1' ? '24小时' : durCode === '2' ? '48小时' : '7天';
+    showToast('体验激活成功，有效期 ' + textDur);
+  }
+  
+  currentMode = Object.keys(allBanks).length > 0 ? 'home' : 'import';
+  render();
 }
 
 // ================= 2. 业务逻辑区 =================
