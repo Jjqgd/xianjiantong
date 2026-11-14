@@ -67,12 +67,12 @@
 <div class="card" style="text-align:center; padding:40px 15px;">
   <h2 style="color:#b71c1c;margin-bottom:15px;">📥 上传文件</h2>
   <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;line-height:1.6;">
-    支持 Excel (.xlsx / .csv) 文件。<br>系统会自动识别题目、答案、解析（含出处），并自动合并所有工作表。
+    支持复杂的 Excel 排版。<br>系统会逐行扫描，自动跨越空行和合并单元格。
   </p>
   
   <input type="file" id="fileUpload" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)">
   
-  <div id="loadingText" style="display:none; margin-top:20px; color:#0d47a1; font-weight:bold;">正在解析，请稍候...</div>
+  <div id="loadingText" style="display:none; margin-top:20px; color:#0d47a1; font-weight:bold;">正在扫描解析，请稍候...</div>
 
   <button class="btn btn-outline" onclick="window.location.href='index.html'" style="margin-top:20px;">取消并返回首页</button>
 </div>
@@ -92,15 +92,16 @@ function handleFileSelect(e) {
       var wb = XLSX.read(data, {type: 'array'});
       var parsed = parseExcel(wb);
       
+      if (parsed.length === 0) throw new Error('未能提取到任何有效题目，请检查表格中是否真的有“题目”和“答案”字眼。');
+
       var defaultName = file.name.replace(/\.[^/.]+$/, "");
-      var bankName = prompt('请为题库命名：', defaultName);
+      var bankName = prompt('解析成功，共提取 ' + parsed.length + ' 道题！\n请为题库命名：', defaultName);
       
       if (bankName === null || bankName.trim() === '') {
         bankName = defaultName;
       }
       
       var newId = 'bank_' + Date.now();
-      
       localStorage.setItem('xjt_new_import', JSON.stringify({
         id: newId,
         name: bankName,
@@ -117,11 +118,12 @@ function handleFileSelect(e) {
   reader.readAsArrayBuffer(file);
 }
 
-// 【终极智能解析】：全表扫描，无视空行，无视表头位置，支持模糊关键字，多Sheet合并
+// 【终极暴力扫描引擎】
 function parseExcel(wb) {
   var allParsed = [];
   var allRows = []; 
   
+  // 1. 把所有工作表的数据拼成一个超级大数组
   wb.SheetNames.forEach(function(sheetName) {
     var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '', raw: false });
     if (rows && rows.length > 0) {
@@ -129,115 +131,100 @@ function parseExcel(wb) {
     }
   });
 
-  if (allRows.length < 2) throw new Error('所有工作表加起来数据太少');
+  if (allRows.length < 2) throw new Error('表格数据为空');
 
-  var colQ = -1, colAns = -1, colAna = -1;
-  var optCols = [];
-  var headerRowIndex = -1;
-
-  for (var r = 0; r < Math.min(allRows.length, 15); r++) {
+  // 2. 逐行扫描，动态识别特征
+  for (var r = 0; r < allRows.length; r++) {
     var row = allRows[r];
-    if (!row || row.length === 0) continue;
-    
-    var tempColQ = -1, tempColAns = -1, tempColAna = -1;
-    var tempOptCols = [];
+    if (!row || row.length < 2) continue;
 
-    for (var c = 0; c < row.length; c++) {
-      var h = String(row[c] || '').trim().toLowerCase();
-      if (!h) continue;
-
-      if (tempColQ === -1 && (h.indexOf('题目') > -1 || h.indexOf('题干') > -1 || h.indexOf('试题') > -1 || h.indexOf('question') > -1)) {
-        tempColQ = c;
-      }
-      else if (tempColAns === -1 && (h.indexOf('正确答案') > -1 || h.indexOf('标准答案') > -1 || h.indexOf('答案') > -1 || h.indexOf('answer') > -1)) {
-        tempColAns = c;
-      }
-      else if (tempColAna === -1 && (h.indexOf('解析') > -1 || h.indexOf('说明') > -1 || h.indexOf('备注') > -1 || h.indexOf('出处') > -1 || h.indexOf('分析') > -1 || h.indexOf('explanation') > -1)) {
-        tempColAna = c;
-      }
-      else if (h.indexOf('选项') > -1 || /^[a-g]$/i.test(h) || /^[a-g]选项$/i.test(h)) {
-        tempOptCols.push(c);
-      }
-    }
-
-    if (tempColQ !== -1 && tempColAns !== -1) {
-      colQ = tempColQ;
-      colAns = tempColAns;
-      colAna = tempColAna;
-      optCols = tempOptCols;
-      headerRowIndex = r;
-      break;
-    }
-  }
-
-  if (headerRowIndex === -1) {
-    throw new Error('未能找到包含【题目/题干】和【答案】的表头');
-  }
-
-  for (var r = headerRowIndex + 1; r < allRows.length; r++) {
-    var row = allRows[r];
-    if (!row || row.length === 0) continue;
-
-    var qText = String(row[colQ] || '').trim();
-    if (!qText) continue; 
-
-    var opts = [];
-    for (var o = 0; o < optCols.length; o++) {
-      var val = String(row[optCols[o]] || '').trim();
-      if (val) opts.push(val);
-    }
-
-    var ansRaw = String(row[colAns] || '').trim().toUpperCase();
-    
-    // 智能抓取解析：优先取解析列，如果没有解析列，直接取答案后一列
+    var qText = '';
+    var ansRaw = '';
     var anaText = '';
-    if (colAna !== -1) {
-      anaText = String(row[colAna] || '').trim();
-    } else if (row.length > colAns + 1) {
-      anaText = String(row[colAns + 1] || '').trim();
+    var opts = [];
+
+    // 扫描这一行的每一个单元格
+    for (var c = 0; c < row.length; c++) {
+      var cell = String(row[c] || '').trim();
+      if (!cell) continue;
+
+      // 判断是否是题目（通常是最长的一段文字，且包含问号、括号或特定字眼）
+      if (cell.length > 5 && (cell.indexOf('（') > -1 || cell.indexOf('()') > -1 || cell.indexOf('？') > -1 || cell.indexOf('。') > -1 || cell.length > 15)) {
+        if (!qText) {
+          qText = cell;
+          continue;
+        }
+      }
+
+      // 判断是否是答案（对/错/ABC等）
+      var upperCell = cell.toUpperCase();
+      if (!ansRaw && /^[A-G]{1,4}$/.test(upperCell)) {
+        ansRaw = upperCell;
+        continue;
+      }
+      if (!ansRaw && /^(对|错|正确|错误|√|×|T|F|TRUE|FALSE|YES|NO)$/i.test(cell)) {
+        ansRaw = cell;
+        continue;
+      }
+
+      // 剩下的长文本，如果已经有题目了，大概率是解析/出处
+      if (qText && cell.length > 5) {
+        if (!anaText) {
+          anaText = cell;
+        } else {
+          opts.push(cell); // 如果有多个长文本，可能是选项
+        }
+      } 
+      // 剩下的短文本，如果是 A. xxx 这种形式，是选项
+      else if (/^[A-G][\.\、\s]/.test(cell)) {
+        opts.push(cell);
+      }
     }
 
-    var type = 'single';
-    var ansIndices = [];
-    
-    var judgeT = ['正确','对','T','TRUE','Y','YES','√','V','是','A'];
-    var judgeF = ['错误','错','不对','F','FALSE','N','NO','×','X','否','B'];
-    
-    // 【核心修复】：只要是判断词汇，直接强行变为判断题
-    if (judgeT.indexOf(ansRaw) > -1 || judgeF.indexOf(ansRaw) > -1) {
-      type = 'judge';
-      opts = ['正确', '错误'];
-      if (judgeT.indexOf(ansRaw) > -1) ansIndices = [0];
-      else ansIndices = [1];
-    } else {
-      if (opts.length < 2) continue; 
-      
-      if (ansRaw.indexOf(',') > -1 || ansRaw.indexOf('，') > -1 || ansRaw.indexOf('#') > -1 || ansRaw.indexOf('/') > -1 || ansRaw.length > 1) {
-        type = 'multiple';
-      }
-      
-      var letters = ansRaw.match(/[A-G]/g) || [];
-      for (var l = 0; l < letters.length; l++) {
-        var idx = letters[l].charCodeAt(0) - 65;
-        if (idx < opts.length && ansIndices.indexOf(idx) === -1) ansIndices.push(idx);
-      }
-      ansIndices.sort();
-    }
-    
-    if (ansIndices.length === 0) continue;
+    // 如果这一行既有题目，又有明确的答案，就把它抓出来！
+    if (qText && ansRaw) {
+      var type = 'single';
+      var ansIndices = [];
 
-    allParsed.push({
-      id: 'q_' + r + '_' + Date.now() + Math.floor(Math.random()*1000),
-      question: qText,
-      type: type,
-      options: opts,
-      answer: ansIndices,
-      analysis: anaText, 
-      streak: 0
-    });
+      // 判断题型逻辑
+      var judgeT = ['正确','对','T','TRUE','Y','YES','√','V','是','A'];
+      var judgeF = ['错误','错','不对','F','FALSE','N','NO','×','X','否','B'];
+
+      // 如果选项少于2个，且答案是对错，强制视为判断题
+      if (opts.length < 2 && (judgeT.indexOf(ansRaw) > -1 || judgeF.indexOf(ansRaw) > -1)) {
+        type = 'judge';
+        opts = ['正确', '错误'];
+        if (judgeT.indexOf(ansRaw) > -1) ansIndices = [0];
+        else ansIndices = [1];
+      } else {
+        // 单选题/多选题逻辑
+        if (opts.length < 2) continue; // 选项不足，跳过
+
+        if (ansRaw.length > 1 || ansRaw.indexOf(',') > -1 || ansRaw.indexOf('，') > -1) {
+          type = 'multiple';
+        }
+        var letters = ansRaw.match(/[A-G]/g) || [];
+        for (var l = 0; l < letters.length; l++) {
+          var idx = letters[l].charCodeAt(0) - 65;
+          if (idx < opts.length) ansIndices.push(idx);
+        }
+        ansIndices.sort();
+      }
+
+      if (ansIndices.length > 0) {
+        allParsed.push({
+          id: 'q_' + r + '_' + Date.now() + Math.floor(Math.random()*1000),
+          question: qText,
+          type: type,
+          options: opts,
+          answer: ansIndices,
+          analysis: anaText, 
+          streak: 0
+        });
+      }
+    }
   }
 
-  if (allParsed.length === 0) throw new Error('未能解析出有效题目，请检查表格数据');
   return allParsed;
 }
 </script>
