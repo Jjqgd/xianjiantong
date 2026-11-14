@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>导入新题库 - 铁途学练</title>
+<script src="https://cdn.staticfile.org/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, "Microsoft YaHei", sans-serif; }
+  body { background-color: #f0f4f8; color: #1e293b; padding: 10px; -webkit-tap-highlight-color: transparent; }
+  .nav { background: #fff; padding: 10px 15px; border-bottom: 2px solid #b71c1c; display: flex; justify-content: space-between; align-items: center; border-radius: 10px; margin-bottom: 10px; }
+  .nav-logo { font-size: 1.2rem; font-weight: bold; color: #b71c1c; display: flex; align-items: center; gap: 8px; }
+  .nav-logo img { width: 30px; height: 30px; object-fit: contain; }
+  .card { background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .btn { border: none; border-radius: 8px; padding: 12px 15px; font-size: 0.95rem; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; text-decoration: none; }
+  .btn-primary { background: #0d47a1; color: #fff; }
+  .btn-outline { background: #fff; border: 1px solid #cbd5e1; color: #1e293b; }
+  .footer { text-align: center; color: #94a3b8; font-size: 0.8rem; margin-top: 20px; padding-bottom: 20px; }
+  
+  /* 强制把原生的框显示出来，绝对不隐藏，绝对不被拦截 */
+  input[type="file"] {
+    display: block !important;
+    width: 100%;
+    padding: 20px 10px;
+    border: 2px dashed #0d47a1;
+    border-radius: 8px;
+    background-color: #eff6ff;
+    color: #0d47a1;
+    font-size: 1rem;
+    font-weight: bold;
+    outline: none;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="nav-logo">
+    <img src="logo.png" onerror="this.style.display='none'"> 导入新题库
+  </div>
+</div>
+
+<div class="card" style="text-align:center; padding:40px 15px;">
+  <h2 style="color:#b71c1c;margin-bottom:15px;">📥 上传文件</h2>
+  <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;line-height:1.6;">
+    支持 Excel (.xlsx / .csv) 文件。<br>请点击下方灰色框选择。
+  </p>
+  
+  <!-- 这是最原始的上传框，无论什么手机浏览器，绝对无法拦截！ -->
+  <input type="file" id="fileUpload" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)">
+  
+  <div id="loadingText" style="display:none; margin-top:20px; color:#0d47a1; font-weight:bold;">正在解析，请稍候...</div>
+
+  <button class="btn btn-outline" onclick="window.location.href='index.html'" style="margin-top:20px;">取消并返回首页</button>
+</div>
+<div class="footer">技术支持：秦十三郎</div>
+
+<script>
+function handleFileSelect(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  
+  document.getElementById('loadingText').style.display = 'block';
+  
+  var reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      var data = new Uint8Array(evt.target.result);
+      var wb = XLSX.read(data, {type: 'array'});
+      var parsed = parseExcel(wb);
+      
+      var defaultName = file.name.replace(/\.[^/.]+$/, "");
+      var bankName = prompt('请为题库命名：', defaultName);
+      
+      // 如果用户点了取消，默认用文件名
+      if (bankName === null || bankName.trim() === '') {
+        bankName = defaultName;
+      }
+      
+      var newId = 'bank_' + Date.now();
+      
+      // 存入临时缓存，回到首页读取
+      localStorage.setItem('xjt_new_import', JSON.stringify({
+        id: newId,
+        name: bankName,
+        questions: parsed
+      }));
+      
+      // 跳回首页
+      window.location.href = 'index.html';
+      
+    } catch(err) {
+      alert('解析失败：' + (err.message || '请检查表格格式'));
+      document.getElementById('loadingText').style.display = 'none';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// 解析逻辑（完全一致）
+function parseExcel(wb) {
+  var allParsed = [];
+  var sheetName = wb.SheetNames[0];
+  var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '', raw: false });
+  if (!rows || rows.length < 2) throw new Error('表格数据太少');
+  
+  var header = rows[0].map(function(c){ return String(c).trim().toLowerCase(); });
+  var colQ = -1, colAns = -1, optCols = [];
+  
+  for (var i = 0; i < header.length; i++) {
+    var h = header[i];
+    if (colQ === -1 && (h.indexOf('题目') > -1 || h.indexOf('问题') > -1 || h.indexOf('question') > -1)) colQ = i;
+    else if (colAns === -1 && (h.indexOf('答案') > -1 || h.indexOf('answer') > -1 || h === '正确')) colAns = i;
+    else if (h.indexOf('选项') > -1 || /^[a-g]$/i.test(h) || /^[a-g]选项$/i.test(h)) optCols.push(i);
+  }
+  
+  if (colQ === -1) throw new Error('未能找到【题目】列');
+  if (colAns === -1) throw new Error('未能找到【答案】列');
+  
+  for (var r = 1; r < rows.length; r++) {
+    var row = rows[r];
+    if (!row || !row[colQ]) continue;
+    
+    var opts = [];
+    for (var o = 0; o < optCols.length; o++) {
+      var val = String(row[optCols[o]] || '').trim();
+      if (val) opts.push(val);
+    }
+    
+    var ansRaw = String(row[colAns] || '').trim().toUpperCase();
+    var type = 'single';
+    var ansIndices = [];
+    
+    var judgeT = ['正确','对','T','TRUE','Y','YES','√','V','是','A'];
+    var judgeF = ['错误','错','不对','F','FALSE','N','NO','×','X','否','B'];
+    
+    if ((judgeT.indexOf(ansRaw) > -1 || judgeF.indexOf(ansRaw) > -1) && opts.length < 2) {
+      type = 'judge';
+      opts = ['正确', '错误'];
+      if (judgeT.indexOf(ansRaw) > -1) ansIndices = [0];
+      else ansIndices = [1];
+    } else {
+      if (opts.length < 2) continue;
+      if (ansRaw.indexOf(',') > -1 || ansRaw.indexOf('，') > -1 || ansRaw.indexOf('#') > -1 || ansRaw.length > 1) {
+        type = 'multiple';
+      }
+      var letters = ansRaw.match(/[A-G]/g) || [];
+      for (var l = 0; l < letters.length; l++) {
+        var idx = letters[l].charCodeAt(0) - 65;
+        if (idx < opts.length && ansIndices.indexOf(idx) === -1) ansIndices.push(idx);
+      }
+      ansIndices.sort();
+    }
+    
+    if (ansIndices.length === 0) continue;
+    
+    allParsed.push({
+      id: 'q_' + r + '_' + Date.now(),
+      question: String(row[colQ]).trim(),
+      type: type,
+      options: opts,
+      answer: ansIndices,
+      analysis: '',
+      streak: 0
+    });
+  }
+  
+  if (allParsed.length === 0) throw new Error('未能解析出有效题目，请检查表格数据');
+  return allParsed;
+}
+</script>
+</body>
+</html>
