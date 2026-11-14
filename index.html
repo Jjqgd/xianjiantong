@@ -7,6 +7,23 @@
 <meta name="apple-mobile-web-app-title" content="铁途学练">
 <link rel="icon" href="logo.png">
 
+<!-- 🔒 防盗锁（已为您加回，域名不对直接白屏） -->
+<script>
+  (function() {
+    var allowedDomains = ["jjqgd.github.io", "localhost", "127.0.0.1"];
+    var host = window.location.hostname;
+    var isAllowed = false;
+    for (var i = 0; i < allowedDomains.length; i++) {
+      if (host === allowedDomains[i] || host.endsWith("." + allowedDomains[i])) { isAllowed = true; break; }
+    }
+    if (!isAllowed) {
+      document.documentElement.innerHTML = '<div style="text-align:center; margin-top:50px; font-size:20px; color:red; font-weight:bold;">🛑 未经授权，禁止盗用本系统！</div>';
+      throw new Error("Unauthorized Domain");
+    }
+  })();
+</script>
+
+<!-- 云端 SDK 与 Excel 解析 -->
 <script src="https://static.cloudbase.net/cloudbase-js-sdk/1.7.2/cloudbase.full.js"></script>
 <script src="https://cdn.staticfile.org/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -132,16 +149,17 @@
 <div id="toast" class="toast"></div>
 
 <script>
-// ================= 1. 初始化云端配置 =================
+// ================= 1. 极速启动与云端配置 =================
+var isAuthorized = localStorage.getItem('xjt_auth_code') !== null;
+
 var LC_ENV = "qinshisanlang-d1g8sen6s54caccf5";
 var LC_KEY = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjJlZGYwNzNmLTBjMGEtNDE4ZS1hOWViLTk4ZWVjYjJkNDY3YiJ9.eyJpc3MiOiJodHRwczovL3FpbnNoaXNhbmxhbmctZDFnOHNlbjZzNTRjYWNjZjUuYXAtc2hhbmdoYWkudGNiLWFwaS50ZW5jZW50Y2xvdWRhcGkuY29tIiwic3ViIjoiYW5vbiIsImF1ZCI6InFpbnNoaXNhbmxhbmctZDFnOHNlbjZzNTRjYWNjZjUiLCJleHAiOjQwOTgzNDkzNjcsImlhdCI6MTc5NDY2NjE2Nywibm9uY2UiOiJQSFFqQnoyc1E0eVMxMlhZMDNmSFhnIiwiYXRfaGFzaCI6IlBIUWpCejJzUTR5UzEyWFkwM2ZIWGciLCJuYW1lIjoiQW5vbnltb3VzIiwic2NvcGUiOiJhbm9ueW1vdXMiLCJwcm9qZWN0X2lkIjoicWluc2hpc2FubGFuZy1kMWc4c2VuNnM1NGNhY2NmNSIsIm1ldGEiOnsicGxhdGZvcm0iOiJQdWJsaXNoYWJsZUtleSJ9LCJyb2xlIjoiYW5vbiIsImlzX2Fub255bW91cyI6dHJ1ZSwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiYW5vbnltb3VzIiwicHJvdmlkZXJzIjpbImFub255bW91cyJdfSwidXNlcl9tZXRhZGF0YSI6eyJuYW1lIjoiQW5vbnltb3VzIn0sInVzZXJfdHlwZSI6IiIsImNsaWVudF90eXBlIjoiY2xpZW50X3VzZXIiLCJpc19zeXN0ZW1fYWRtaW4iOmZhbHNlfQ.Smm1vGReMVO-FXNhmKNKrUsIZ5BpvX5d86WzNt1fhF_ELJ8huqwk3_9ofOnpW63_4lPJeRJZ1RBkxWeIIY726pEoQyltgi2eScmBiKxXI9dQKyV1DWTDa5NmJguZ4g1DlzaVRZJESh_o35UrkumhMCvDzznYWTETjRW6XfI2NxlT9zDWcAXhJ1CbYb7D9jg5woRhzsMEQH9L83xjQKQdfO1OYgMlmeTJ7sGDzGV0GSDu-k-b1KQAjjjBbk47j9a11Uf6HnsPyoQpfvza4_KN62XOxqkhPP72cg5fmb9qV1Sb3zJhlxf8R3lX8TJGGt0gdOGGkcEGJpLaxNtYKUaHUQ";
 
-var app = null;
-if (typeof cloudbase !== 'undefined') {
-  app = cloudbase.init({ env: LC_ENV, accessKey: LC_KEY });
+var cloudApp = null;
+// 只有在未授权（没登录过）的情况下，才去初始化并联网
+if (!isAuthorized && typeof cloudbase !== 'undefined') {
+  cloudApp = cloudbase.init({ env: LC_ENV, accessKey: LC_KEY });
 }
-
-var isAuthorized = localStorage.getItem('xjt_auth_code') !== null;
 
 function getDeviceId() {
   var devId = localStorage.getItem('xjt_device_id');
@@ -158,13 +176,13 @@ function getDeviceId() {
 function doLogin() {
   var val = document.getElementById('authInput').value.trim();
   if (!val) return showToast('请输入授权码', true);
-  if (!app) return showToast('云端组件加载失败，请刷新', true);
+  if (!cloudApp) return showToast('云端组件加载失败，请刷新', true);
 
   var btn = document.querySelector('.btn-primary');
-  btn.innerText = '验证中...'; btn.disabled = true;
+  btn.innerText = '云端验证中...'; btn.disabled = true;
   var deviceId = getDeviceId();
   
-  app.database().from('auth_codes').where({ code: val }).get().then(function(res) {
+  cloudApp.database().from('auth_codes').where({ code: val }).get().then(function(res) {
     if (!res.data || res.data.length === 0) throw new Error('授权码不存在');
     var record = res.data[0];
     var boundDevice = record.deviceId;
@@ -172,7 +190,7 @@ function doLogin() {
     if (boundDevice && boundDevice !== deviceId) throw new Error('该码已在其他设备绑定');
 
     if (!boundDevice) {
-      return app.database().from('auth_codes').where({ code: val }).update({ deviceId: deviceId }).then(function() { loginSuccess(val); });
+      return cloudApp.database().from('auth_codes').where({ code: val }).update({ deviceId: deviceId }).then(function() { loginSuccess(val); });
     } else {
       loginSuccess(val);
     }
