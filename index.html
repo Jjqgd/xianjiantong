@@ -13,6 +13,7 @@
   * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, "Microsoft YaHei", sans-serif; }
   body { background-color: #f0f4f8; color: #1e293b; padding: 10px; -webkit-tap-highlight-color: transparent; }
   
+  /* 开场动画 */
   #splash-screen { position: fixed; top:0; left:0; right:0; bottom:0; background: #fcf9f2; z-index: 9999; display: flex; align-items: center; justify-content: center; transition: opacity 0.8s; }
   #splash-screen.hidden { opacity: 0; pointer-events: none; }
   .calligraphy-box { display: flex; gap: 40px; }
@@ -266,8 +267,8 @@ function renderImport() {
         支持 Excel (.xlsx / .csv) 文件。<br>只要包含 <b>题目</b> 和 <b>答案</b> 列，以及至少两个选项列。
       </p>
       
-      <!-- 每次渲染，强制重置 file 的值，并重新挂载事件 -->
-      <div style="border: 2px dashed #0d47a1; padding: 25px 10px; border-radius: 8px; background:#eff6ff;">
+      <!-- 每次点击导入，直接渲染原生 file input，彻底告别一切 JS 缓存问题 -->
+      <div id="inputWrapper" style="border: 2px dashed #0d47a1; padding: 25px 10px; border-radius: 8px; background:#eff6ff;">
         <input type="file" id="fileUpload" accept=".xlsx,.xls,.csv" style="width: 100%; font-size: 1rem; outline: none; color: #0d47a1; font-weight: bold;">
       </div>
 
@@ -276,14 +277,14 @@ function renderImport() {
     <div class="footer">技术支持：秦十三郎</div>
   `;
 
-  // 【核心修复】：在每次渲染后，重新给 input 绑定事件。并且避免旧事件堆积。
+  // 在页面渲染完毕后，直接绑定新的 onchange 事件。
   var fileInput = document.getElementById('fileUpload');
   fileInput.onchange = function(e) {
     var file = e.target.files[0];
     if (!file) return;
     showToast('正在解析...');
     
-    // 每次重新 new 一个 FileReader，杜绝状态残留
+    // 每次重新 new 一个 FileReader
     var reader = new FileReader();
     reader.onload = function(evt) {
       try {
