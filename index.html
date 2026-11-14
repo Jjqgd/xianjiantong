@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-title" content="铁途学练">
 <link rel="icon" href="logo.png">
 
-<!-- 防盗锁 -->
+<!-- 🔒 防盗锁 -->
 <script>
   (function() {
     var allowedDomains = ["jjqgd.github.io", "localhost", "127.0.0.1"];
@@ -147,87 +147,53 @@
 <div id="toast" class="toast"></div>
 
 <script>
-// ================= 1. 极速启动与云端请求 =================
-var isAuthorized = localStorage.getItem('xjt_auth_code') !== null;
+// ================= 1. 单机离线注册码系统 =================
+var isAuthorized = localStorage.getItem('xjt_offline_auth') === 'true';
 
-var LC_ENV = "qinshisanlang-d1g8sen6s54caccf5";
-var LC_KEY = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjJlZGYwNzNmLTBjMGEtNDE4ZS1hOWViLTk4ZWVjYjJkNDY3YiJ9.eyJpc3MiOiJodHRwczovL3FpbnNoaXNhbmxhbmctZDFnOHNlbjZzNTRjYWNjZjUuYXAtc2hhbmdoYWkudGNiLWFwaS50ZW5jZW50Y2xvdWRhcGkuY29tIiwic3ViIjoiYW5vbiIsImF1ZCI6InFpbnNoaXNhbmxhbmctZDFnOHNlbjZzNTRjYWNjZjUiLCJleHAiOjQwOTgzNDkzNjcsImlhdCI6MTc5NDY2NjE2Nywibm9uY2UiOiJQSFFqQnoyc1E0eVMxMlhZMDNmSFhnIiwiYXRfaGFzaCI6IlBIUWpCejJzUTR5UzEyWFkwM2ZIWGciLCJuYW1lIjoiQW5vbnltb3VzIiwic2NvcGUiOiJhbm9ueW1vdXMiLCJwcm9qZWN0X2lkIjoicWluc2hpc2FubGFuZy1kMWc4c2VuNnM1NGNhY2NmNSIsIm1ldGEiOnsicGxhdGZvcm0iOiJQdWJsaXNoYWJsZUtleSJ9LCJyb2xlIjoiYW5vbiIsImlzX2Fub255bW91cyI6dHJ1ZSwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiYW5vbnltb3VzIiwicHJvdmlkZXJzIjpbImFub255bW91cyJdfSwidXNlcl9tZXRhZGF0YSI6eyJuYW1lIjoiQW5vbnltb3VzIn0sInVzZXJfdHlwZSI6IiIsImNsaWVudF90eXBlIjoiY2xpZW50X3VzZXIiLCJpc19zeXN0ZW1fYWRtaW4iOmZhbHNlfQ.Smm1vGReMVO-FXNhmKNKrUsIZ5BpvX5d86WzNt1fhF_ELJ8huqwk3_9ofOnpW63_4lPJeRJZ1RBkxWeIIY726pEoQyltgi2eScmBiKxXI9dQKyV1DWTDa5NmJguZ4g1DlzaVRZJESh_o35UrkumhMCvDzznYWTETjRW6XfI2NxlT9zDWcAXhJ1CbYb7D9jg5woRhzsMEQH9L83xjQKQdfO1OYgMlmeTJ7sGDzGV0GSDu-k-b1KQAjjjBbk47j9a11Uf6HnsPyoQpfvza4_KN62XOxqkhPP72cg5fmb9qV1Sb3zJhlxf8R3lX8TJGGt0gdOGGkcEGJpLaxNtYKUaHUQ";
-
+// 获取用户的设备码（全自动生成）
 function getDeviceId() {
   var devId = localStorage.getItem('xjt_device_id');
   if (devId) return devId;
   var nav = window.navigator;
   var raw = nav.userAgent + nav.language + screen.width + screen.height;
   var hash = 0;
-  for (var i = 0; i < raw.length; i++) { hash = ((hash << 5) - hash) + raw.charCodeAt(i); hash |= 0; }
-  devId = 'DEV-' + Math.abs(hash).toString(16) + '-' + Math.floor(Math.random()*10000);
+  for (var i = 0; i < raw.length; i++) {
+    hash = ((hash << 5) - hash) + raw.charCodeAt(i);
+    hash |= 0;
+  }
+  var hex = Math.abs(hash).toString(16).toUpperCase().padStart(8, '0');
+  devId = 'DEV-' + hex.substring(0,4) + '-' + hex.substring(4,8);
   localStorage.setItem('xjt_device_id', devId);
   return devId;
 }
 
-function doLogin() {
-  var val = document.getElementById('authInput').value.trim();
-  if (!val) return showToast('请输入授权码', true);
-
-  var btn = document.querySelector('.btn-primary');
-  btn.innerText = '验证中...'; btn.disabled = true;
-  var deviceId = getDeviceId();
-  
-  // 直接通过 REST API 发起原生 fetch 请求，绕过腾讯云的 SDK
-  var url = "https://" + LC_ENV + ".ap-shanghai.tcb-api.tencentcloudapi.com/v1/db/auth_codes?code=" + val;
-  
-  var timeoutId = setTimeout(function() {
-    btn.innerText = '进入系统'; btn.disabled = false;
-    showToast('网络请求超时，请检查网络或重试', true);
-  }, 5000);
-
-  fetch(url, {
-    method: 'GET',
-    headers: {
-      'Authorization': 'Bearer ' + LC_KEY
-    }
-  })
-  .then(function(res) {
-    clearTimeout(timeoutId);
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    return res.json();
-  })
-  .then(function(data) {
-    var rows = data.data || data;
-    if (!rows || rows.length === 0) throw new Error('授权码不存在');
-    
-    var record = rows[0];
-    var boundDevice = record.deviceId;
-
-    if (boundDevice && boundDevice !== deviceId) throw new Error('该码已在其他设备绑定');
-
-    if (!boundDevice) {
-      // 第一次绑定，发送 PATCH 请求更新设备码
-      return fetch("https://" + LC_ENV + ".ap-shanghai.tcb-api.tencentcloudapi.com/v1/db/auth_codes", {
-        method: 'PATCH',
-        headers: {
-          'Authorization': 'Bearer ' + LC_KEY,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ filter: { code: val }, update: { deviceId: deviceId } })
-      }).then(function() { loginSuccess(val); });
-    } else {
-      loginSuccess(val);
-    }
-  })
-  .catch(function(err) {
-    clearTimeout(timeoutId);
-    btn.innerText = '进入系统'; btn.disabled = false;
-    showToast(err.message || '网络异常', true);
-  });
+// 校验算法（必须和您的手机生成器一模一样）
+function generateSecretKey(deviceId) {
+  var salt = "TieTuXueLian2024Qin"; // 🔒 您的独家暗号
+  var raw = deviceId + salt;
+  var hash = 0;
+  for (var i = 0; i < raw.length; i++) {
+    hash = ((hash << 5) - hash) + raw.charCodeAt(i);
+    hash |= 0;
+  }
+  var hex = Math.abs(hash).toString(16).toUpperCase().padStart(8, '0');
+  return 'TT-' + hex.substring(0,4) + '-' + hex.substring(4,8);
 }
 
-function loginSuccess(code) {
-  isAuthorized = true;
-  localStorage.setItem('xjt_auth_code', code);
-  currentMode = Object.keys(allBanks).length > 0 ? 'home' : 'import';
-  showToast('授权成功，欢迎使用！');
-  render();
+function doLogin() {
+  var inputCode = document.getElementById('regCodeInput').value.trim().toUpperCase();
+  var myDevId = getDeviceId();
+  var correctCode = generateSecretKey(myDevId);
+
+  if (inputCode === correctCode) {
+    isAuthorized = true;
+    localStorage.setItem('xjt_offline_auth', 'true');
+    currentMode = Object.keys(allBanks).length > 0 ? 'home' : 'import';
+    showToast('激活成功，欢迎使用！');
+    render();
+  } else {
+    showToast('注册码错误，请检查输入或联系客服', true);
+  }
 }
 
 // ================= 2. 业务逻辑区 =================
@@ -352,15 +318,34 @@ function render() {
 
 // ================= 3. 页面渲染区 =================
 function renderLogin() {
+  var myDevId = getDeviceId();
   appContainer.innerHTML = `
-    <div class="card" style="text-align:center; margin-top:20%;">
-      <h2 style="color:#b71c1c;margin-bottom:10px;">🔐 身份验证</h2>
-      <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;">请输入一机一码授权</p>
-      <input type="password" id="authInput" style="width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:8px;text-align:center;font-size:1.1rem;margin-bottom:20px;">
-      <button class="btn btn-primary btn-block" onclick="doLogin()">进入系统</button>
+    <div class="card" style="text-align:center; margin-top:10%; padding: 30px 20px;">
+      <h2 style="color:#b71c1c;margin-bottom:10px;">🔐 单机离线授权</h2>
+      <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;">请将下方【设备码】发给客服购买</p>
+      
+      <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin-bottom:20px; border: 1px dashed #cbd5e1;">
+        <div style="font-size:0.8rem; color:#64748b; margin-bottom:5px;">您的设备码</div>
+        <div style="font-size:1.3rem; font-weight:bold; color:#0d47a1; letter-spacing:2px;">${myDevId}</div>
+        <button class="btn btn-outline" style="margin-top:10px; padding:6px 12px; font-size:0.85rem; display:inline-block;" onclick="copyDeviceId('${myDevId}')">📋 一键复制设备码</button>
+      </div>
+
+      <input type="text" id="regCodeInput" placeholder="请输入客服发给您的注册码" style="width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:8px;text-align:center;font-size:1.1rem;margin-bottom:20px; text-transform:uppercase;">
+      
+      <button class="btn btn-primary btn-block" onclick="doLogin()">激活软件</button>
     </div>
     <div class="footer">技术支持：秦十三郎</div>
   `;
+}
+
+function copyDeviceId(id) {
+  var input = document.createElement("input");
+  input.value = id;
+  document.body.appendChild(input);
+  input.select();
+  document.execCommand("copy");
+  document.body.removeChild(input);
+  showToast('设备码已复制，请发给客服');
 }
 
 function renderImport() {
