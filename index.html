@@ -1,50 +1,28 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<script>
-  // ==========================================
-  // 🔒 铁途学练 核心防盗锁 (请勿随意删除)
-  // ==========================================
-  (function() {
-    // 1. 设置您专属的白名单域名 (已填好您的 jjqgd)
-    var allowedDomains = [
-      "jjqgd.github.io",  // 您的 GitHub 正式环境
-      "localhost",        // 允许本地开发测试
-      "127.0.0.1"         // 允许本地开发测试
-    ];
-    
-    // 2. 获取当前访问的域名
-    var host = window.location.hostname;
-    var isAllowed = false;
-    
-    // 3. 校验域名是否合法
-    for (var i = 0; i < allowedDomains.length; i++) {
-      if (host === allowedDomains[i] || host.endsWith("." + allowedDomains[i])) {
-        isAllowed = true;
-        break;
-      }
-    }
-    
-    // 4. 如果域名不合法，立刻执行“毁灭”程序
-    if (!isAllowed) {
-      document.documentElement.innerHTML = '';
-      document.write(`
-        <div style="position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:999999; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif;">
-          <div style="font-size:60px; margin-bottom:20px;">🛑</div>
-          <h2 style="color:#d32f2f; font-size:24px; font-weight:bold; margin-bottom:10px;">未经授权，禁止盗用</h2>
-          <p style="color:#666; font-size:14px; margin-bottom:20px;">此系统受版权保护，仅限专属域名访问。</p>
-          <p style="color:#999; font-size:12px;">技术支持：秦十三郎</p>
-        </div>
-      `);
-      throw new Error("Unauthorized Domain Access");
-    }
-  })();
-</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>铁途学练</title>
 <meta name="apple-mobile-web-app-title" content="铁途学练">
 <link rel="icon" href="logo.png">
+
+<!-- 防盗锁（如果不需要，可以保留也可以删掉，这里为您保留着） -->
+<script>
+  (function() {
+    var allowedDomains = ["jjqgd.github.io", "localhost", "127.0.0.1"];
+    var host = window.location.hostname;
+    var isAllowed = false;
+    for (var i = 0; i < allowedDomains.length; i++) {
+      if (host === allowedDomains[i] || host.endsWith("." + allowedDomains[i])) { isAllowed = true; break; }
+    }
+    if (!isAllowed) {
+      document.documentElement.innerHTML = '<div style="text-align:center; margin-top:50px; font-size:20px; color:red; font-weight:bold;">🛑 未经授权，禁止盗用本系统！</div>';
+      throw new Error("Unauthorized Domain");
+    }
+  })();
+</script>
+
 <script src="https://cdn.staticfile.org/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
@@ -187,21 +165,6 @@ var toastEl = document.getElementById('toast');
 
 setTimeout(function() { document.getElementById('splash-screen').classList.add('hidden'); }, 2800);
 
-// 【核心修复】：每次加载首页时，检查是否有刚导入的题库
-function checkNewImport() {
-  var newBankStr = localStorage.getItem('xjt_new_import');
-  if (newBankStr) {
-    try {
-      var newBank = JSON.parse(newBankStr);
-      allBanks[newBank.id] = { name: newBank.name, questions: newBank.questions };
-      activeBankId = newBank.id;
-      localStorage.removeItem('xjt_new_import');
-      saveData();
-      showToast('导入成功，共 ' + newBank.questions.length + ' 题');
-    } catch(e) {}
-  }
-}
-
 function showToast(msg, isErr) {
   toastEl.innerText = msg;
   toastEl.style.background = isErr ? '#ef4444' : 'rgba(0,0,0,0.8)';
@@ -209,7 +172,7 @@ function showToast(msg, isErr) {
   setTimeout(function() { toastEl.style.display = 'none'; }, 2500);
 }
 
-function showAppConfirm(title, msg, okText, cancelText, onOk) {
+function showAppConfirm(title, msg, okText, cancelText, onOk, onCancel) {
   var mask = document.createElement('div');
   mask.className = 'app-mask';
   mask.innerHTML = `
@@ -224,15 +187,25 @@ function showAppConfirm(title, msg, okText, cancelText, onOk) {
   `;
   document.body.appendChild(mask);
   
-  document.getElementById('btnCancel').onclick = function() { document.body.removeChild(mask); };
-  document.getElementById('btnOk').onclick = function() { document.body.removeChild(mask); onOk(); };
+  document.getElementById('btnCancel').onclick = function() { 
+    document.body.removeChild(mask); 
+    if (onCancel) onCancel(); 
+  };
+  document.getElementById('btnOk').onclick = function() { 
+    document.body.removeChild(mask); 
+    if (onOk) onOk(); 
+  };
 }
 
+// 【修复1】：在答题页面主动点退出时，彻底删除断点记录，保证首页退出不弹窗
 function confirmExitPractice() {
-  showAppConfirm('铁途学练', '确定要退出当前练习吗？(进度会自动保存)', '退出', '取消', function() {
-    currentMode = 'home'; render();
+  showAppConfirm('铁途学练', '确定要退出当前练习吗？(退出后进度将不再保留)', '退出', '取消', function() {
+    localStorage.removeItem('xjt_practice_progress'); 
+    currentMode = 'home'; 
+    render();
   });
 }
+
 function confirmExitExam() {
   showAppConfirm('铁途学练', '确定要退出当前考试吗？本次成绩将不保存。', '退出', '取消', function() {
     if (examTimer) clearInterval(examTimer); examTimer = null;
@@ -259,7 +232,7 @@ function saveData() {
   localStorage.setItem('xjt_wrong', JSON.stringify(wrongBook));
 }
 
-// 【核心修复】：断点续答功能
+// 保存断点进度
 function savePracticeProgress() {
   if (currentMode === 'practice') {
     localStorage.setItem('xjt_practice_progress', JSON.stringify({
@@ -268,17 +241,16 @@ function savePracticeProgress() {
       selections: practiceSelections,
       isWrong: isWrongPracticeMode
     }));
-  } else {
-    localStorage.removeItem('xjt_practice_progress');
   }
 }
+
+// 恢复断点进度
 function restorePracticeProgress() {
   var pStr = localStorage.getItem('xjt_practice_progress');
   if (pStr) {
     try {
       var p = JSON.parse(pStr);
       if (p.questions && p.questions.length > 0) {
-        // 询问用户是否恢复
         showAppConfirm('铁途学练', '检测到上次未完成的练习，是否继续？', '继续', '放弃', function() {
           practiceQuestions = p.questions;
           practiceIndex = p.index;
@@ -309,6 +281,20 @@ function loadData() {
     }
     if (activeBankId && !allBanks[activeBankId]) activeBankId = null;
   } catch(e) {}
+}
+
+function checkNewImport() {
+  var newBankStr = localStorage.getItem('xjt_new_import');
+  if (newBankStr) {
+    try {
+      var newBank = JSON.parse(newBankStr);
+      allBanks[newBank.id] = { name: newBank.name, questions: newBank.questions };
+      activeBankId = newBank.id;
+      localStorage.removeItem('xjt_new_import');
+      saveData();
+      showToast('导入成功，共 ' + newBank.questions.length + ' 题');
+    } catch(e) {}
+  }
 }
 
 function render() {
@@ -348,13 +334,12 @@ function doLogin() {
   } else { showToast('授权码错误', true); }
 }
 
-// 【核心修复】：导入直接跳转到独立页面 import.html
 function renderImport() {
   app.innerHTML = `
     <div class="card" style="text-align:center; padding:40px 15px;">
       <h2 style="color:#b71c1c;margin-bottom:15px;">📥 导入新题库</h2>
       <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;line-height:1.6;">
-        系统将跳转至独立导入页面。<br>只要包含 <b>题目</b> 和 <b>答案</b> 列，以及至少两个选项列。
+        系统将跳转至独立导入页面。<br>支持 Excel (.xlsx / .csv) 文件。
       </p>
       <button class="btn btn-primary btn-block" style="padding:15px;" onclick="window.location.href='import.html'">
         📂 前往导入页面
@@ -363,12 +348,6 @@ function renderImport() {
     </div>
     <div class="footer">技术支持：秦十三郎</div>
   `;
-}
-
-function saveData() {
-  localStorage.setItem('xjt_banks', JSON.stringify(allBanks));
-  localStorage.setItem('xjt_active', activeBankId || '');
-  localStorage.setItem('xjt_wrong', JSON.stringify(wrongBook));
 }
 
 // ================= 2. 首页 =================
@@ -510,13 +489,13 @@ function startPractice(type) {
     if (practiceQuestions[i].streak === undefined) practiceQuestions[i].streak = 0;
   }
   currentMode = 'practice';
-  savePracticeProgress(); // 记录初始状态
+  savePracticeProgress(); 
   render();
 }
 
 function renderPractice() {
   if (practiceIndex >= practiceQuestions.length) {
-    localStorage.removeItem('xjt_practice_progress'); // 练习完成清除
+    localStorage.removeItem('xjt_practice_progress'); 
     app.innerHTML = `<div class="card" style="text-align:center;padding:40px;"><h2 style="color:#0d47a1;margin-bottom:15px;">🎉 练习完成</h2><p style="color:#64748b;margin-bottom:20px;">您已完成本轮练习。</p><button class="btn btn-primary btn-block" onclick="currentMode='home';render()">返回首页</button></div>`;
     return;
   }
@@ -601,14 +580,14 @@ function selectPractice(idx) {
     if (pos > -1) sels.splice(pos, 1);
     else sels.push(idx);
     practiceSelections[practiceIndex] = sels;
-    savePracticeProgress(); // 每次选择保存进度
+    savePracticeProgress(); 
     renderPractice();
   } else {
     practiceSelections[practiceIndex] = [idx];
     q.isAnswered = true;
     var isCorrect = q.answer.length === 1 && q.answer[0] === idx;
     handlePracticeResult(q, isCorrect);
-    savePracticeProgress(); // 每次答题保存进度
+    savePracticeProgress(); 
     renderPractice();
   }
 }
@@ -619,7 +598,7 @@ function confirmMultiPractice() {
   var sels = practiceSelections[practiceIndex] || [];
   var isCorrect = sels.length === q.answer.length && sels.every(function(v){ return q.answer.indexOf(v) > -1; });
   handlePracticeResult(q, isCorrect);
-  savePracticeProgress(); // 确认答案保存进度
+  savePracticeProgress(); 
   renderPractice();
 }
 
@@ -918,7 +897,15 @@ function customPrompt(title, defaultValue, callback) {
 loadData();
 checkNewImport();
 render();
-restorePracticeProgress(); // 尝试恢复
+
+// 【修复2】：延迟3秒等开场动画放完，再检查是否恢复进度
+setTimeout(function() {
+  // 如果当前模式是 practice，说明是刷新恢复；
+  // 如果是正常进入，检查本地是否存有断点，有才恢复。
+  if (currentMode === 'home') {
+    restorePracticeProgress();
+  }
+}, 3000);
 </script>
 </body>
 </html>
