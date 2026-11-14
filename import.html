@@ -54,6 +54,14 @@
     outline: none;
     cursor: pointer;
   }
+
+  /* 错误提示弹窗样式 */
+  .modal-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.6); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .modal-box { background: #fff; border-radius: 12px; width: 100%; max-width: 500px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; }
+  .modal-header { padding: 15px; background: #ffebee; color: #b71c1c; font-weight: bold; border-bottom: 1px solid #ffcdd2; }
+  .modal-body { padding: 15px; overflow-y: auto; font-size: 0.85rem; line-height: 1.6; color: #333; }
+  .error-item { border-bottom: 1px dashed #eee; padding: 8px 0; }
+  .error-item strong { color: #d32f2f; }
 </style>
 </head>
 <body>
@@ -67,18 +75,32 @@
 <div class="card" style="text-align:center; padding:40px 15px;">
   <h2 style="color:#b71c1c;margin-bottom:15px;">📥 上传文件</h2>
   <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;line-height:1.6;">
-    支持复杂的 Excel 排版。<br>系统会逐行扫描，自动跨越空行和合并单元格。
+    支持 Excel (.xlsx / .csv) 文件。<br>系统自带超强字典，自动匹配各种表头。
   </p>
   
   <input type="file" id="fileUpload" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)">
   
-  <div id="loadingText" style="display:none; margin-top:20px; color:#0d47a1; font-weight:bold;">正在扫描解析，请稍候...</div>
+  <div id="loadingText" style="display:none; margin-top:20px; color:#0d47a1; font-weight:bold;">正在解析并校验数据，请稍候...</div>
 
   <button class="btn btn-outline" onclick="window.location.href='index.html'" style="margin-top:20px;">取消并返回首页</button>
 </div>
 <div class="footer">技术支持：秦十三郎</div>
 
+<!-- 弹窗容器 -->
+<div id="errorModal" class="modal-mask" style="display:none;">
+  <div class="modal-box">
+    <div class="modal-header" id="modalTitle">⚠️ 部分题目导入失败</div>
+    <div class="modal-body" id="modalBody"></div>
+    <div style="padding: 15px; text-align: center; border-top: 1px solid #eee;">
+      <button class="btn btn-primary" onclick="closeErrorModal()" style="width: 100%;">我知道了，继续</button>
+    </div>
+  </div>
+</div>
+
 <script>
+var pendingQuestions = []; 
+var pendingName = "";
+
 function handleFileSelect(e) {
   var file = e.target.files[0];
   if (!file) return;
@@ -90,25 +112,29 @@ function handleFileSelect(e) {
     try {
       var data = new Uint8Array(evt.target.result);
       var wb = XLSX.read(data, {type: 'array'});
-      var parsed = parseExcel(wb);
+      var result = parseExcel(wb);
       
-      if (parsed.length === 0) throw new Error('未能提取到任何有效题目，请检查表格中是否真的有“题目”和“答案”字眼。');
+      var parsed = result.data;
+      var errors = result.errors;
 
-      var defaultName = file.name.replace(/\.[^/.]+$/, "");
-      var bankName = prompt('解析成功，共提取 ' + parsed.length + ' 道题！\n请为题库命名：', defaultName);
-      
-      if (bankName === null || bankName.trim() === '') {
-        bankName = defaultName;
+      if (parsed.length === 0 && errors.length === 0) {
+        throw new Error('未能找到任何有效题目，请检查表格列名。');
       }
       
-      var newId = 'bank_' + Date.now();
-      localStorage.setItem('xjt_new_import', JSON.stringify({
-        id: newId,
-        name: bankName,
-        questions: parsed
-      }));
-      
-      window.location.href = 'index.html';
+      if (parsed.length === 0) {
+        showErrorModal(errors);
+        document.getElementById('loadingText').style.display = 'none';
+        return;
+      }
+
+      pendingQuestions = parsed;
+      pendingName = file.name.replace(/\.[^/.]+$/, "");
+
+      if (errors.length > 0) {
+        showErrorModal(errors);
+      } else {
+        finishImport(parsed, pendingName);
+      }
       
     } catch(err) {
       alert('解析失败：' + (err.message || '请检查表格格式'));
@@ -118,114 +144,169 @@ function handleFileSelect(e) {
   reader.readAsArrayBuffer(file);
 }
 
-// 【终极暴力扫描引擎】
+function finishImport(parsed, defaultName) {
+  var bankName = prompt('解析成功，共抓取 ' + parsed.length + ' 道题！\n请为题库命名：', defaultName);
+  if (bankName === null || bankName.trim() === '') {
+    bankName = defaultName;
+  }
+  
+  var newId = 'bank_' + Date.now();
+  localStorage.setItem('xjt_new_import', JSON.stringify({
+    id: newId,
+    name: bankName,
+    questions: parsed
+  }));
+  
+  window.location.href = 'index.html';
+}
+
+function showErrorModal(errors) {
+  document.getElementById('modalTitle').innerText = `⚠️ 成功抓取 ${pendingQuestions.length} 题，拦截 ${errors.length} 道异常题`;
+  var html = `<div style="margin-bottom:10px; color:#666;">以下题目因为格式不规范未被导入，建议修改 Excel 后重新导入：</div>`;
+  errors.forEach(function(err) {
+    html += `<div class="error-item"><strong>${err.pos}</strong>：${err.msg}</div>`;
+  });
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('errorModal').style.display = 'flex';
+}
+
+function closeErrorModal() {
+  document.getElementById('errorModal').style.display = 'none';
+  if (pendingQuestions.length > 0) {
+    finishImport(pendingQuestions, pendingName);
+  }
+}
+
+// ================= 终极严格版抓取引擎（超强字典） =================
 function parseExcel(wb) {
   var allParsed = [];
-  var allRows = []; 
+  var errorList = []; 
   
-  // 1. 把所有工作表的数据拼成一个超级大数组
   wb.SheetNames.forEach(function(sheetName) {
     var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '', raw: false });
-    if (rows && rows.length > 0) {
-      allRows = allRows.concat(rows);
-    }
-  });
+    if (!rows || rows.length < 2) return;
 
-  if (allRows.length < 2) throw new Error('表格数据为空');
+    var colQ = -1, colAns = -1, colAna = -1, colType = -1;
+    var optCols = [];
+    var headerRowIndex = -1;
 
-  // 2. 逐行扫描，动态识别特征
-  for (var r = 0; r < allRows.length; r++) {
-    var row = allRows[r];
-    if (!row || row.length < 2) continue;
+    // 1. 扫描前20行，锁定表头
+    for (var r = 0; r < Math.min(rows.length, 20); r++) {
+      var row = rows[r];
+      if (!row || row.length === 0) continue;
+      
+      var tempQ = -1, tempAns = -1, tempAna = -1, tempType = -1;
+      var tempOpts = [];
 
-    var qText = '';
-    var ansRaw = '';
-    var anaText = '';
-    var opts = [];
+      for (var c = 0; c < row.length; c++) {
+        var h = String(row[c] || '').trim().toLowerCase();
+        if (!h) continue;
 
-    // 扫描这一行的每一个单元格
-    for (var c = 0; c < row.length; c++) {
-      var cell = String(row[c] || '').trim();
-      if (!cell) continue;
-
-      // 判断是否是题目（通常是最长的一段文字，且包含问号、括号或特定字眼）
-      if (cell.length > 5 && (cell.indexOf('（') > -1 || cell.indexOf('()') > -1 || cell.indexOf('？') > -1 || cell.indexOf('。') > -1 || cell.length > 15)) {
-        if (!qText) {
-          qText = cell;
-          continue;
+        // 🔥 题目类字典
+        if (tempQ === -1 && (h.indexOf('题目') > -1 || h.indexOf('题干') > -1 || h.indexOf('试题') > -1 || h.indexOf('问题') > -1 || h.indexOf('内容') > -1 || h === 'question')) {
+          tempQ = c;
+        }
+        // 🔥 答案类字典
+        else if (tempAns === -1 && (h.indexOf('答案') > -1 || h.indexOf('正确答案') > -1 || h.indexOf('标准答案') > -1 || h.indexOf('参考答案') > -1 || h === 'answer')) {
+          tempAns = c;
+        }
+        // 🔥 解析类字典
+        else if (tempAna === -1 && (h.indexOf('解析') > -1 || h.indexOf('说明') > -1 || h.indexOf('备注') > -1 || h.indexOf('出处') > -1 || h.indexOf('分析') > -1 || h.indexOf('详解') > -1 || h === 'explanation')) {
+          tempAna = c;
+        }
+        // 🔥 题型类字典
+        else if (tempType === -1 && (h.indexOf('题型') > -1 || h.indexOf('类型') > -1 || h === 'type')) {
+          tempType = c;
+        }
+        // 🔥 选项类字典
+        else if (h.indexOf('选项') > -1 || /^[a-g]$/i.test(h) || /^[a-g]选项$/i.test(h) || h === '备选项') {
+          tempOpts.push(c);
         }
       }
 
-      // 判断是否是答案（对/错/ABC等）
-      var upperCell = cell.toUpperCase();
-      if (!ansRaw && /^[A-G]{1,4}$/.test(upperCell)) {
-        ansRaw = upperCell;
-        continue;
-      }
-      if (!ansRaw && /^(对|错|正确|错误|√|×|T|F|TRUE|FALSE|YES|NO)$/i.test(cell)) {
-        ansRaw = cell;
-        continue;
-      }
-
-      // 剩下的长文本，如果已经有题目了，大概率是解析/出处
-      if (qText && cell.length > 5) {
-        if (!anaText) {
-          anaText = cell;
-        } else {
-          opts.push(cell); // 如果有多个长文本，可能是选项
-        }
-      } 
-      // 剩下的短文本，如果是 A. xxx 这种形式，是选项
-      else if (/^[A-G][\.\、\s]/.test(cell)) {
-        opts.push(cell);
+      if (tempQ !== -1 && tempAns !== -1) {
+        colQ = tempQ; colAns = tempAns; colAna = tempAna; colType = tempType;
+        optCols = tempOpts; headerRowIndex = r;
+        break;
       }
     }
 
-    // 如果这一行既有题目，又有明确的答案，就把它抓出来！
-    if (qText && ansRaw) {
+    if (headerRowIndex === -1) return; 
+
+    // 2. 逐行严格抓取并校验
+    for (var r = headerRowIndex + 1; r < rows.length; r++) {
+      var row = rows[r];
+      if (!row || row.length === 0) continue;
+
+      var qText = String(row[colQ] || '').trim();
+      if (!qText) continue;
+
+      var opts = [];
+      for (var o = 0; o < optCols.length; o++) {
+        var val = String(row[optCols[o]] || '').trim();
+        if (val) opts.push(val);
+      }
+
+      var ansRaw = String(row[colAns] || '').trim().toUpperCase();
+      var anaText = colAna !== -1 ? String(row[colAna] || '').trim() : '';
+      var typeStr = colType !== -1 ? String(row[colType] || '').trim().toLowerCase() : '';
+      var excelRow = r + 1; 
+
+      if (!ansRaw) {
+        errorList.push({ pos: `工作表[${sheetName}] 第 ${excelRow} 行`, msg: `题目【${qText.substring(0,10)}...】的答案为空` });
+        continue;
+      }
+
+      ansRaw = ansRaw.replace(/[，、\s]/g, ',');
       var type = 'single';
       var ansIndices = [];
-
-      // 判断题型逻辑
+      
       var judgeT = ['正确','对','T','TRUE','Y','YES','√','V','是','A'];
       var judgeF = ['错误','错','不对','F','FALSE','N','NO','×','X','否','B'];
 
-      // 如果选项少于2个，且答案是对错，强制视为判断题
-      if (opts.length < 2 && (judgeT.indexOf(ansRaw) > -1 || judgeF.indexOf(ansRaw) > -1)) {
+      if (typeStr.indexOf('判') > -1 || judgeT.indexOf(ansRaw) > -1 || judgeF.indexOf(ansRaw) > -1) {
         type = 'judge';
-        opts = ['正确', '错误'];
+        opts = ['正确', '错误']; 
         if (judgeT.indexOf(ansRaw) > -1) ansIndices = [0];
-        else ansIndices = [1];
-      } else {
-        // 单选题/多选题逻辑
-        if (opts.length < 2) continue; // 选项不足，跳过
-
-        if (ansRaw.length > 1 || ansRaw.indexOf(',') > -1 || ansRaw.indexOf('，') > -1) {
+        else if (judgeF.indexOf(ansRaw) > -1) ansIndices = [1];
+      } 
+      
+      if (ansIndices.length === 0) {
+        if (ansRaw.indexOf(',') > -1 || ansRaw.length > 1) {
           type = 'multiple';
         }
         var letters = ansRaw.match(/[A-G]/g) || [];
         for (var l = 0; l < letters.length; l++) {
           var idx = letters[l].charCodeAt(0) - 65;
-          if (idx < opts.length) ansIndices.push(idx);
+          if (ansIndices.indexOf(idx) === -1) ansIndices.push(idx);
         }
         ansIndices.sort();
       }
 
-      if (ansIndices.length > 0) {
-        allParsed.push({
-          id: 'q_' + r + '_' + Date.now() + Math.floor(Math.random()*1000),
-          question: qText,
-          type: type,
-          options: opts,
-          answer: ansIndices,
-          analysis: anaText, 
-          streak: 0
-        });
+      if (ansIndices.length === 0) {
+        errorList.push({ pos: `工作表[${sheetName}] 第 ${excelRow} 行`, msg: `题目【${qText.substring(0,10)}...】的答案【${ansRaw}】无法识别` });
+        continue;
       }
-    }
-  }
 
-  return allParsed;
+      var maxAns = Math.max.apply(null, ansIndices);
+      if (opts.length <= maxAns && type !== 'judge') {
+         errorList.push({ pos: `工作表[${sheetName}] 第 ${excelRow} 行`, msg: `题目【${qText.substring(0,10)}...】选了 ${String.fromCharCode(65+maxAns)}，但表格缺失该选项` });
+         continue;
+      }
+
+      allParsed.push({
+        id: 'q_' + r + '_' + Date.now() + Math.floor(Math.random()*1000),
+        question: qText,
+        type: type,
+        options: opts.length > 1 ? opts : ['正确', '错误'], 
+        answer: ansIndices,
+        analysis: anaText, 
+        streak: 0
+      });
+    }
+  });
+
+  return { data: allParsed, errors: errorList };
 }
 </script>
 </body>
