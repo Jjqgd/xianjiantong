@@ -6,7 +6,7 @@
 <title>导入新题库 - 铁途学练</title>
 <link rel="icon" href="logo.png">
 
-<!-- 🔒 最强防盗锁：全屏覆盖 + 阻断 JS 执行 -->
+<!-- 🔒 最强防盗锁 -->
 <script>
   (function() {
     var allowedDomains = ["jjqgd.github.io", "localhost", "127.0.0.1"];
@@ -21,7 +21,7 @@
       warn.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;z-index:9999999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;';
       warn.innerHTML = '<div style="font-size:60px;margin-bottom:20px;">🛑</div><h2 style="color:#d32f2f;font-size:24px;font-weight:bold;">未经授权，禁止盗用</h2><p style="color:#666;font-size:14px;">此系统受版权保护。</p>';
       document.body.appendChild(warn);
-      setInterval(function(){}, 99999); // 死循环卡死
+      setInterval(function(){}, 99999); 
       throw new Error("Unauthorized Domain Access");
     }
   })();
@@ -41,7 +41,7 @@
   .btn-outline { background: #fff; border: 1px solid #cbd5e1; color: #1e293b; }
   .footer { text-align: center; color: #94a3b8; font-size: 0.8rem; margin-top: 20px; padding-bottom: 20px; }
   
-  /* 强制把原生的框显示出来，绝对不隐藏，绝对不被拦截 */
+  /* 原生上传框 */
   input[type="file"] {
     display: block !important;
     width: 100%;
@@ -68,10 +68,9 @@
 <div class="card" style="text-align:center; padding:40px 15px;">
   <h2 style="color:#b71c1c;margin-bottom:15px;">📥 上传文件</h2>
   <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;line-height:1.6;">
-    支持 Excel (.xlsx / .csv) 文件。<br>系统会自动识别题目、答案、解析，并自动合并所有工作表。
+    支持 Excel (.xlsx / .csv) 文件。<br>系统会自动识别题目、答案、解析（含出处），并自动合并所有工作表。
   </p>
   
-  <!-- 原生上传框，无视任何浏览器拦截 -->
   <input type="file" id="fileUpload" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)">
   
   <div id="loadingText" style="display:none; margin-top:20px; color:#0d47a1; font-weight:bold;">正在解析，请稍候...</div>
@@ -97,21 +96,18 @@ function handleFileSelect(e) {
       var defaultName = file.name.replace(/\.[^/.]+$/, "");
       var bankName = prompt('请为题库命名：', defaultName);
       
-      // 如果用户点了取消，默认用文件名
       if (bankName === null || bankName.trim() === '') {
         bankName = defaultName;
       }
       
       var newId = 'bank_' + Date.now();
       
-      // 存入临时缓存，回到首页读取
       localStorage.setItem('xjt_new_import', JSON.stringify({
         id: newId,
         name: bankName,
         questions: parsed
       }));
       
-      // 跳回首页
       window.location.href = 'index.html';
       
     } catch(err) {
@@ -125,7 +121,7 @@ function handleFileSelect(e) {
 // 【终极智能解析】：全表扫描，无视空行，无视表头位置，支持模糊关键字，多Sheet合并
 function parseExcel(wb) {
   var allParsed = [];
-  var allRows = []; // 用于存储合并后的所有行数据
+  var allRows = []; 
   
   // 1. 遍历所有工作表，把数据全部汇聚到一起
   wb.SheetNames.forEach(function(sheetName) {
@@ -137,13 +133,12 @@ function parseExcel(wb) {
 
   if (allRows.length < 2) throw new Error('所有工作表加起来数据太少');
 
-  // 2. 智能寻找真正的表头列索引
   var colQ = -1, colAns = -1, colAna = -1;
   var optCols = [];
   var headerRowIndex = -1;
 
-  // 向下扫描前 10 行，寻找包含“题目”和“答案”的那一行
-  for (var r = 0; r < Math.min(allRows.length, 10); r++) {
+  // 2. 向下扫描前 15 行，寻找真正的表头
+  for (var r = 0; r < Math.min(allRows.length, 15); r++) {
     var row = allRows[r];
     if (!row || row.length === 0) continue;
     
@@ -154,25 +149,21 @@ function parseExcel(wb) {
       var h = String(row[c] || '').trim().toLowerCase();
       if (!h) continue;
 
-      // 模糊匹配题干
       if (tempColQ === -1 && (h.indexOf('题目') > -1 || h.indexOf('题干') > -1 || h.indexOf('试题') > -1 || h.indexOf('question') > -1)) {
         tempColQ = c;
       }
-      // 模糊匹配答案
       else if (tempColAns === -1 && (h.indexOf('正确答案') > -1 || h.indexOf('标准答案') > -1 || h.indexOf('答案') > -1 || h.indexOf('answer') > -1)) {
         tempColAns = c;
       }
-      // 模糊匹配解析
-      else if (tempColAna === -1 && (h.indexOf('解析') > -1 || h.indexOf('说明') > -1 || h.indexOf('备注') > -1 || h.indexOf('分析') > -1 || h.indexOf('explanation') > -1)) {
+      // 把“出处”也纳入解析的模糊匹配
+      else if (tempColAna === -1 && (h.indexOf('解析') > -1 || h.indexOf('说明') > -1 || h.indexOf('备注') > -1 || h.indexOf('出处') > -1 || h.indexOf('分析') > -1 || h.indexOf('explanation') > -1)) {
         tempColAna = c;
       }
-      // 匹配选项
       else if (h.indexOf('选项') > -1 || /^[a-g]$/i.test(h) || /^[a-g]选项$/i.test(h)) {
         tempOptCols.push(c);
       }
     }
 
-    // 如果找到了题干和答案的列，说明这就是表头！
     if (tempColQ !== -1 && tempColAns !== -1) {
       colQ = tempColQ;
       colAns = tempColAns;
@@ -187,13 +178,13 @@ function parseExcel(wb) {
     throw new Error('未能找到包含【题目/题干】和【答案】的表头');
   }
 
-  // 3. 从表头下一行开始，逐行提取题库数据（包含所有工作表的数据）
+  // 3. 逐行提取数据
   for (var r = headerRowIndex + 1; r < allRows.length; r++) {
     var row = allRows[r];
     if (!row || row.length === 0) continue;
 
     var qText = String(row[colQ] || '').trim();
-    if (!qText) continue; // 跳过没有题目的空行
+    if (!qText) continue; 
 
     var opts = [];
     for (var o = 0; o < optCols.length; o++) {
@@ -202,24 +193,30 @@ function parseExcel(wb) {
     }
 
     var ansRaw = String(row[colAns] || '').trim().toUpperCase();
-    var anaText = colAna !== -1 ? String(row[colAna] || '').trim() : '';
+    
+    // 自动抓取解析（如果没指定解析列，直接把答案后面的那一列当作解析）
+    var anaText = '';
+    if (colAna !== -1) {
+      anaText = String(row[colAna] || '').trim();
+    } else if (row.length > colAns + 1) {
+      anaText = String(row[colAns + 1] || '').trim();
+    }
 
     var type = 'single';
     var ansIndices = [];
     
-    // 智能判断题型
     var judgeT = ['正确','对','T','TRUE','Y','YES','√','V','是','A'];
     var judgeF = ['错误','错','不对','F','FALSE','N','NO','×','X','否','B'];
     
-    if ((judgeT.indexOf(ansRaw) > -1 || judgeF.indexOf(ansRaw) > -1) && opts.length < 2) {
+    // 【核心修复】：只要答案是对/错，直接识别为判断题
+    if (judgeT.indexOf(ansRaw) > -1 || judgeF.indexOf(ansRaw) > -1) {
       type = 'judge';
       opts = ['正确', '错误'];
       if (judgeT.indexOf(ansRaw) > -1) ansIndices = [0];
       else ansIndices = [1];
     } else {
-      if (opts.length < 2) continue; // 选项不足，跳过
+      if (opts.length < 2) continue; 
       
-      // 多选识别：如果有逗号、#号或者连续多个字母
       if (ansRaw.indexOf(',') > -1 || ansRaw.indexOf('，') > -1 || ansRaw.indexOf('#') > -1 || ansRaw.indexOf('/') > -1 || ansRaw.length > 1) {
         type = 'multiple';
       }
@@ -232,16 +229,15 @@ function parseExcel(wb) {
       ansIndices.sort();
     }
     
-    if (ansIndices.length === 0) continue; // 答案解析失败，跳过
+    if (ansIndices.length === 0) continue; 
 
-    // 成功抓取一道题
     allParsed.push({
       id: 'q_' + r + '_' + Date.now() + Math.floor(Math.random()*1000),
       question: qText,
       type: type,
       options: opts,
       answer: ansIndices,
-      analysis: anaText, // 解析内容完美保存
+      analysis: anaText, 
       streak: 0
     });
   }
