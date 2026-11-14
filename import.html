@@ -41,7 +41,6 @@
   .btn-outline { background: #fff; border: 1px solid #cbd5e1; color: #1e293b; }
   .footer { text-align: center; color: #94a3b8; font-size: 0.8rem; margin-top: 20px; padding-bottom: 20px; }
   
-  /* 原生上传框 */
   input[type="file"] {
     display: block !important;
     width: 100%;
@@ -123,7 +122,6 @@ function parseExcel(wb) {
   var allParsed = [];
   var allRows = []; 
   
-  // 1. 遍历所有工作表，把数据全部汇聚到一起
   wb.SheetNames.forEach(function(sheetName) {
     var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '', raw: false });
     if (rows && rows.length > 0) {
@@ -137,7 +135,6 @@ function parseExcel(wb) {
   var optCols = [];
   var headerRowIndex = -1;
 
-  // 2. 向下扫描前 15 行，寻找真正的表头
   for (var r = 0; r < Math.min(allRows.length, 15); r++) {
     var row = allRows[r];
     if (!row || row.length === 0) continue;
@@ -155,7 +152,6 @@ function parseExcel(wb) {
       else if (tempColAns === -1 && (h.indexOf('正确答案') > -1 || h.indexOf('标准答案') > -1 || h.indexOf('答案') > -1 || h.indexOf('answer') > -1)) {
         tempColAns = c;
       }
-      // 把“出处”也纳入解析的模糊匹配
       else if (tempColAna === -1 && (h.indexOf('解析') > -1 || h.indexOf('说明') > -1 || h.indexOf('备注') > -1 || h.indexOf('出处') > -1 || h.indexOf('分析') > -1 || h.indexOf('explanation') > -1)) {
         tempColAna = c;
       }
@@ -178,7 +174,6 @@ function parseExcel(wb) {
     throw new Error('未能找到包含【题目/题干】和【答案】的表头');
   }
 
-  // 3. 逐行提取数据
   for (var r = headerRowIndex + 1; r < allRows.length; r++) {
     var row = allRows[r];
     if (!row || row.length === 0) continue;
@@ -194,7 +189,7 @@ function parseExcel(wb) {
 
     var ansRaw = String(row[colAns] || '').trim().toUpperCase();
     
-    // 自动抓取解析（如果没指定解析列，直接把答案后面的那一列当作解析）
+    // 智能抓取解析：优先取解析列，如果没有解析列，直接取答案后一列
     var anaText = '';
     if (colAna !== -1) {
       anaText = String(row[colAna] || '').trim();
@@ -208,7 +203,7 @@ function parseExcel(wb) {
     var judgeT = ['正确','对','T','TRUE','Y','YES','√','V','是','A'];
     var judgeF = ['错误','错','不对','F','FALSE','N','NO','×','X','否','B'];
     
-    // 【核心修复】：只要答案是对/错，直接识别为判断题
+    // 【核心修复】：只要是判断词汇，直接强行变为判断题
     if (judgeT.indexOf(ansRaw) > -1 || judgeF.indexOf(ansRaw) > -1) {
       type = 'judge';
       opts = ['正确', '错误'];
@@ -229,7 +224,7 @@ function parseExcel(wb) {
       ansIndices.sort();
     }
     
-    if (ansIndices.length === 0) continue; 
+    if (ansIndices.length === 0) continue;
 
     allParsed.push({
       id: 'q_' + r + '_' + Date.now() + Math.floor(Math.random()*1000),
