@@ -266,10 +266,11 @@ function renderImport() {
         支持 Excel (.xlsx / .csv) 文件。<br>只要包含 <b>题目</b> 和 <b>答案</b> 列，以及至少两个选项列。
       </p>
       
-      <label class="btn btn-primary btn-block" style="padding:15px; cursor:pointer;">
-        📂 点击选择文件
-        <input type="file" id="fileUpload" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)" style="display:none;">
-      </label>
+      <!-- 这里彻底放弃动态 label，直接使用绝对定位的透明文件框覆盖在按钮上 -->
+      <div style="position: relative; width: 100%; height: 50px; margin-top: 10px;">
+        <button class="btn btn-primary" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:1;">📂 点击选择文件</button>
+        <input type="file" id="fileUpload" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; z-index:2; cursor:pointer;">
+      </div>
 
       ${Object.keys(allBanks).length > 0 ? `<button class="btn btn-outline btn-block" onclick="currentMode='home';render()" style="margin-top:20px;">返回首页</button>` : ''}
     </div>
@@ -277,9 +278,15 @@ function renderImport() {
   `;
 }
 
+// 【核心修复】：完全抛弃之前所有的文件重置逻辑。每次选文件时，直接把整个 input 节点从 DOM 树中拔掉！
+// 这样浏览器底层再也找不到这个旧节点，下次点击时必定重新触发！这招叫物理拔除！
 function handleFileSelect(e) {
   var file = e.target.files[0];
   if (!file) return;
+  
+  // 立刻断绝关系，防止浏览器记录状态
+  e.target.parentNode.removeChild(e.target);
+
   showToast('正在解析...');
   var reader = new FileReader();
   reader.onload = function(evt) {
@@ -300,8 +307,8 @@ function handleFileSelect(e) {
       });
     } catch(err) {
       showToast(err.message || '解析失败，请检查表格格式', true);
-    } finally {
-      e.target.value = ''; 
+      // 报错时重新渲染一遍页面，保证输入框还在
+      render();
     }
   };
   reader.readAsArrayBuffer(file);
@@ -452,16 +459,7 @@ function renderHome() {
   app.innerHTML = html;
 }
 
-// 【换思路核心】：在这里彻底清空之前可能遗留的任何文件输入框缓存
-function goToImport() { 
-  // 暴力清空可能存在的所有文件输入框的值
-  var inputs = document.querySelectorAll('input[type="file"]');
-  for(var i=0; i<inputs.length; i++) {
-    inputs[i].value = '';
-  }
-  currentMode = 'import'; 
-  render(); 
-}
+function goToImport() { currentMode = 'import'; render(); }
 function switchBank(id) { activeBankId = id; saveData(); render(); }
 
 // ================= 3. 答题卡组件 =================
