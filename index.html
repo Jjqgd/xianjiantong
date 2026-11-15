@@ -42,7 +42,7 @@
   .nav-logo img { width: 30px; height: 30px; object-fit: contain; }
   .nav-right { font-size: 0.8rem; color: #64748b; }
 
-  .card { background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); position: relative; overflow: hidden; }
+  .card { background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); position: relative; overflow: visible; } /* overflow 改为 visible 让红圈可以超出 */
   .title { font-size: 1.1rem; font-weight: bold; margin-bottom: 12px; border-left: 4px solid #b71c1c; padding-left: 8px; }
   .banner { background: #e0f2fe; color: #0369a1; padding: 12px; border-radius: 8px; font-size: 0.8rem; margin-bottom: 15px; line-height: 1.5; }
 
@@ -77,7 +77,7 @@
   .sheet-content { background: #f8fafc; width: 100%; max-height: 75vh; border-radius: 20px 20px 0 0; padding: 20px; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s; }
   .sheet-mask.show .sheet-content { transform: translateY(0); }
   .sheet-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
-
+  
   .acc-group { margin-bottom: 12px; background: #fff; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
   .acc-header { padding: 12px 15px; background: #f1f5f9; font-weight: bold; font-size: 0.95rem; color: #0d47a1; display: flex; justify-content: space-between; cursor: pointer; }
   .acc-header span { font-size: 0.8rem; color: #64748b; font-weight: normal; }
@@ -87,8 +87,8 @@
   .num-btn.done { background: #0d47a1; color: #fff; border-color: #0d47a1; }
 
   .tag { display: inline-block; padding: 2px 8px; background: #0d47a1; color: #fff; border-radius: 4px; font-size: 0.75rem; font-weight: bold; margin-bottom: 10px; }
-  .q-text { font-size: 1.05rem; font-weight: bold; line-height: 1.5; margin-bottom: 15px; }
-  .opt { border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; gap: 10px; font-size: 0.95rem; cursor: pointer; transition: all 0.15s; }
+  .q-text { font-size: 1.05rem; font-weight: bold; line-height: 1.5; margin-bottom: 15px; position: relative; padding-right: 65px; } /* 右侧留白给红圈 */
+  .opt { border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; gap: 10px; font-size: 0.95rem; cursor: pointer; transition: all 0.15s; position: relative; }
   .opt:hover:not(.disabled) { border-color: #94a3b8; background: #f8fafc; }
   .opt.selected { border-color: #0d47a1; background: #eff6ff; }
   .opt.correct { border-color: #10b981; background: #ecfdf5; }
@@ -108,45 +108,50 @@
   .score-num { font-family: "Georgia", serif; color: #d32f2f; font-size: 5rem; font-weight: bold; display: inline-block; border-bottom: 4px double #d32f2f; line-height: 1; margin-bottom: 15px; padding: 0 10px; }
   .bottom-actions { display: flex; gap: 10px; margin-top: 20px; }
   .bottom-actions .btn { flex: 1; }
-
+  
   .maoti-result { font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive; font-size: 2.2rem; color: #0d47a1; text-align: center; margin: 20px 0; line-height: 1.4; }
   .maoti-result.full { color: #b71c1c; }
   .maoti-fail { font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive; font-size: 2rem; color: #d32f2f; text-align: center; line-height: 1.5; }
-
+  
   .toast { position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 0.85rem; z-index: 9999; display: none; }
-
+  
   .app-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; }
   .app-box { background: #fff; padding: 25px; border-radius: 16px; width: 80%; max-width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
   .app-box h3 { font-size: 1.2rem; color: #b71c1c; margin-bottom: 10px; font-weight: bold; }
   .app-box p { font-size: 0.95rem; color: #475569; margin-bottom: 20px; line-height: 1.5; }
   .app-box .actions { display: flex; gap: 10px; }
   .app-box .btn { flex: 1; padding: 10px; font-size: 0.95rem; border-radius: 8px; }
-
-  .prompt-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-  .prompt-box { background: #fff; padding: 20px; border-radius: 12px; width: 80%; max-width: 300px; }
-  .prompt-box input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin: 15px 0; font-size: 1rem; }
+  
   .footer { text-align: center; color: #94a3b8; font-size: 0.8rem; margin-top: 20px; padding-bottom: 20px; }
 
-  /* ====== 答题对错反馈（真实毛笔圈，不遮挡题目） ====== */
-  .ink-mark {
+  /* ====== 答题对错反馈（毛笔红圈，放在题目右上方） ====== */
+  .feedback-badge {
     position: absolute;
-    top: -34px;
-    right: -30px;
-    width: 86px;
-    height: 80px;
+    top: -24px;
+    right: -35px;
+    width: 85px;
+    height: 85px;
     pointer-events: none;
     z-index: 40;
     opacity: 0;
-    animation: inkStamp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    transform-origin: 60% 60%;
-    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.15));
+    transform: rotate(-15deg) scale(0);
+    animation: stampIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
   }
-  @keyframes inkStamp {
-    0%   { opacity: 0; transform: rotate(-18deg) scale(0.4); }
-    70%  { opacity: 0.95; transform: rotate(-6deg) scale(1.08); }
-    100% { opacity: 0.9; transform: rotate(-8deg) scale(1); }
+  /* 用 CSS 画一个稍带不规则感的红圈（背景是 SVG data URI） */
+  .feedback-badge::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 45 10 C 20 12, 5 30, 8 55 C 10 80, 30 92, 55 90 C 75 88, 90 70, 88 45 C 87 30, 78 20, 65 15 C 55 12, 45 15, 40 25' fill='none' stroke='%23d32f2f' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' opacity='0.9' /%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
   }
-  .ink-mark svg { width: 100%; height: 100%; display: block; }
+  @keyframes stampIn {
+    0% { transform: rotate(-30deg) scale(0); opacity: 0; }
+    80% { transform: rotate(-10deg) scale(1.1); opacity: 1; }
+    100% { transform: rotate(-15deg) scale(1); opacity: 1; }
+  }
 
   /* ====== 满分烟花 ====== */
   #fireworks-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9998; }
@@ -243,10 +248,10 @@ function doLogin() {
 var allBanks = {}; var activeBankId = null; var wrongBook = []; var currentMode = 'login';
 var practiceQuestions = [], practiceIndex = 0, practiceSelections = [], isWrongPracticeMode = false;
 var examQuestions = [], examIndex = 0, examSelections = [];
-var examConfig = { scoreSingle: 2, scoreMultiple: 4, scoreJudge: 2, timeLimit: 60, passScore: 0 }; // passScore:0=不设合格线
+var examConfig = { scoreSingle: 2, scoreMultiple: 4, scoreJudge: 2, timeLimit: 60, passScore: 0 };
 var examScore = { got: 0, total: 0, usedTime: '0分0秒' };
 var examTimer = null, examStartTime = 0, examRemainingSeconds = 0;
-var examAborted = false; // 是否因低于合格线自动结束
+var examAborted = false;
 
 var appContainer = document.getElementById('app');
 var toastEl = document.getElementById('toast');
@@ -502,25 +507,6 @@ function startPractice(type) {
   currentMode = 'practice'; savePracticeProgress(); render();
 }
 
-/* 改：生成真实毛笔圈 SVG（开口、拖笔） */
-function inkMarkSvg() {
-  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <path d="M 46 12 C 22 14, 8 30, 10 50 C 12 72, 30 88, 52 86 C 70 84, 84 70, 82 54 C 81 44, 76 38, 68 34 C 60 30, 50 31, 45 36"
-      fill="none" stroke="#d32f2f" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"
-      opacity="0.85" style="filter:url(#rough)" />
-    <path d="M 45 36 C 40 41, 39 49, 44 55"
-      fill="none" stroke="#d32f2f" stroke-width="4.2" stroke-linecap="round" opacity="0.75" />
-    <path d="M 82 54 C 88 58, 96 60, 99 57"
-      fill="none" stroke="#d32f2f" stroke-width="3.2" stroke-linecap="round" opacity="0.6" />
-    <defs>
-      <filter id="rough">
-        <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" result="noise"/>
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.2" />
-      </filter>
-    </defs>
-  </svg>`;
-}
-
 function renderPractice() {
   if (practiceIndex >= practiceQuestions.length) {
     localStorage.removeItem('xjt_practice_progress');
@@ -539,11 +525,11 @@ function renderPractice() {
   var typeName = q.type === 'single' ? '单选题' : q.type === 'multiple' ? '多选题' : '判断题';
   var streakHtml = isWrongPracticeMode ? `<span style="float:right;font-size:0.8rem;color:#ef4444;font-weight:bold;">🔥连对: ${q.streak}/5</span>` : '';
   var sheetHtml = buildSheetHtml(practiceQuestions, practiceIndex, practiceSelections, 'practice');
-
-  /* 改：毛笔圈只在已作答时出现，位置在题目右上方外侧 */
+  
   var feedbackAnim = '';
   if (showAns) {
-    feedbackAnim = `<div class="ink-mark">${inkMarkSvg()}</div>`;
+    // 定位在选项右侧的空白区：因为给 .q-text 加了 padding-right: 65px，所以红圈会被挤在右侧不遮字
+    feedbackAnim = `<div class="feedback-badge"></div>`;
   }
 
   appContainer.innerHTML = `
@@ -556,7 +542,7 @@ function renderPractice() {
     </div>
     <div class="card">
       <span class="tag">${typeName}</span>${streakHtml}
-      <div class="q-text" style="position:relative;">${q.question}${feedbackAnim}</div>${optsHtml}
+      <div class="q-text">${q.question}${feedbackAnim}</div>${optsHtml}
       <div class="analysis ${showAns ? (isCorrect ? 'success' : 'error') : ''}" style="display:${showAns ? 'block' : 'none'};">
         <div style="font-weight:bold;margin-bottom:5px;">正确答案：<span style="color:#10b981;">${q.answer.map(function(i){ return String.fromCharCode(65+i); }).join(', ')}</span></div>
         ${q.analysis ? `<div style="margin-top:8px; font-weight:bold; color:#0d47a1;">解析：</div><div style="color:#475569; margin-top:4px;">${q.analysis}</div>` : ''}
@@ -683,7 +669,7 @@ function startExam() {
   var cS = parseInt(document.getElementById('cS').value) || 0; var cM = parseInt(document.getElementById('cM').value) || 0;
   var cJ = parseInt(document.getElementById('cJ').value) || 0; var tLimit = parseInt(document.getElementById('tLimit').value) || 60;
   var pScoreRaw = document.getElementById('passScore').value;
-  var pScore = parseInt(pScoreRaw); // 留空 => NaN => 0 => 不设合格线
+  var pScore = parseInt(pScoreRaw);
   if (isNaN(pScore) || pScore <= 0) pScore = 0;
   if (cS + cM + cJ === 0) return showToast('请至少选择一题', true);
   var sQS = qs.filter(function(q){ return q.type === 'single'; }).sort(function(){ return 0.5 - Math.random(); });
@@ -758,33 +744,41 @@ function selectExam(idx) {
 function nextExam() { if (examIndex === examQuestions.length - 1) { confirmSubmitExam(); } else { examIndex++; renderExam(); } }
 function prevExam() { if (examIndex > 0) { examIndex--; renderExam(); } }
 
-/* 改：只统计已答题目的真实得分；仅在设置了合格线时检查 */
-function calcCurrentExamScore() {
+/* 改：计算目前得分 + 剩余未答题满分，与合格线比较 */
+function checkExamScoreWarning() {
+  if (currentMode !== 'exam') return;
+  if (examRemainingSeconds <= 0) return;
+  if (!examConfig.passScore || examConfig.passScore <= 0) return; // 未设置合格线
+  if (window.__examLowScoreWarned) return;
+
   var got = 0;
+  var remainingMax = 0;
+  var totalMax = 0;
+  
   for (var i = 0; i < examQuestions.length; i++) {
-    var sel = examSelections[i] || [];
-    if (sel.length === 0) continue; // 未作答不计
     var q = examQuestions[i];
     var pts = q.type==='single' ? examConfig.scoreSingle : q.type==='multiple' ? examConfig.scoreMultiple : examConfig.scoreJudge;
+    totalMax += pts;
+    
+    var sel = examSelections[i] || [];
+    if (sel.length === 0) {
+      // 没答的题，算作剩余可得分
+      remainingMax += pts;
+      continue;
+    }
+    
+    // 算作已答题，判断对错
     var ans = q.answer.slice().sort();
     var s = sel.slice().sort();
     var isCorrect = ans.length === s.length && ans.every(function(v, idx){ return v === s[idx]; });
     if (isCorrect) got += pts;
   }
-  return got;
-}
 
-function checkExamScoreWarning() {
-  if (currentMode !== 'exam') return;
-  if (examRemainingSeconds <= 0) return;
-  if (!examConfig.passScore || examConfig.passScore <= 0) return; // 未设置合格线，不检查
-  if (window.__examLowScoreWarned) return;
-
-  var got = calcCurrentExamScore();
-  if (got < examConfig.passScore) {
+  // 核心逻辑：当前得分 + 剩余未答满分 < 合格线，说明绝对考不及格了
+  if (got + remainingMax < examConfig.passScore) {
     window.__examLowScoreWarned = true;
     showAppConfirm(
-      '考试结束',
+      '考试终止',
       '<div class="maoti-fail">考试不合格，不要气馁，继续加油，多去练练吧！</div>',
       '查看成绩',
       '查看成绩',
