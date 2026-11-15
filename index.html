@@ -43,7 +43,7 @@
   .nav-logo img { width: 30px; height: 30px; object-fit: contain; }
   .nav-right { font-size: 0.8rem; color: #64748b; }
 
-  .card { background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .card { background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); position: relative; overflow: hidden; }
   .title { font-size: 1.1rem; font-weight: bold; margin-bottom: 12px; border-left: 4px solid #b71c1c; padding-left: 8px; }
   .banner { background: #e0f2fe; color: #0369a1; padding: 12px; border-radius: 8px; font-size: 0.8rem; margin-bottom: 15px; line-height: 1.5; }
 
@@ -89,28 +89,30 @@
 
   .tag { display: inline-block; padding: 2px 8px; background: #0d47a1; color: #fff; border-radius: 4px; font-size: 0.75rem; font-weight: bold; margin-bottom: 10px; }
   .q-text { font-size: 1.05rem; font-weight: bold; line-height: 1.5; margin-bottom: 15px; }
-  .opt { border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; gap: 10px; font-size: 0.95rem; cursor: pointer; }
-  .opt-prefix { width: 22px; height: 22px; border-radius: 50%; background: #f1f5f9; border: 1px solid #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; flex-shrink: 0; }
-  
+  .opt { border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; gap: 10px; font-size: 0.95rem; cursor: pointer; transition: all 0.15s; }
+  .opt:hover:not(.disabled) { border-color: #94a3b8; background: #f8fafc; }
   .opt.selected { border-color: #0d47a1; background: #eff6ff; }
-  .opt.selected .opt-prefix { background: #0d47a1; color: #fff; border-color: #0d47a1; }
   .opt.correct { border-color: #10b981; background: #ecfdf5; }
-  .opt.correct .opt-prefix { background: #10b981; color: #fff; border-color: #10b981; }
   .opt.wrong { border-color: #ef4444; background: #fef2f2; }
+  .opt.disabled { cursor: not-allowed; }
+  .opt-prefix { width: 22px; height: 22px; border-radius: 50%; background: #f1f5f9; border: 1px solid #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; flex-shrink: 0; color: #64748b; }
+  .opt.selected .opt-prefix { background: #0d47a1; color: #fff; border-color: #0d47a1; }
+  .opt.correct .opt-prefix { background: #10b981; color: #fff; border-color: #10b981; }
   .opt.wrong .opt-prefix { background: #ef4444; color: #fff; border-color: #ef4444; }
 
-  .analysis { padding: 12px; background: #f8fafc; border-radius: 8px; margin-top: 15px; font-size: 0.85rem; border-left: 4px solid #0d47a1; line-height: 1.5; color: #475569; }
+  .analysis { padding: 12px; background: #f8fafc; border-radius: 8px; margin-top: 15px; font-size: 0.85rem; border-left: 4px solid #0d47a1; line-height: 1.5; color: #475569; display: none; }
+  .analysis.show { display: block; }
   .analysis.error { border-left-color: #ef4444; background: #fef2f2; }
   .analysis.success { border-left-color: #10b981; background: #ecfdf5; }
 
   .score-box { text-align: center; padding: 30px 0; }
   .score-num { font-family: "Georgia", serif; color: #d32f2f; font-size: 5rem; font-weight: bold; display: inline-block; border-bottom: 4px double #d32f2f; line-height: 1; margin-bottom: 15px; padding: 0 10px; }
-  
   .bottom-actions { display: flex; gap: 10px; margin-top: 20px; }
   .bottom-actions .btn { flex: 1; }
   
   .maoti-result { font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive; font-size: 2.2rem; color: #0d47a1; text-align: center; margin: 20px 0; line-height: 1.4; }
   .maoti-result.full { color: #b71c1c; }
+  .maoti-fail { font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive; font-size: 2rem; color: #d32f2f; text-align: center; line-height: 1.5; }
   
   .toast { position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 0.85rem; z-index: 9999; display: none; }
   
@@ -125,6 +127,32 @@
   .prompt-box { background: #fff; padding: 20px; border-radius: 12px; width: 80%; max-width: 300px; }
   .prompt-box input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin: 15px 0; font-size: 1rem; }
   .footer { text-align: center; color: #94a3b8; font-size: 0.8rem; margin-top: 20px; padding-bottom: 20px; }
+
+  /* ====== 答题对错反馈动画（毛体文字版） ====== */
+  .feedback-overlay {
+    position: absolute;
+    top: 40%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0;
+    animation: popFeedback 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+  .feedback-text {
+    font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive;
+    font-size: 6rem;
+    font-weight: bold;
+    color: #d32f2f;
+    text-shadow: 3px 3px 0px #fff, 0 10px 20px rgba(0,0,0,0.2);
+    transform: rotate(-10deg);
+  }
+  
+  @keyframes popFeedback {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5) rotate(-20deg); }
+    20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1) rotate(0deg); }
+    80% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2) rotate(10deg); }
+  }
 </style>
 </head>
 <body>
@@ -236,7 +264,7 @@ function doLogin() {
 var allBanks = {}; var activeBankId = null; var wrongBook = []; var currentMode = 'login';
 var practiceQuestions = [], practiceIndex = 0, practiceSelections = [], isWrongPracticeMode = false;
 var examQuestions = [], examIndex = 0, examSelections = [];
-var examConfig = { single: 0, multiple: 0, judge: 0, scoreSingle: 2, scoreMultiple: 4, scoreJudge: 2, timeLimit: 60 };
+var examConfig = { single: 0, multiple: 0, judge: 0, scoreSingle: 2, scoreMultiple: 4, scoreJudge: 2, timeLimit: 60, passScore: 60 };
 var examScore = { got: 0, total: 0, usedTime: '0分0秒' };
 var examTimer = null, examStartTime = 0, examRemainingSeconds = 0;
 
@@ -483,6 +511,7 @@ function buildSheetHtml(questions, currentIdx, selections, type) {
   return html;
 }
 
+// ================= 练习模式（加入毛体反馈） =================
 function startPractice(type) {
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
   if (type === 'wrong') {
@@ -518,19 +547,12 @@ function renderPractice() {
   var streakHtml = isWrongPracticeMode ? `<span style="float:right;font-size:0.8rem;color:#ef4444;font-weight:bold;">🔥连对: ${q.streak}/5</span>` : '';
   var sheetHtml = buildSheetHtml(practiceQuestions, practiceIndex, practiceSelections, 'practice');
   
-  // 【核心修复】：只要有解析，就必须展示出来
-  var analysisHtml = '';
+  // 毛体文字反馈
+  var feedbackAnim = '';
   if (showAns) {
-    analysisHtml = `
-      <div class="analysis ${isCorrect ? 'success' : 'error'} show">
-        <div style="font-weight:bold;margin-bottom:5px;">正确答案：<span style="color:#10b981;">${q.answer.map(function(i){ return String.fromCharCode(65+i); }).join(', ')}</span></div>
-        ${q.analysis ? `<div style="margin-top:8px; font-weight:bold; color:#0d47a1;">解析：</div><div style="color:#475569; margin-top:4px;">${q.analysis}</div>` : ''}
-        ${isWrongPracticeMode && isCorrect ? `<div style="color:#10b981;font-weight:bold;margin-top:8px;">✅ 连对次数 +1</div>` : ''}
-        ${isWrongPracticeMode && !isCorrect ? `<div style="color:#ef4444;font-weight:bold;margin-top:8px;">❌ 答错了，连对重置</div>` : ''}
-      </div>
-    `;
+    feedbackAnim = `<div class="feedback-overlay"><div class="feedback-text">${isCorrect ? '对' : '错'}</div></div>`;
   }
-  
+
   appContainer.innerHTML = `
     <div class="toolbar">
       <div style="display:flex; align-items:center; gap:10px;">
@@ -540,9 +562,15 @@ function renderPractice() {
       <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
     </div>
     <div class="card">
+      ${feedbackAnim}
       <span class="tag">${typeName}</span>${streakHtml}
       <div class="q-text">${q.question}</div>${optsHtml}
-      ${analysisHtml}
+      <div class="analysis ${showAns ? (isCorrect ? 'success' : 'error') : ''}" style="display:${showAns ? 'block' : 'none'};">
+        <div style="font-weight:bold;margin-bottom:5px;">正确答案：<span style="color:#10b981;">${q.answer.map(function(i){ return String.fromCharCode(65+i); }).join(', ')}</span></div>
+        ${q.analysis ? `<div style="margin-top:8px; font-weight:bold; color:#0d47a1;">解析：</div><div style="color:#475569; margin-top:4px;">${q.analysis}</div>` : ''}
+        ${isWrongPracticeMode && isCorrect ? `<div style="color:#10b981;font-weight:bold;margin-top:8px;">✅ 连对次数 +1</div>` : ''}
+        ${isWrongPracticeMode && !isCorrect ? `<div style="color:#ef4444;font-weight:bold;margin-top:8px;">❌ 答错了，连对重置</div>` : ''}
+      </div>
       <div class="bottom-actions">
         <button class="btn btn-outline" onclick="prevPractice()" ${practiceIndex===0?'disabled style="opacity:0.5"':''}>⬅ 上一题</button>
         ${(!showAns && q.type === 'multiple') ? `<button class="btn btn-primary" onclick="confirmMultiPractice()" ${sels.length===0?'disabled style="opacity:0.5"':''}>确认答案</button>` : ''}
@@ -573,7 +601,7 @@ function selectPractice(idx) {
     var isCorrect = q.answer.length === 1 && q.answer[0] === idx;
     handlePracticeResult(q, isCorrect); savePracticeProgress(); renderPractice();
     if (isCorrect && !isWrongPracticeMode && practiceIndex < practiceQuestions.length - 1) {
-      setTimeout(function() { nextPractice(); }, 600);
+      setTimeout(function() { nextPractice(); }, 1000);
     }
   }
 }
@@ -623,13 +651,14 @@ function renderReview() {
         <div style="font-weight:bold;font-size:0.95rem;margin-bottom:10px;">${q.question}</div>
         <div style="font-size:0.85rem;color:#10b981;margin-bottom:5px;font-weight:bold;">正确答案：${q.answer.map(function(idx){ return String.fromCharCode(65+idx); }).join(', ')}</div>
         <div style="font-size:0.85rem;color:#64748b;line-height:1.5; margin-bottom:8px;">${q.options.map(function(o,idx){ return String.fromCharCode(65+idx) + '. ' + o; }).join('<br>')}</div>
-        ${q.analysis ? `<div class="analysis" style="margin-top:0;"><strong>解析：</strong>${q.analysis}</div>` : ''}
+        ${q.analysis ? `<div class="analysis show" style="margin-top:0;"><strong>解析：</strong>${q.analysis}</div>` : ''}
       </div>
     `;
   }
   appContainer.innerHTML = html + `<div class="footer">技术支持：秦十三郎</div>`;
 }
 
+// ================= 考试模式（加入合格线与不及格弹窗） =================
 function startExamSetup() { currentMode = 'examSetup'; render(); }
 function renderExamSetup() {
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
@@ -641,7 +670,14 @@ function renderExamSetup() {
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;"><span>单选题 (共${cS}题)</span><div>抽 <input type="number" id="cS" value="${Math.min(5,cS)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pS" value="2" style="width:40px;text-align:center;"> 分</div></div>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;"><span>多选题 (共${cM}题)</span><div>抽 <input type="number" id="cM" value="${Math.min(2,cM)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pM" value="4" style="width:40px;text-align:center;"> 分</div></div>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;"><span>判断题 (共${cJ}题)</span><div>抽 <input type="number" id="cJ" value="${Math.min(3,cJ)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pJ" value="2" style="width:40px;text-align:center;"> 分</div></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;"><span>考试时长</span><div><input type="number" id="tLimit" value="60" style="width:50px;text-align:center;"> 分钟</div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;">
+        <span>合格分数</span>
+        <div><input type="number" id="passScore" value="60" style="width:60px;text-align:center; border:1px solid #cbd5e1; border-radius:6px; padding:6px;"> 分</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;">
+        <span>考试时长</span>
+        <div><input type="number" id="tLimit" value="60" style="width:50px;text-align:center;"> 分钟</div>
+      </div>
     </div>
     <button class="btn btn-primary btn-block" onclick="startExam()">开始考试</button>
   `;
@@ -651,12 +687,13 @@ function startExam() {
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
   var cS = parseInt(document.getElementById('cS').value) || 0; var cM = parseInt(document.getElementById('cM').value) || 0;
   var cJ = parseInt(document.getElementById('cJ').value) || 0; var tLimit = parseInt(document.getElementById('tLimit').value) || 60;
+  var pScore = parseInt(document.getElementById('passScore').value) || 60;
   if (cS + cM + cJ === 0) return showToast('请至少选择一题', true);
   var sQS = qs.filter(function(q){ return q.type === 'single'; }).sort(function(){ return 0.5 - Math.random(); });
   var mQS = qs.filter(function(q){ return q.type === 'multiple'; }).sort(function(){ return 0.5 - Math.random(); });
   var jQS = qs.filter(function(q){ return q.type === 'judge'; }).sort(function(){ return 0.5 - Math.random(); });
   examQuestions = sQS.slice(0, cS).concat(mQS.slice(0, cM)).concat(jQS.slice(0, cJ));
-  examConfig = { scoreSingle: parseInt(document.getElementById('pS').value) || 1, scoreMultiple: parseInt(document.getElementById('pM').value) || 1, scoreJudge: parseInt(document.getElementById('pJ').value) || 1, timeLimit: tLimit };
+  examConfig = { scoreSingle: parseInt(document.getElementById('pS').value) || 1, scoreMultiple: parseInt(document.getElementById('pM').value) || 1, scoreJudge: parseInt(document.getElementById('pJ').value) || 1, timeLimit: tLimit, passScore: pScore };
   examIndex = 0; examSelections = []; for (var i=0; i<examQuestions.length; i++) examSelections.push([]);
   examStartTime = Date.now(); examRemainingSeconds = tLimit * 60;
   if (examTimer) clearInterval(examTimer);
@@ -736,15 +773,37 @@ function submitExam() {
 
 function renderResult() {
   var isFull = examScore.got === examScore.total && examScore.total > 0;
-  var msg = isFull ? '你真棒，继续加油！' : '不要气馁，再去多刷刷题，满分等着你！';
-  var msgClass = isFull ? 'maoti-result full' : 'maoti-result';
+  var isPass = examScore.got >= examConfig.passScore;
+  
+  var msg = '';
+  var msgClass = 'maoti-result';
+  
+  if (isFull) {
+    msg = '你真棒，继续加油！';
+    msgClass += ' full';
+  } else if (!isPass) {
+    // 不及格，弹出毛体大弹窗
+    showAppConfirm('铁途学练', '<div class="maoti-fail">考试不合格<br>不要气馁<br>继续加油<br>多去练练吧！</div>', '去练练', '看成绩', function() {
+      currentMode = 'home'; render();
+    }, function() {
+      // 留在成绩页
+    });
+    msg = '考试不合格，不要气馁，继续加油，多去练练吧！';
+    msgClass += ' full';
+  } else {
+    msg = '考试合格，再接再厉！';
+  }
+
   appContainer.innerHTML = `
     <div class="card score-box">
       <h2 style="color:#0d47a1;margin-bottom:20px;">📊 考试成绩</h2>
       <div class="score-num">${examScore.got}</div>
-      <div style="font-size:1.1rem;color:#64748b;font-weight:bold;margin-bottom:20px;">总分：${examScore.total} 分</div>
+      <div style="font-size:1.1rem;color:#64748b;font-weight:bold;margin-bottom:20px;">总分：${examScore.total} 分 ｜ 合格线：${examConfig.passScore} 分</div>
+      
       <div class="${msgClass}">${msg}</div>
+      
       <div style="color:#64748b;font-size:0.9rem;margin-bottom:30px;">本次用时：${examScore.usedTime}</div>
+      
       <div style="display:flex;gap:10px;">
         <button class="btn btn-primary" style="flex:1;" onclick="currentMode='home';render()">返回首页</button>
         <button class="btn btn-outline" style="flex:1;" onclick="currentMode='review';render()">查看错题</button>
