@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-title" content="铁途学练">
 <link rel="icon" href="logo.png">
 
+<!-- 🔒 防盗锁 -->
 <script>
   (function() {
     var allowedDomains = ["jjqgd.github.io", "localhost", "127.0.0.1"];
@@ -29,12 +30,26 @@
   * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, "Microsoft YaHei", sans-serif; }
   body { background-color: #f0f4f8; color: #1e293b; padding: 10px; -webkit-tap-highlight-color: transparent; }
 
+  /* 开屏动画 */
   #splash-screen { position: fixed; top:0; left:0; right:0; bottom:0; background: #fcf9f2; z-index: 9999; display: flex; align-items: center; justify-content: center; transition: opacity 0.8s; }
   #splash-screen.hidden { opacity: 0; pointer-events: none; }
-  .calligraphy-box { display: flex; gap: 40px; }
+  
+  .splash-container { position: relative; width: 200px; height: 300px; display: flex; align-items: center; justify-content: center; }
+  
+  .calligraphy-group { display: flex; gap: 40px; position: absolute; transition: opacity 0.8s ease; }
+  .calligraphy-group.fade-out { opacity: 0; pointer-events: none; }
+  
   .calligraphy-col { font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive; font-size: 3.5rem; font-weight: bold; writing-mode: vertical-rl; color: #111; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); opacity: 0; transform: scale(1.1); animation: inkReveal 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
   .col-1 { margin-top: 60px; }
   .col-2 { margin-bottom: 60px; color: #b71c1c; animation-delay: 0.5s; }
+  
+  /* 节假日文字样式 */
+  .holiday-group { display: none; gap: 40px; position: absolute; opacity: 0; }
+  .holiday-group.show { display: flex; opacity: 1; }
+  .holiday-col { font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive; font-size: 3.5rem; font-weight: bold; writing-mode: vertical-rl; color: #b71c1c; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); transform: scale(1.1); animation: inkReveal 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+  .holiday-col.h-col-1 { margin-top: 60px; }
+  .holiday-col.h-col-2 { margin-bottom: 60px; animation-delay: 0.5s; }
+
   @keyframes inkReveal { 0% { opacity: 0; filter: blur(10px); transform: scale(1.1); } 100% { opacity: 1; filter: blur(0); transform: scale(1); } }
 
   .nav { background: #fff; padding: 10px 15px; border-bottom: 2px solid #b71c1c; display: flex; justify-content: space-between; align-items: center; border-radius: 10px; margin-bottom: 10px; }
@@ -42,7 +57,7 @@
   .nav-logo img { width: 30px; height: 30px; object-fit: contain; }
   .nav-right { font-size: 0.8rem; color: #64748b; }
 
-  .card { background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); position: relative; overflow: visible; } /* overflow 改为 visible 让红圈可以超出 */
+  .card { background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); position: relative; overflow: visible; }
   .title { font-size: 1.1rem; font-weight: bold; margin-bottom: 12px; border-left: 4px solid #b71c1c; padding-left: 8px; }
   .banner { background: #e0f2fe; color: #0369a1; padding: 12px; border-radius: 8px; font-size: 0.8rem; margin-bottom: 15px; line-height: 1.5; }
 
@@ -59,7 +74,7 @@
   .menu { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
   .menu-btn { flex: 1; min-width: 45%; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px; text-align: center; font-weight: bold; font-size: 0.95rem; cursor: pointer; }
   .menu-btn:active { background: #f1f5f9; }
-  .sub-menu { display: flex; gap: 8px; }
+  .sub-menu { display: flex; gap: 8px; margin-bottom: 8px; }
   .sub-menu .btn { flex: 1; padding: 8px 0; font-size: 0.85rem; border-radius: 6px; }
 
   .btn { border: none; border-radius: 8px; padding: 12px 15px; font-size: 0.95rem; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; }
@@ -68,6 +83,7 @@
   .btn-danger { background: #b71c1c; color: #fff; }
   .btn-outline { background: #fff; border: 1px solid #cbd5e1; color: #1e293b; }
   .btn-block { width: 100%; margin-top: 10px; }
+  .btn-green { background: #10b981; color: #fff; }
 
   .toolbar { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 10px 15px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
   .timer { font-family: monospace; font-size: 1.1rem; font-weight: bold; color: #ef4444; }
@@ -85,9 +101,10 @@
   .acc-body.hidden { display: none; }
   .num-btn { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: #f8fafc; border-radius: 6px; font-weight: bold; color: #1e293b; border: 1px solid #cbd5e1; cursor: pointer; }
   .num-btn.done { background: #0d47a1; color: #fff; border-color: #0d47a1; }
+  .num-btn.wrong { background: #ef4444; color: #fff; border-color: #ef4444; }
 
   .tag { display: inline-block; padding: 2px 8px; background: #0d47a1; color: #fff; border-radius: 4px; font-size: 0.75rem; font-weight: bold; margin-bottom: 10px; }
-  .q-text { font-size: 1.05rem; font-weight: bold; line-height: 1.5; margin-bottom: 15px; position: relative; padding-right: 65px; } /* 右侧留白给红圈 */
+  .q-text { font-size: 1.05rem; font-weight: bold; line-height: 1.5; margin-bottom: 15px; position: relative; padding-right: 65px; }
   .opt { border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; gap: 10px; font-size: 0.95rem; cursor: pointer; transition: all 0.15s; position: relative; }
   .opt:hover:not(.disabled) { border-color: #94a3b8; background: #f8fafc; }
   .opt.selected { border-color: #0d47a1; background: #eff6ff; }
@@ -103,6 +120,10 @@
   .analysis.show { display: block; }
   .analysis.error { border-left-color: #ef4444; background: #fef2f2; }
   .analysis.success { border-left-color: #10b981; background: #ecfdf5; }
+
+  .exam-review-box { margin-top: 15px; padding: 12px; border-radius: 8px; font-size: 0.85rem; line-height: 1.5; }
+  .exam-review-box.err { border-left: 4px solid #ef4444; background: #fef2f2; }
+  .exam-review-box.ok { border-left: 4px solid #10b981; background: #ecfdf5; }
 
   .score-box { text-align: center; padding: 30px 0; }
   .score-num { font-family: "Georgia", serif; color: #d32f2f; font-size: 5rem; font-weight: bold; display: inline-block; border-bottom: 4px double #d32f2f; line-height: 1; margin-bottom: 15px; padding: 0 10px; }
@@ -124,33 +145,41 @@
   
   .footer { text-align: center; color: #94a3b8; font-size: 0.8rem; margin-top: 20px; padding-bottom: 20px; }
 
-  /* ====== 答题对错反馈（毛笔红圈，放在题目右上方） ====== */
+  /* ====== 答题反馈：加粗红毛笔圈 + 毛体对错 ====== */
   .feedback-badge {
     position: absolute;
-    top: -24px;
+    top: -30px;
     right: -35px;
-    width: 85px;
-    height: 85px;
+    width: 90px;
+    height: 90px;
     pointer-events: none;
     z-index: 40;
     opacity: 0;
-    transform: rotate(-15deg) scale(0);
+    transform: rotate(-10deg) scale(0);
     animation: stampIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    display: flex; align-items: center; justify-content: center;
   }
-  /* 用 CSS 画一个稍带不规则感的红圈（背景是 SVG data URI） */
   .feedback-badge::before {
     content: '';
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 45 10 C 20 12, 5 30, 8 55 C 10 80, 30 92, 55 90 C 75 88, 90 70, 88 45 C 87 30, 78 20, 65 15 C 55 12, 45 15, 40 25' fill='none' stroke='%23d32f2f' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' opacity='0.9' /%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 42 8 C 15 12, 2 35, 8 60 C 12 85, 35 96, 60 92 C 82 88, 94 70, 90 45 C 88 28, 78 15, 62 10 C 50 6, 40 12, 35 25' fill='none' stroke='%23d32f2f' stroke-width='7' stroke-linecap='round' stroke-linejoin='round' opacity='0.9' /%3E%3C/svg%3E");
     background-size: contain;
     background-repeat: no-repeat;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
   }
+  .feedback-text {
+    font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive;
+    font-size: 3rem;
+    font-weight: bold;
+    color: #d32f2f;
+    transform: rotate(-10deg);
+    margin-top: -6px; margin-left: -4px;
+  }
   @keyframes stampIn {
     0% { transform: rotate(-30deg) scale(0); opacity: 0; }
-    80% { transform: rotate(-10deg) scale(1.1); opacity: 1; }
-    100% { transform: rotate(-15deg) scale(1); opacity: 1; }
+    80% { transform: rotate(-8deg) scale(1.1); opacity: 1; }
+    100% { transform: rotate(-10deg) scale(1); opacity: 1; }
   }
 
   /* ====== 满分烟花 ====== */
@@ -160,9 +189,15 @@
 <body>
 
 <div id="splash-screen">
-  <div class="calligraphy-box">
-    <div class="calligraphy-col col-1">铁道征途</div>
-    <div class="calligraphy-col col-2">勤学练兵</div>
+  <div class="splash-container">
+    <div class="calligraphy-group" id="group-normal">
+      <div class="calligraphy-col col-1">铁道征途</div>
+      <div class="calligraphy-col col-2">勤学练兵</div>
+    </div>
+    <div class="holiday-group" id="group-holiday">
+      <div class="holiday-col h-col-1" id="holiday-text-1"></div>
+      <div class="holiday-col h-col-2" id="holiday-text-2"></div>
+    </div>
   </div>
 </div>
 
@@ -177,6 +212,49 @@
 <div id="toast" class="toast"></div>
 
 <script>
+// ================= 节假日识别及开屏动画 =================
+(function setHoliday() {
+  var d = new Date();
+  var m = d.getMonth() + 1;
+  var day = d.getDate();
+  var text = "";
+  
+  if (m === 1 && day === 1) text = "元旦快乐万象更新";
+  else if (m === 2 && day >= 10 && day <= 17) text = "新春大吉万事胜意";
+  else if (m === 3 && day === 8) text = "致敬巾帼节日快乐";
+  else if (m === 5 && day === 1) text = "劳动光荣节日快乐";
+  else if (m === 5 && day === 4) text = "青春不息奋斗不止";
+  else if (m === 6 && day === 1) text = "童心未泯快乐常在";
+  else if (m === 7 && day === 1) text = "红心向党砥砺前行";
+  else if (m === 8 && day === 1) text = "铁血军魂保家卫国";
+  else if (m === 9 && day === 10) text = "尊师重教桃李芬芳";
+  else if (m === 10 && day === 1) text = "盛世华诞举国同庆";
+  else if (m === 12 && day === 13) text = "铭记历史珍爱和平";
+
+  if (text) {
+    // 拆分前四个字和后四个字
+    document.getElementById('holiday-text-1').innerText = text.substring(0, 4);
+    document.getElementById('holiday-text-2').innerText = text.substring(4, 8);
+    
+    // 动画时序控制
+    setTimeout(function() {
+      // 2.2秒时，普通文字淡出
+      document.getElementById('group-normal').classList.add('fade-out');
+      
+      // 2.7秒时，节假日文字显示并淡入
+      setTimeout(function() {
+        document.getElementById('group-holiday').classList.add('show');
+      }, 500);
+      
+    }, 2200);
+  }
+})();
+
+// 控制开屏整体消失时间（有节假日时延迟到3.5秒，没有则2.8秒）
+var hasHolidayText = document.getElementById('holiday-text-1').innerText !== "";
+var splashDelay = hasHolidayText ? 3500 : 2800;
+setTimeout(function() { document.getElementById('splash-screen').classList.add('hidden'); }, splashDelay);
+
 // ================= 1. 防白嫖极限授权系统 =================
 var isAuthorized = localStorage.getItem('xjt_offline_auth') === 'true';
 
@@ -252,11 +330,10 @@ var examConfig = { scoreSingle: 2, scoreMultiple: 4, scoreJudge: 2, timeLimit: 6
 var examScore = { got: 0, total: 0, usedTime: '0分0秒' };
 var examTimer = null, examStartTime = 0, examRemainingSeconds = 0;
 var examAborted = false;
+var reviewExamIndex = 0;
 
 var appContainer = document.getElementById('app');
 var toastEl = document.getElementById('toast');
-
-setTimeout(function() { document.getElementById('splash-screen').classList.add('hidden'); }, 2800);
 
 function showToast(msg, isErr) {
   toastEl.innerText = msg;
@@ -284,7 +361,7 @@ function showAppConfirm(title, msg, okText, cancelText, onOk, onCancel) {
 }
 
 function confirmExitPractice() {
-  showAppConfirm('铁途学练', '确定要退出当前练习吗？(进度将不再保留)', '退出', '取消', function() {
+  showAppConfirm('铁途学练', '确定要退出当前学习吗？(进度将不再保留)', '退出', '取消', function() {
     localStorage.removeItem('xjt_practice_progress'); currentMode = 'home'; render();
   });
 }
@@ -309,8 +386,8 @@ function saveData() {
 }
 
 function savePracticeProgress() {
-  if (currentMode === 'practice') {
-    localStorage.setItem('xjt_practice_progress', JSON.stringify({ questions: practiceQuestions, index: practiceIndex, selections: practiceSelections, isWrong: isWrongPracticeMode }));
+  if (currentMode === 'practice' || currentMode === 'recite') {
+    localStorage.setItem('xjt_practice_progress', JSON.stringify({ mode: currentMode, questions: practiceQuestions, index: practiceIndex, selections: practiceSelections, isWrong: isWrongPracticeMode }));
   }
 }
 
@@ -320,9 +397,10 @@ function restorePracticeProgress() {
     try {
       var p = JSON.parse(pStr);
       if (p.questions && p.questions.length > 0) {
-        showAppConfirm('铁途学练', '检测到上次未完成的练习，是否继续？', '继续', '放弃', function() {
+        var modeName = p.mode === 'recite' ? '背题' : '练习';
+        showAppConfirm('铁途学练', '检测到上次未完成的' + modeName + '，是否继续？', '继续', '放弃', function() {
           practiceQuestions = p.questions; practiceIndex = p.index; practiceSelections = p.selections; isWrongPracticeMode = p.isWrong;
-          currentMode = 'practice'; render();
+          currentMode = p.mode || 'practice'; render();
         }, function() { localStorage.removeItem('xjt_practice_progress'); });
       }
     } catch(e) {}
@@ -359,9 +437,11 @@ function render() {
   else if (currentMode === 'import') renderImport();
   else if (currentMode === 'home') renderHome();
   else if (currentMode === 'practice') renderPractice();
+  else if (currentMode === 'recite') renderRecite();
   else if (currentMode === 'examSetup') renderExamSetup();
   else if (currentMode === 'exam') renderExam();
   else if (currentMode === 'result') renderResult();
+  else if (currentMode === 'examReview') renderExamReview();
   else if (currentMode === 'review') renderReview();
 }
 
@@ -429,14 +509,22 @@ function renderHome() {
         </div>
         <div class="menu">
           <div class="menu-btn" onclick="startPractice('all')">📖 顺序练习</div>
+          <div class="menu-btn" onclick="startRecite('all')">👁️ 背题模式</div>
           <div class="menu-btn" onclick="startExamSetup()">📝 模拟考试</div>
           <div class="menu-btn" onclick="startPractice('wrong')">🔥 错题集训</div>
           <div class="menu-btn" onclick="openReview()">📑 错题查看</div>
         </div>
+        <div class="title" style="margin-top:15px;font-size:0.95rem;margin-bottom:8px;">专项练习</div>
         <div class="sub-menu">
-          <button class="btn btn-outline" onclick="startPractice('single')">专项：单选</button>
-          <button class="btn btn-outline" onclick="startPractice('multiple')">专项：多选</button>
-          <button class="btn btn-outline" onclick="startPractice('judge')">专项：判断</button>
+          <button class="btn btn-outline" onclick="startPractice('single')">单选</button>
+          <button class="btn btn-outline" onclick="startPractice('multiple')">多选</button>
+          <button class="btn btn-outline" onclick="startPractice('judge')">判断</button>
+        </div>
+        <div class="title" style="margin-top:15px;font-size:0.95rem;margin-bottom:8px;">专项背题</div>
+        <div class="sub-menu">
+          <button class="btn btn-outline" onclick="startRecite('single')">单选</button>
+          <button class="btn btn-outline" onclick="startRecite('multiple')">多选</button>
+          <button class="btn btn-outline" onclick="startRecite('judge')">判断</button>
         </div>
       </div>
     `;
@@ -460,6 +548,7 @@ function renderHome() {
     }
   }
   html += `<button class="btn btn-primary btn-block" onclick="goToImport()">➕ 导入新题库</button></div>`;
+  
   html += `
     <div class="banner">
       <b>🔒 隐私安全提示：</b>本系统采用本地缓存形式，不涉及上传云端，绝对安全。导入后请勿清理浏览器缓存，以免数据丢失。
@@ -476,13 +565,25 @@ function buildSheetHtml(questions, currentIdx, selections, type) {
   var groups = { single: [], multiple: [], judge: [] };
   for (var k = 0; k < questions.length; k++) groups[questions[k].type].push({ idx: k, q: questions[k] });
   var html = ''; var types = ['single', 'multiple', 'judge']; var typeNames = { single: '单选题', multiple: '多选题', judge: '判断题' };
-  var jumpFn = type === 'practice' ? 'jumpPractice' : 'jumpExam';
+  
+  // 控制点击跳转的回调函数
+  var jumpFn = 'jumpPractice';
+  if (type === 'exam') jumpFn = 'jumpExam';
+  else if (type === 'examReview') jumpFn = 'jumpExamReview';
+  else if (type === 'recite') jumpFn = 'jumpRecite';
+
   for (var t = 0; t < types.length; t++) {
     var tp = types[t]; var items = groups[tp]; if (items.length === 0) continue;
     html += `<div class="acc-group"><div class="acc-header" onclick="this.nextElementSibling.classList.toggle('hidden')"><span style="font-size:1.1rem;">${typeNames[tp]}</span><span>共 ${items.length} 题 (点击折叠/展开)</span></div><div class="acc-body">`;
     for (var i = 0; i < items.length; i++) {
       var item = items[i];
-      var isDone = type === 'practice' ? item.q.isAnswered : (selections[item.idx] && selections[item.idx].length > 0);
+      var isDone = false;
+      if (type === 'practice' || type === 'recite') isDone = item.q.isAnswered;
+      else if (type === 'exam') isDone = (selections[item.idx] && selections[item.idx].length > 0);
+      else if (type === 'examReview') {
+        // 查看试卷模式：有作答记录就算 done
+        isDone = (selections[item.idx] && selections[item.idx].length > 0);
+      }
       html += `<div class="num-btn ${isDone ? 'done' : ''}" onclick="${jumpFn}(${item.idx})">${item.idx+1}</div>`;
     }
     html += `</div></div>`;
@@ -490,7 +591,7 @@ function buildSheetHtml(questions, currentIdx, selections, type) {
   return html;
 }
 
-// ================= 练习模式 =================
+// ================= 练习与背题模式 =================
 function startPractice(type) {
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
   if (type === 'wrong') {
@@ -507,6 +608,45 @@ function startPractice(type) {
   currentMode = 'practice'; savePracticeProgress(); render();
 }
 
+function startRecite(type) {
+  var qs = activeBankId ? allBanks[activeBankId].questions : [];
+  if (qs.length === 0) return showToast('题库为空', true);
+  practiceQuestions = type === 'all' ? qs.slice() : qs.filter(function(q){ return q.type === type; });
+  if (practiceQuestions.length === 0) return showToast('该分类下暂无题目', true);
+  practiceIndex = 0; practiceSelections = [];
+  for (var i = 0; i < practiceQuestions.length; i++) { practiceQuestions[i].isAnswered = true; } // 背题模式默认已作答，直接出解析
+  isWrongPracticeMode = false;
+  currentMode = 'recite'; savePracticeProgress(); render();
+}
+
+// 通用题目渲染逻辑
+function buildQuestionHtml(q, sels, showAns, isWrongMode) {
+  var optsHtml = '';
+  for (var i = 0; i < q.options.length; i++) {
+    var cls = 'opt';
+    if (showAns) { 
+      if (q.answer.indexOf(i) > -1) cls += ' correct'; 
+      else if (sels && sels.indexOf(i) > -1) cls += ' wrong'; 
+    } else if (sels && sels.indexOf(i) > -1) {
+      cls += ' selected';
+    }
+    optsHtml += `<div class="${cls}" onclick="selectPractice(${i})"><div class="opt-prefix">${String.fromCharCode(65+i)}</div><div>${q.options[i]}</div></div>`;
+  }
+  return optsHtml;
+}
+
+function buildAnalysisHtml(q, sels, showAns, isWrongMode) {
+  if (!showAns) return '';
+  var isCorrect = sels.length === q.answer.length && sels.every(function(v){ return q.answer.indexOf(v) > -1; });
+  
+  return `
+    <div class="analysis show ${isCorrect ? 'success' : 'error'}">
+      <div style="font-weight:bold;margin-bottom:5px;">正确答案：<span style="color:#10b981;">${q.answer.map(function(i){ return String.fromCharCode(65+i); }).join(', ')}</span></div>
+      ${q.analysis ? `<div style="margin-top:8px; font-weight:bold; color:#0d47a1;">解析：</div><div style="color:#475569; margin-top:4px;">${q.analysis}</div>` : ''}
+    </div>
+  `;
+}
+
 function renderPractice() {
   if (practiceIndex >= practiceQuestions.length) {
     localStorage.removeItem('xjt_practice_progress');
@@ -515,21 +655,15 @@ function renderPractice() {
   }
   var q = practiceQuestions[practiceIndex]; var sels = practiceSelections[practiceIndex] || [];
   var showAns = q.isAnswered; var isCorrect = showAns && sels.length === q.answer.length && sels.every(function(v){ return q.answer.indexOf(v) > -1; });
-  var optsHtml = '';
-  for (var i = 0; i < q.options.length; i++) {
-    var cls = 'opt';
-    if (showAns) { if (q.answer.indexOf(i) > -1) cls += ' correct'; else if (sels.indexOf(i) > -1) cls += ' wrong'; }
-    else if (sels.indexOf(i) > -1) cls += ' selected';
-    optsHtml += `<div class="${cls}" onclick="selectPractice(${i})"><div class="opt-prefix">${String.fromCharCode(65+i)}</div><div>${q.options[i]}</div></div>`;
-  }
+  
+  var optsHtml = buildQuestionHtml(q, sels, showAns);
   var typeName = q.type === 'single' ? '单选题' : q.type === 'multiple' ? '多选题' : '判断题';
   var streakHtml = isWrongPracticeMode ? `<span style="float:right;font-size:0.8rem;color:#ef4444;font-weight:bold;">🔥连对: ${q.streak}/5</span>` : '';
   var sheetHtml = buildSheetHtml(practiceQuestions, practiceIndex, practiceSelections, 'practice');
   
   var feedbackAnim = '';
   if (showAns) {
-    // 定位在选项右侧的空白区：因为给 .q-text 加了 padding-right: 65px，所以红圈会被挤在右侧不遮字
-    feedbackAnim = `<div class="feedback-badge"></div>`;
+    feedbackAnim = `<div class="feedback-badge"><div class="feedback-text">${isCorrect ? '对' : '错'}</div></div>`;
   }
 
   appContainer.innerHTML = `
@@ -543,12 +677,7 @@ function renderPractice() {
     <div class="card">
       <span class="tag">${typeName}</span>${streakHtml}
       <div class="q-text">${q.question}${feedbackAnim}</div>${optsHtml}
-      <div class="analysis ${showAns ? (isCorrect ? 'success' : 'error') : ''}" style="display:${showAns ? 'block' : 'none'};">
-        <div style="font-weight:bold;margin-bottom:5px;">正确答案：<span style="color:#10b981;">${q.answer.map(function(i){ return String.fromCharCode(65+i); }).join(', ')}</span></div>
-        ${q.analysis ? `<div style="margin-top:8px; font-weight:bold; color:#0d47a1;">解析：</div><div style="color:#475569; margin-top:4px;">${q.analysis}</div>` : ''}
-        ${isWrongPracticeMode && isCorrect ? `<div style="color:#10b981;font-weight:bold;margin-top:8px;">✅ 连对次数 +1</div>` : ''}
-        ${isWrongPracticeMode && !isCorrect ? `<div style="color:#ef4444;font-weight:bold;margin-top:8px;">❌ 答错了，连对重置</div>` : ''}
-      </div>
+      ${buildAnalysisHtml(q, sels, showAns, isWrongPracticeMode)}
       <div class="bottom-actions">
         <button class="btn btn-outline" onclick="prevPractice()" ${practiceIndex===0?'disabled style="opacity:0.5"':''}>⬅ 上一题</button>
         ${(!showAns && q.type === 'multiple') ? `<button class="btn btn-primary" onclick="confirmMultiPractice()" ${sels.length===0?'disabled style="opacity:0.5"':''}>确认答案</button>` : ''}
@@ -563,12 +692,64 @@ function renderPractice() {
   `;
 }
 
+function renderRecite() {
+  if (practiceIndex >= practiceQuestions.length) {
+    localStorage.removeItem('xjt_practice_progress');
+    appContainer.innerHTML = `<div class="card" style="text-align:center;padding:40px;"><h2 style="color:#0d47a1;margin-bottom:15px;">🎉 背题完成</h2><p style="color:#64748b;margin-bottom:20px;">您已完成本轮背题。</p><button class="btn btn-primary btn-block" onclick="currentMode='home';render()">返回首页</button></div>`;
+    return;
+  }
+  var q = practiceQuestions[practiceIndex];
+  var showAns = true; // 强制显示答案
+  var sels = q.answer; // 直接选中正确答案
+  
+  var optsHtml = '';
+  // 背题模式判断特殊处理：判断题可选正确/错误
+  if (q.type === 'judge') {
+    for (var i = 0; i < q.options.length; i++) {
+      var cls = 'opt';
+      if (q.answer.indexOf(i) > -1) cls += ' correct';
+      optsHtml += `<div class="${cls}"><div class="opt-prefix">${String.fromCharCode(65+i)}</div><div>${q.options[i]}</div></div>`;
+    }
+  } else {
+    optsHtml = buildQuestionHtml(q, sels, showAns);
+  }
+  
+  var typeName = q.type === 'single' ? '单选题' : q.type === 'multiple' ? '多选题' : '判断题';
+  var sheetHtml = buildSheetHtml(practiceQuestions, practiceIndex, practiceSelections, 'recite');
+
+  appContainer.innerHTML = `
+    <div class="toolbar">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="confirmExitPractice()">⬅ 退出</button>
+        <div class="q-progress">${practiceIndex+1} / ${practiceQuestions.length}</div>
+      </div>
+      <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
+    </div>
+    <div class="card">
+      <span class="tag" style="background:#10b981;">${typeName} · 背题模式</span>
+      <div class="q-text">${q.question}</div>${optsHtml}
+      ${buildAnalysisHtml(q, sels, showAns, false)}
+      <div class="bottom-actions">
+        <button class="btn btn-outline" onclick="prevPractice()" ${practiceIndex===0?'disabled style="opacity:0.5"':''}>⬅ 上一题</button>
+        <button class="btn btn-primary" onclick="nextPractice()">${practiceIndex === practiceQuestions.length-1 ? '完成' : '下一题 ➡'}</button>
+      </div>
+    </div>
+    <div id="sheetModal" class="sheet-mask" style="display:none;" onclick="closeSheet(event)">
+      <div class="sheet-content" onclick="event.stopPropagation()">
+        <div class="sheet-title">答题卡 <span style="font-size:0.85rem;color:#64748b;font-weight:normal;">(点击题号跳转)</span></div>${sheetHtml}
+      </div>
+    </div>
+  `;
+}
+
 function openSheet() { document.getElementById('sheetModal').style.display='flex'; setTimeout(function(){document.getElementById('sheetModal').classList.add('show');},10); }
 function closeSheet(e) { if(e.target.id==='sheetModal'){ document.getElementById('sheetModal').classList.remove('show'); setTimeout(function(){document.getElementById('sheetModal').style.display='none';},300); } }
-function jumpPractice(idx) { practiceIndex = idx; closeSheet({target:{id:'sheetModal'}}); savePracticeProgress(); renderPractice(); }
-function prevPractice() { if(practiceIndex > 0) { practiceIndex--; savePracticeProgress(); renderPractice(); } }
+function jumpPractice(idx) { practiceIndex = idx; closeSheet({target:{id:'sheetModal'}}); savePracticeProgress(); render(); }
+function jumpRecite(idx) { practiceIndex = idx; closeSheet({target:{id:'sheetModal'}}); savePracticeProgress(); render(); }
+function prevPractice() { if(practiceIndex > 0) { practiceIndex--; savePracticeProgress(); render(); } }
 
 function selectPractice(idx) {
+  if (currentMode === 'recite') return; // 背题模式不可作答
   var q = practiceQuestions[practiceIndex]; if (q.isAnswered) return;
   var sels = practiceSelections[practiceIndex] || [];
   if (q.type === 'multiple') {
@@ -610,7 +791,7 @@ function handlePracticeResult(q, isCorrect) {
   }
 }
 
-function nextPractice() { if(practiceIndex < practiceQuestions.length) { practiceIndex++; savePracticeProgress(); renderPractice(); } }
+function nextPractice() { if(practiceIndex < practiceQuestions.length) { practiceIndex++; savePracticeProgress(); render(); } }
 
 function openReview() { currentMode = 'review'; render(); }
 function renderReview() {
@@ -744,7 +925,7 @@ function selectExam(idx) {
 function nextExam() { if (examIndex === examQuestions.length - 1) { confirmSubmitExam(); } else { examIndex++; renderExam(); } }
 function prevExam() { if (examIndex > 0) { examIndex--; renderExam(); } }
 
-/* 改：计算目前得分 + 剩余未答题满分，与合格线比较 */
+/* 核心逻辑：已得分 + 剩余未答满分 < 合格线 时终止 */
 function checkExamScoreWarning() {
   if (currentMode !== 'exam') return;
   if (examRemainingSeconds <= 0) return;
@@ -753,28 +934,24 @@ function checkExamScoreWarning() {
 
   var got = 0;
   var remainingMax = 0;
-  var totalMax = 0;
   
   for (var i = 0; i < examQuestions.length; i++) {
     var q = examQuestions[i];
     var pts = q.type==='single' ? examConfig.scoreSingle : q.type==='multiple' ? examConfig.scoreMultiple : examConfig.scoreJudge;
-    totalMax += pts;
-    
     var sel = examSelections[i] || [];
+    
     if (sel.length === 0) {
-      // 没答的题，算作剩余可得分
-      remainingMax += pts;
+      remainingMax += pts; // 没答的题算作剩余满分
       continue;
     }
     
-    // 算作已答题，判断对错
     var ans = q.answer.slice().sort();
     var s = sel.slice().sort();
     var isCorrect = ans.length === s.length && ans.every(function(v, idx){ return v === s[idx]; });
-    if (isCorrect) got += pts;
+    if (isCorrect) got += pts; // 答对的计入得分
   }
 
-  // 核心逻辑：当前得分 + 剩余未答满分 < 合格线，说明绝对考不及格了
+  // 绝对无法及格时，弹出拦截
   if (got + remainingMax < examConfig.passScore) {
     window.__examLowScoreWarned = true;
     showAppConfirm(
@@ -852,13 +1029,74 @@ function renderResult() {
       </div>
       <div class="${msgClass}">${msg}</div>
       <div style="color:#64748b;font-size:0.9rem;margin-bottom:30px;">本次用时：${examScore.usedTime}</div>
-      <div style="display:flex;gap:10px;">
-        <button class="btn btn-primary" style="flex:1;" onclick="currentMode='home';render()">返回首页</button>
-        <button class="btn btn-outline" style="flex:1;" onclick="currentMode='review';render()">查看错题</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-primary" style="flex:1;min-width:30%;" onclick="currentMode='home';render()">返回首页</button>
+        <button class="btn btn-green" style="flex:1;min-width:30%;" onclick="currentMode='examReview';reviewExamIndex=0;render();">查看试卷</button>
+        <button class="btn btn-outline" style="flex:1;min-width:30%;" onclick="currentMode='review';render()">查看错题</button>
       </div>
     </div>
   `;
 }
+
+/* 考试试卷查看 */
+function renderExamReview() {
+  if (reviewExamIndex >= examQuestions.length) {
+    appContainer.innerHTML = `<div class="card" style="text-align:center;padding:40px;"><h2 style="color:#0d47a1;margin-bottom:15px;">试卷已看完</h2><button class="btn btn-primary btn-block" onclick="currentMode='result';render()">返回成绩单</button></div>`;
+    return;
+  }
+  var q = examQuestions[reviewExamIndex]; var sels = examSelections[reviewExamIndex] || [];
+  
+  var isCorrect = sels.length === q.answer.length && sels.every(function(v){ return q.answer.indexOf(v) > -1; });
+  var feedbackAnim = `<div class="feedback-badge"><div class="feedback-text">${isCorrect ? '对' : '错'}</div></div>`;
+
+  var optsHtml = '';
+  for (var i=0; i<q.options.length; i++) {
+    var cls = 'opt disabled';
+    if (q.answer.indexOf(i) > -1) cls += ' correct'; // 正确答案绿底
+    else if (sels.indexOf(i) > -1) cls += ' wrong'; // 选错了红底
+    optsHtml += `<div class="${cls}"><div class="opt-prefix">${String.fromCharCode(65+i)}</div><div>${q.options[i]}</div></div>`;
+  }
+  
+  var typeName = q.type === 'single' ? '单选题' : q.type === 'multiple' ? '多选题' : '判断题';
+  var sheetHtml = buildSheetHtml(examQuestions, reviewExamIndex, examSelections, 'examReview');
+  
+  var myAnsStr = sels.length > 0 ? sels.map(function(idx){ return String.fromCharCode(65+idx); }).join(', ') : '未作答';
+  var trueAnsStr = q.answer.map(function(idx){ return String.fromCharCode(65+idx); }).join(', ');
+
+  appContainer.innerHTML = `
+    <div class="toolbar">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="currentMode='result';render()">⬅ 退出</button>
+        <div class="q-progress">${reviewExamIndex+1} / ${examQuestions.length}</div>
+      </div>
+      <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
+    </div>
+    <div class="card">
+      <span class="tag">${typeName}</span>
+      <div class="q-text">${q.question}${feedbackAnim}</div>${optsHtml}
+      
+      <div class="exam-review-box ${isCorrect ? 'ok' : 'err'}">
+        <div style="font-weight:bold; margin-bottom:5px;">标准答案：<span style="color:#10b981;">${trueAnsStr}</span></div>
+        <div style="font-weight:bold; margin-bottom:5px;">你的答案：<span style="color:${isCorrect ? '#10b981' : '#ef4444'};">${myAnsStr}</span></div>
+        ${q.analysis ? `<div style="margin-top:8px; font-weight:bold; color:#0d47a1;">解析：</div><div style="color:#475569; margin-top:4px;">${q.analysis}</div>` : ''}
+      </div>
+      
+      <div class="bottom-actions">
+        <button class="btn btn-outline" onclick="prevExamReview()" ${reviewExamIndex===0?'disabled style="opacity:0.5"':''}>⬅ 上一题</button>
+        <button class="btn btn-primary" onclick="nextExamReview()">${reviewExamIndex === examQuestions.length-1 ? '看完' : '下一题 ➡'}</button>
+      </div>
+    </div>
+    <div id="sheetModal" class="sheet-mask" style="display:none;" onclick="closeSheet(event)">
+      <div class="sheet-content" onclick="event.stopPropagation()">
+        <div class="sheet-title">试卷答题卡 <span style="font-size:0.85rem;color:#64748b;font-weight:normal;">(点击题号跳转)</span></div>${sheetHtml}
+      </div>
+    </div>
+  `;
+}
+
+function jumpExamReview(idx) { reviewExamIndex = idx; closeSheet({target:{id:'sheetModal'}}); renderExamReview(); }
+function nextExamReview() { if (reviewExamIndex === examQuestions.length - 1) { currentMode='result'; render(); } else { reviewExamIndex++; renderExamReview(); } }
+function prevExamReview() { if (reviewExamIndex > 0) { reviewExamIndex--; renderExamReview(); } }
 
 // ===== 满分烟花 =====
 function launchFireworks(duration) {
@@ -913,7 +1151,7 @@ function launchFireworks(duration) {
 loadData();
 checkNewImport();
 render();
-setTimeout(function() { if (currentMode === 'home') restorePracticeProgress(); }, 3000);
+setTimeout(function() { if (currentMode === 'home') restorePracticeProgress(); }, 3500);
 </script>
 </body>
 </html>
