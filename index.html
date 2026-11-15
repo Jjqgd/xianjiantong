@@ -39,12 +39,10 @@
   .calligraphy-group { display: flex; gap: 40px; position: absolute; transition: opacity 0.8s ease; }
   .calligraphy-group.fade-out { opacity: 0; pointer-events: none; }
   
-  /* 统一毛体加粗红字 */
   .calligraphy-col { font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive; font-size: 3.5rem; font-weight: bold; writing-mode: vertical-rl; color: #b71c1c; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); opacity: 0; transform: scale(1.1); animation: inkReveal 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
   .col-1 { margin-top: 60px; }
   .col-2 { margin-bottom: 60px; animation-delay: 0.5s; }
   
-  /* 节假日文字样式 */
   .holiday-group { display: none; gap: 40px; position: absolute; opacity: 0; }
   .holiday-group.show { display: flex; opacity: 1; }
   .holiday-col { font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive; font-size: 3.5rem; font-weight: bold; writing-mode: vertical-rl; color: #b71c1c; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); transform: scale(1.1); animation: inkReveal 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
@@ -245,31 +243,105 @@
   }
 })();
 
-// 延长节假日的开屏时间（4.5秒），普通时间（2.8秒）
 var hasHolidayText = document.getElementById('holiday-text-1').innerText !== "";
 var splashDelay = hasHolidayText ? 4500 : 2800;
 setTimeout(function() { document.getElementById('splash-screen').classList.add('hidden'); }, splashDelay);
 
+// ================= 1. 防白嫖极限授权系统 (加入多重备份防丢) =================
+var isAuthorized = false;
 
-// ================= 1. 防白嫖极限授权系统 =================
-var isAuthorized = localStorage.getItem('xjt_offline_auth') === 'true';
+// IndexedDB 备份机制
+function setAuthDB(val) {
+  var req = indexedDB.open("XJT_DB", 1);
+  req.onupgradeneeded = function(e) {
+    var db = e.target.result;
+    if (!db.objectStoreNames.contains("auth")) db.createObjectStore("auth");
+  };
+  req.onsuccess = function(e) {
+    var db = e.target.result;
+    var tx = db.transaction("auth", "readwrite");
+    tx.objectStore("auth").put(val, "status");
+  };
+}
+function getAuthDB(callback) {
+  var req = indexedDB.open("XJT_DB", 1);
+  req.onupgradeneeded = function(e) {
+    var db = e.target.result;
+    if (!db.objectStoreNames.contains("auth")) db.createObjectStore("auth");
+  };
+  req.onsuccess = function(e) {
+    var db = e.target.result;
+    var tx = db.transaction("auth", "readonly");
+    var getReq = tx.objectStore("auth").get("status");
+    getReq.onsuccess = function() { callback(getReq.result); };
+    getReq.onerror = function() { callback(null); };
+  };
+  req.onerror = function() { callback(null); };
+}
 
-var expireTime = localStorage.getItem('xjt_expire_time');
-if (expireTime) {
-  var exp = parseInt(expireTime);
-  var now = new Date().getTime();
-  if (now > exp) {
-    localStorage.removeItem('xjt_offline_auth');
-    localStorage.removeItem('xjt_expire_time');
-    isAuthorized = false;
-    setTimeout(function() { showAppConfirm('试用期已结束', '您的体验期已结束，请联系客服购买正式版。', '知道了', '关闭', function() {}, function() {}); }, 3000);
-  } else if (now < parseInt(localStorage.getItem('xjt_last_check_time') || 0)) {
-    localStorage.removeItem('xjt_offline_auth');
-    localStorage.removeItem('xjt_expire_time');
-    isAuthorized = false;
-    setTimeout(function() { showAppConfirm('安全警告', '检测到系统时间异常，授权失效，请联系客服！', '知道了', '关闭', function() {}, function() {}); }, 3000);
-  } else {
-    localStorage.setItem('xjt_last_check_time', now);
+// Cookie 机制
+function setAuthCookie(val) {
+  var d = new Date();
+  d.setTime(d.getTime() + (20 * 365 * 24 * 60 * 60 * 1000)); // 20年
+  document.cookie = "xjt_auth_status=" + val + "; expires=" + d.toUTCString() + "; path=/";
+}
+function getAuthCookie() {
+  var name = "xjt_auth_status=";
+  var decodedCookie = decodeURIComponent(document.cookie);
+  var ca = decodedCookie.split(';');
+  for(var i = 0; i < ca.length; i++) {
+    var c = ca[i].trim();
+    if (c.indexOf(name) == 0) return c.substring(name.length, c.length);
+  }
+  return "";
+}
+
+// 初始化校验
+var authLS = localStorage.getItem('xjt_offline_auth') === 'true';
+var authCK = getAuthCookie() === 'true';
+
+if (authLS) {
+  isAuthorized = true;
+  if (!authCK) setAuthCookie('true');
+  setAuthDB('true');
+} else if (authCK) {
+  isAuthorized = true;
+  localStorage.setItem('xjt_offline_auth', 'true');
+  setAuthDB('true');
+} else {
+  getAuthDB(function(dbVal) {
+    if (dbVal === 'true') {
+      isAuthorized = true;
+      localStorage.setItem('xjt_offline_auth', 'true');
+      setAuthCookie('true');
+    } else {
+      checkAuthExpire();
+    }
+  });
+}
+
+function checkAuthExpire() {
+  var expireTime = localStorage.getItem('xjt_expire_time');
+  if (expireTime) {
+    var exp = parseInt(expireTime);
+    var now = new Date().getTime();
+    if (now > exp) {
+      localStorage.removeItem('xjt_offline_auth');
+      localStorage.removeItem('xjt_expire_time');
+      isAuthorized = false;
+      setAuthCookie('');
+      setAuthDB('false');
+      setTimeout(function() { showAppConfirm('试用期已结束', '您的体验期已结束，请联系客服购买正式版。', '知道了', '关闭', function() {}, function() {}); }, 3000);
+    } else if (now < parseInt(localStorage.getItem('xjt_last_check_time') || 0)) {
+      localStorage.removeItem('xjt_offline_auth');
+      localStorage.removeItem('xjt_expire_time');
+      isAuthorized = false;
+      setAuthCookie('');
+      setAuthDB('false');
+      setTimeout(function() { showAppConfirm('安全警告', '检测到系统时间异常，授权失效，请联系客服！', '知道了', '关闭', function() {}, function() {}); }, 3000);
+    } else {
+      localStorage.setItem('xjt_last_check_time', now);
+    }
   }
 }
 
@@ -300,8 +372,12 @@ function doLogin() {
   for (var i = 0; i < raw.length; i++) { hash = ((hash << 5) - hash) + raw.charCodeAt(i); hash |= 0; }
   var correctHash = Math.abs(hash).toString(16).toUpperCase().padStart(8, '0').substring(0, 6);
   if (inputHash !== correctHash) return showToast('注册码无效或已损坏', true);
+  
   isAuthorized = true;
   localStorage.setItem('xjt_offline_auth', 'true');
+  setAuthCookie('true');
+  setAuthDB('true');
+  
   if (durCode === "4") {
     localStorage.removeItem('xjt_expire_time');
     showToast('永久授权激活成功，欢迎使用！');
@@ -326,6 +402,9 @@ var examConfig = { scoreSingle: 2, scoreMultiple: 4, scoreJudge: 2, timeLimit: 6
 var examScore = { got: 0, total: 0, usedTime: '0分0秒' };
 var examTimer = null, examStartTime = 0, examRemainingSeconds = 0;
 var examAborted = false;
+
+// 背题模式判断过滤
+var reciteJudgeFilter = 'all'; // all, true, false
 
 var appContainer = document.getElementById('app');
 var toastEl = document.getElementById('toast');
@@ -614,12 +693,45 @@ function startPractice(type) {
 function startRecite(type) {
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
   if (qs.length === 0) return showToast('题库为空', true);
-  practiceQuestions = type === 'all' ? qs.slice() : qs.filter(function(q){ return q.type === type; });
-  if (practiceQuestions.length === 0) return showToast('该分类下暂无题目', true);
+  
+  reciteJudgeFilter = 'all'; // 重置过滤
+  var allQs = type === 'all' ? qs.slice() : qs.filter(function(q){ return q.type === type; });
+  if (allQs.length === 0) return showToast('该分类下暂无题目', true);
+
+  // 如果是判断题，先按所有加载
+  practiceQuestions = allQs;
   practiceIndex = 0; practiceSelections = [];
   for (var i = 0; i < practiceQuestions.length; i++) { practiceQuestions[i].isAnswered = true; }
   isWrongPracticeMode = false;
   currentMode = 'recite'; savePracticeProgress(); render();
+}
+
+function changeReciteFilter(filterType) {
+  reciteJudgeFilter = filterType;
+  var qs = activeBankId ? allBanks[activeBankId].questions : [];
+  var baseQs = qs.filter(function(q){ return q.type === 'judge'; });
+  
+  if (filterType === 'true') {
+    practiceQuestions = baseQs.filter(function(q){ 
+      // 判断题正确答案通常 0 表示正确，1 表示错误 (或相反，这里以 0 和 A 为准)
+      return q.answer.indexOf(0) > -1 || q.answer.indexOf('A') > -1 || q.answer.indexOf('正确') > -1; 
+    });
+  } else if (filterType === 'false') {
+    practiceQuestions = baseQs.filter(function(q){ 
+      return q.answer.indexOf(1) > -1 || q.answer.indexOf('B') > -1 || q.answer.indexOf('错误') > -1; 
+    });
+  } else {
+    practiceQuestions = baseQs;
+  }
+  
+  if (practiceQuestions.length === 0) {
+    showToast('该过滤条件下暂无题目', true);
+    practiceQuestions = baseQs; // 恢复全部防止白屏
+  } else {
+    practiceIndex = 0; practiceSelections = [];
+    for (var i = 0; i < practiceQuestions.length; i++) { practiceQuestions[i].isAnswered = true; }
+    render();
+  }
 }
 
 function buildQuestionHtml(q, sels, showAns, isReciteJudge) {
@@ -632,7 +744,6 @@ function buildQuestionHtml(q, sels, showAns, isReciteJudge) {
     } else if (sels && sels.indexOf(i) > -1) {
       cls += ' selected';
     }
-    // 如果是背题的判断题，添加点击事件
     var clickAction = isReciteJudge ? `onclick="toggleReciteJudge(${i})"` : `onclick="selectPractice(${i})"`;
     optsHtml += `<div class="${cls}" ${clickAction}><div class="opt-prefix">${String.fromCharCode(65+i)}</div><div>${q.options[i]}</div></div>`;
   }
@@ -704,14 +815,25 @@ function renderRecite() {
   }
   var q = practiceQuestions[practiceIndex];
   var showAns = true; 
-  var sels = practiceSelections[practiceIndex] || q.answer; // 如果没选过，默认高亮标准答案
+  var sels = practiceSelections[practiceIndex] || q.answer; 
   
-  // 判断题在背题模式下可以选择
   var isReciteJudge = (q.type === 'judge');
   var optsHtml = buildQuestionHtml(q, sels, true, isReciteJudge);
   
   var typeName = q.type === 'single' ? '单选题' : q.type === 'multiple' ? '多选题' : '判断题';
   var sheetHtml = buildSheetHtml(practiceQuestions, practiceIndex, practiceSelections, 'recite');
+  
+  // 判断题过滤按钮 UI
+  var filterHtml = '';
+  if (q.type === 'judge') {
+    filterHtml = `
+      <div style="display:flex; gap:8px; margin-bottom:12px; background:#f1f5f9; padding:8px; border-radius:8px;">
+        <button class="btn ${reciteJudgeFilter==='all'?'btn-primary':'btn-outline'}" style="flex:1;padding:6px;font-size:0.8rem;" onclick="changeReciteFilter('all')">全部</button>
+        <button class="btn ${reciteJudgeFilter==='true'?'btn-green':'btn-outline'}" style="flex:1;padding:6px;font-size:0.8rem;" onclick="changeReciteFilter('true')">只看正确</button>
+        <button class="btn ${reciteJudgeFilter==='false'?'btn-danger':'btn-outline'}" style="flex:1;padding:6px;font-size:0.8rem;" onclick="changeReciteFilter('false')">只看错误</button>
+      </div>
+    `;
+  }
 
   appContainer.innerHTML = `
     <div class="toolbar">
@@ -721,8 +843,10 @@ function renderRecite() {
       </div>
       <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
     </div>
+    
     <div class="card">
       <span class="tag" style="background:#10b981;">${typeName} · 背题模式</span>
+      ${filterHtml}
       <div class="q-text">${q.question}</div>${optsHtml}
       ${buildAnalysisHtml(q, sels, true)}
       <div class="bottom-actions">
@@ -741,7 +865,6 @@ function renderRecite() {
 function toggleReciteJudge(idx) {
   var q = practiceQuestions[practiceIndex];
   var sels = practiceSelections[practiceIndex] || [];
-  // 如果点的是已选的，取消选择；否则替换
   if (sels.length === 1 && sels[0] === idx) practiceSelections[practiceIndex] = [];
   else practiceSelections[practiceIndex] = [idx];
   savePracticeProgress(); renderRecite();
