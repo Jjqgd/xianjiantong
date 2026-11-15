@@ -7,7 +7,6 @@
 <meta name="apple-mobile-web-app-title" content="铁途学练">
 <link rel="icon" href="logo.png">
 
-<!-- 🔒 防盗锁 -->
 <script>
   (function() {
     var allowedDomains = ["jjqgd.github.io", "localhost", "127.0.0.1"];
@@ -29,7 +28,7 @@
   @import url('https://fonts.googleapis.com/css2?family=Zhi+Mang+Xing&display=swap');
   * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, "Microsoft YaHei", sans-serif; }
   body { background-color: #f0f4f8; color: #1e293b; padding: 10px; -webkit-tap-highlight-color: transparent; }
-  
+
   #splash-screen { position: fixed; top:0; left:0; right:0; bottom:0; background: #fcf9f2; z-index: 9999; display: flex; align-items: center; justify-content: center; transition: opacity 0.8s; }
   #splash-screen.hidden { opacity: 0; pointer-events: none; }
   .calligraphy-box { display: flex; gap: 40px; }
@@ -78,7 +77,7 @@
   .sheet-content { background: #f8fafc; width: 100%; max-height: 75vh; border-radius: 20px 20px 0 0; padding: 20px; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s; }
   .sheet-mask.show .sheet-content { transform: translateY(0); }
   .sheet-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
-  
+
   .acc-group { margin-bottom: 12px; background: #fff; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
   .acc-header { padding: 12px 15px; background: #f1f5f9; font-weight: bold; font-size: 0.95rem; color: #0d47a1; display: flex; justify-content: space-between; cursor: pointer; }
   .acc-header span { font-size: 0.8rem; color: #64748b; font-weight: normal; }
@@ -109,67 +108,48 @@
   .score-num { font-family: "Georgia", serif; color: #d32f2f; font-size: 5rem; font-weight: bold; display: inline-block; border-bottom: 4px double #d32f2f; line-height: 1; margin-bottom: 15px; padding: 0 10px; }
   .bottom-actions { display: flex; gap: 10px; margin-top: 20px; }
   .bottom-actions .btn { flex: 1; }
-  
+
   .maoti-result { font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive; font-size: 2.2rem; color: #0d47a1; text-align: center; margin: 20px 0; line-height: 1.4; }
   .maoti-result.full { color: #b71c1c; }
   .maoti-fail { font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive; font-size: 2rem; color: #d32f2f; text-align: center; line-height: 1.5; }
-  
+
   .toast { position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 0.85rem; z-index: 9999; display: none; }
-  
+
   .app-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; }
   .app-box { background: #fff; padding: 25px; border-radius: 16px; width: 80%; max-width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
   .app-box h3 { font-size: 1.2rem; color: #b71c1c; margin-bottom: 10px; font-weight: bold; }
   .app-box p { font-size: 0.95rem; color: #475569; margin-bottom: 20px; line-height: 1.5; }
   .app-box .actions { display: flex; gap: 10px; }
   .app-box .btn { flex: 1; padding: 10px; font-size: 0.95rem; border-radius: 8px; }
-  
+
   .prompt-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; }
   .prompt-box { background: #fff; padding: 20px; border-radius: 12px; width: 80%; max-width: 300px; }
   .prompt-box input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin: 15px 0; font-size: 1rem; }
   .footer { text-align: center; color: #94a3b8; font-size: 0.8rem; margin-top: 20px; padding-bottom: 20px; }
 
-  /* ====== 答题对错反馈（题目右上方，毛体红圈） ====== */
-  .feedback-overlay {
+  /* ====== 答题对错反馈（真实毛笔圈，不遮挡题目） ====== */
+  .ink-mark {
     position: absolute;
-    top: -14px;
-    right: -6px;
+    top: -34px;
+    right: -30px;
+    width: 86px;
+    height: 80px;
     pointer-events: none;
-    z-index: 30;
+    z-index: 40;
     opacity: 0;
-    transform: rotate(-15deg) scale(0);
-    animation: stampFeedback 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    animation: inkStamp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    transform-origin: 60% 60%;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.15));
   }
-  .feedback-text {
-    font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive;
-    font-size: 2.2rem;
-    font-weight: bold;
-    color: #d32f2f;
-    width: 58px;
-    height: 58px;
-    border: 4px solid #d32f2f;
-    border-radius: 50%;
-    background: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-    line-height: 1;
-    padding-top: 2px;
+  @keyframes inkStamp {
+    0%   { opacity: 0; transform: rotate(-18deg) scale(0.4); }
+    70%  { opacity: 0.95; transform: rotate(-6deg) scale(1.08); }
+    100% { opacity: 0.9; transform: rotate(-8deg) scale(1); }
   }
-  @keyframes stampFeedback {
-    0%   { opacity: 0; transform: rotate(-30deg) scale(0); }
-    80%  { opacity: 1; transform: rotate(-10deg) scale(1.1); }
-    100% { opacity: 1; transform: rotate(-15deg) scale(1); }
-  }
+  .ink-mark svg { width: 100%; height: 100%; display: block; }
 
   /* ====== 满分烟花 ====== */
-  #fireworks-canvas {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-    z-index: 9998;
-  }
+  #fireworks-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9998; }
 </style>
 </head>
 <body>
@@ -200,12 +180,12 @@ if (expireTime) {
   var exp = parseInt(expireTime);
   var now = new Date().getTime();
   if (now > exp) {
-    localStorage.removeItem('xjt_offline_auth'); 
+    localStorage.removeItem('xjt_offline_auth');
     localStorage.removeItem('xjt_expire_time');
     isAuthorized = false;
     setTimeout(function() { showAppConfirm('试用期已结束', '您的体验期已结束，请联系客服购买正式版。', '知道了', '关闭', function() {}, function() {}); }, 3000);
   } else if (now < parseInt(localStorage.getItem('xjt_last_check_time') || 0)) {
-    localStorage.removeItem('xjt_offline_auth'); 
+    localStorage.removeItem('xjt_offline_auth');
     localStorage.removeItem('xjt_expire_time');
     isAuthorized = false;
     setTimeout(function() { showAppConfirm('安全警告', '检测到系统时间异常，授权失效，请联系客服！', '知道了', '关闭', function() {}, function() {}); }, 3000);
@@ -230,35 +210,19 @@ function getDeviceId() {
 function doLogin() {
   var inputCode = document.getElementById('regCodeInput').value.trim().toUpperCase();
   var myDevId = getDeviceId();
-  
   var parts = inputCode.split('-');
-  if (parts.length !== 4 || parts[0] !== 'TT') {
-    return showToast('注册码格式错误，请联系客服', true);
-  }
-
-  var durCode = parts[1];
-  var devSuffix = parts[2];
-  var inputHash = parts[3];
-
+  if (parts.length !== 4 || parts[0] !== 'TT') return showToast('注册码格式错误，请联系客服', true);
+  var durCode = parts[1], devSuffix = parts[2], inputHash = parts[3];
   var myDevSuffix = myDevId.substring(4, 8);
-
-  if (devSuffix !== myDevSuffix) {
-    return showToast('该注册码不属于当前设备', true);
-  }
-
+  if (devSuffix !== myDevSuffix) return showToast('该注册码不属于当前设备', true);
   var salt = "TieTuXueLian2024Qin";
-  var raw = myDevSuffix + salt + durCode; 
+  var raw = myDevSuffix + salt + durCode;
   var hash = 0;
   for (var i = 0; i < raw.length; i++) { hash = ((hash << 5) - hash) + raw.charCodeAt(i); hash |= 0; }
   var correctHash = Math.abs(hash).toString(16).toUpperCase().padStart(8, '0').substring(0, 6);
-
-  if (inputHash !== correctHash) {
-    return showToast('注册码无效或已损坏', true);
-  }
-
+  if (inputHash !== correctHash) return showToast('注册码无效或已损坏', true);
   isAuthorized = true;
   localStorage.setItem('xjt_offline_auth', 'true');
-  
   if (durCode === "4") {
     localStorage.removeItem('xjt_expire_time');
     showToast('永久授权激活成功，欢迎使用！');
@@ -268,11 +232,9 @@ function doLogin() {
     var now = new Date().getTime();
     localStorage.setItem('xjt_expire_time', now + durationMs);
     localStorage.setItem('xjt_last_check_time', now);
-    
     var textDur = durCode === '0' ? '8小时' : durCode === '1' ? '24小时' : durCode === '2' ? '48小时' : '7天';
     showToast('体验激活成功，有效期 ' + textDur);
   }
-  
   currentMode = Object.keys(allBanks).length > 0 ? 'home' : 'import';
   render();
 }
@@ -281,9 +243,10 @@ function doLogin() {
 var allBanks = {}; var activeBankId = null; var wrongBook = []; var currentMode = 'login';
 var practiceQuestions = [], practiceIndex = 0, practiceSelections = [], isWrongPracticeMode = false;
 var examQuestions = [], examIndex = 0, examSelections = [];
-var examConfig = { single: 0, multiple: 0, judge: 0, scoreSingle: 2, scoreMultiple: 4, scoreJudge: 2, timeLimit: 60, passScore: 60 };
+var examConfig = { scoreSingle: 2, scoreMultiple: 4, scoreJudge: 2, timeLimit: 60, passScore: 0 }; // passScore:0=不设合格线
 var examScore = { got: 0, total: 0, usedTime: '0分0秒' };
 var examTimer = null, examStartTime = 0, examRemainingSeconds = 0;
+var examAborted = false; // 是否因低于合格线自动结束
 
 var appContainer = document.getElementById('app');
 var toastEl = document.getElementById('toast');
@@ -325,7 +288,7 @@ function confirmExitExam() {
     if(examTimer) clearInterval(examTimer); examTimer = null; currentMode = 'home'; render();
   });
 }
-function confirmSubmitExam() { showAppConfirm('铁途学练', '确定要交卷吗？', '交卷', '取消', function() { submitExam(); }); }
+function confirmSubmitExam() { showAppConfirm('铁途学练', '确定要交卷吗？', '交卷', '取消', function() { submitExam(false); }); }
 function confirmDeleteBank(id) {
   showAppConfirm('铁途学练', '确定删除该题库？', '删除', '取消', function() {
     delete allBanks[id];
@@ -404,15 +367,12 @@ function renderLogin() {
     <div class="card" style="text-align:center; margin-top:10%; padding: 30px 20px;">
       <h2 style="color:#b71c1c;margin-bottom:10px;">🔐 单机离线授权</h2>
       <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;">请将下方【设备码】发给客服购买</p>
-      
       <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin-bottom:20px; border: 1px dashed #cbd5e1;">
         <div style="font-size:0.8rem; color:#64748b; margin-bottom:5px;">您的设备码</div>
         <div style="font-size:1.3rem; font-weight:bold; color:#0d47a1; letter-spacing:2px;">${myDevId}</div>
         <button class="btn btn-outline" style="margin-top:10px; padding:6px 12px; font-size:0.85rem; display:inline-block;" onclick="copyDeviceId('${myDevId}')">📋 一键复制设备码</button>
       </div>
-
       <input type="text" id="regCodeInput" placeholder="请输入客服发给您的注册码" style="width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:8px;text-align:center;font-size:1.1rem;margin-bottom:20px; text-transform:uppercase;">
-      
       <button class="btn btn-primary btn-block" onclick="doLogin()">激活软件</button>
     </div>
     <div class="footer">技术支持：秦十三郎</div>
@@ -433,9 +393,7 @@ function renderImport() {
   appContainer.innerHTML = `
     <div class="card" style="text-align:center; padding:40px 15px;">
       <h2 style="color:#b71c1c;margin-bottom:15px;">📥 导入新题库</h2>
-      <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;line-height:1.6;">
-        系统将跳转至独立导入页面。
-      </p>
+      <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;line-height:1.6;">系统将跳转至独立导入页面。</p>
       <button class="btn btn-primary btn-block" style="padding:15px;" onclick="window.location.href='import.html'">📂 前往导入页面</button>
       ${Object.keys(allBanks).length > 0 ? `<button class="btn btn-outline btn-block" onclick="currentMode='home';render()" style="margin-top:20px;">返回首页</button>` : ''}
     </div>
@@ -497,7 +455,6 @@ function renderHome() {
     }
   }
   html += `<button class="btn btn-primary btn-block" onclick="goToImport()">➕ 导入新题库</button></div>`;
-  
   html += `
     <div class="banner">
       <b>🔒 隐私安全提示：</b>本系统采用本地缓存形式，不涉及上传云端，绝对安全。导入后请勿清理浏览器缓存，以免数据丢失。
@@ -545,9 +502,28 @@ function startPractice(type) {
   currentMode = 'practice'; savePracticeProgress(); render();
 }
 
+/* 改：生成真实毛笔圈 SVG（开口、拖笔） */
+function inkMarkSvg() {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M 46 12 C 22 14, 8 30, 10 50 C 12 72, 30 88, 52 86 C 70 84, 84 70, 82 54 C 81 44, 76 38, 68 34 C 60 30, 50 31, 45 36"
+      fill="none" stroke="#d32f2f" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"
+      opacity="0.85" style="filter:url(#rough)" />
+    <path d="M 45 36 C 40 41, 39 49, 44 55"
+      fill="none" stroke="#d32f2f" stroke-width="4.2" stroke-linecap="round" opacity="0.75" />
+    <path d="M 82 54 C 88 58, 96 60, 99 57"
+      fill="none" stroke="#d32f2f" stroke-width="3.2" stroke-linecap="round" opacity="0.6" />
+    <defs>
+      <filter id="rough">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" result="noise"/>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.2" />
+      </filter>
+    </defs>
+  </svg>`;
+}
+
 function renderPractice() {
   if (practiceIndex >= practiceQuestions.length) {
-    localStorage.removeItem('xjt_practice_progress'); 
+    localStorage.removeItem('xjt_practice_progress');
     appContainer.innerHTML = `<div class="card" style="text-align:center;padding:40px;"><h2 style="color:#0d47a1;margin-bottom:15px;">🎉 练习完成</h2><p style="color:#64748b;margin-bottom:20px;">您已完成本轮练习。</p><button class="btn btn-primary btn-block" onclick="currentMode='home';render()">返回首页</button></div>`;
     return;
   }
@@ -563,11 +539,11 @@ function renderPractice() {
   var typeName = q.type === 'single' ? '单选题' : q.type === 'multiple' ? '多选题' : '判断题';
   var streakHtml = isWrongPracticeMode ? `<span style="float:right;font-size:0.8rem;color:#ef4444;font-weight:bold;">🔥连对: ${q.streak}/5</span>` : '';
   var sheetHtml = buildSheetHtml(practiceQuestions, practiceIndex, practiceSelections, 'practice');
-  
-  // 毛体红圈反馈（题目右上方）
+
+  /* 改：毛笔圈只在已作答时出现，位置在题目右上方外侧 */
   var feedbackAnim = '';
   if (showAns) {
-    feedbackAnim = `<div class="feedback-overlay"><div class="feedback-text">${isCorrect ? '对' : '错'}</div></div>`;
+    feedbackAnim = `<div class="ink-mark">${inkMarkSvg()}</div>`;
   }
 
   appContainer.innerHTML = `
@@ -687,8 +663,11 @@ function renderExamSetup() {
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;"><span>多选题 (共${cM}题)</span><div>抽 <input type="number" id="cM" value="${Math.min(2,cM)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pM" value="4" style="width:40px;text-align:center;"> 分</div></div>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;"><span>判断题 (共${cJ}题)</span><div>抽 <input type="number" id="cJ" value="${Math.min(3,cJ)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pJ" value="2" style="width:40px;text-align:center;"> 分</div></div>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;">
-        <span>合格分数</span>
-        <div><input type="number" id="passScore" value="60" style="width:60px;text-align:center; border:1px solid #cbd5e1; border-radius:6px; padding:6px;"> 分</div>
+        <span>合格分数线（可选）</span>
+        <div><input type="number" id="passScore" value="" placeholder="不设置" style="width:70px;text-align:center; border:1px solid #cbd5e1; border-radius:6px; padding:6px;"> 分</div>
+      </div>
+      <div class="banner" style="margin-top:10px;margin-bottom:0;background:#fff7ed;color:#9a3412;">
+        ⚠️ <b>铁途学练提示：</b>当设置合格分数线后，答题过程中如果低于合格分会自动结束当前考试。
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;">
         <span>考试时长</span>
@@ -703,7 +682,9 @@ function startExam() {
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
   var cS = parseInt(document.getElementById('cS').value) || 0; var cM = parseInt(document.getElementById('cM').value) || 0;
   var cJ = parseInt(document.getElementById('cJ').value) || 0; var tLimit = parseInt(document.getElementById('tLimit').value) || 60;
-  var pScore = parseInt(document.getElementById('passScore').value) || 60;
+  var pScoreRaw = document.getElementById('passScore').value;
+  var pScore = parseInt(pScoreRaw); // 留空 => NaN => 0 => 不设合格线
+  if (isNaN(pScore) || pScore <= 0) pScore = 0;
   if (cS + cM + cJ === 0) return showToast('请至少选择一题', true);
   var sQS = qs.filter(function(q){ return q.type === 'single'; }).sort(function(){ return 0.5 - Math.random(); });
   var mQS = qs.filter(function(q){ return q.type === 'multiple'; }).sort(function(){ return 0.5 - Math.random(); });
@@ -712,11 +693,12 @@ function startExam() {
   examConfig = { scoreSingle: parseInt(document.getElementById('pS').value) || 1, scoreMultiple: parseInt(document.getElementById('pM').value) || 1, scoreJudge: parseInt(document.getElementById('pJ').value) || 1, timeLimit: tLimit, passScore: pScore };
   examIndex = 0; examSelections = []; for (var i=0; i<examQuestions.length; i++) examSelections.push([]);
   examStartTime = Date.now(); examRemainingSeconds = tLimit * 60;
+  examAborted = false;
   window.__examLowScoreWarned = false;
   if (examTimer) clearInterval(examTimer);
   examTimer = setInterval(function() {
     examRemainingSeconds--;
-    if (examRemainingSeconds <= 0) { clearInterval(examTimer); examTimer = null; showToast('时间到，自动交卷', true); submitExam(); }
+    if (examRemainingSeconds <= 0) { clearInterval(examTimer); examTimer = null; showToast('时间到，自动交卷', true); submitExam(false); }
     else {
       var tEl = document.getElementById('timerDisplay');
       if (tEl) {
@@ -730,13 +712,13 @@ function startExam() {
 }
 
 function renderExam() {
-  if (examIndex >= examQuestions.length) return submitExam();
+  if (examIndex >= examQuestions.length) return submitExam(false);
   var q = examQuestions[examIndex]; var sels = examSelections[examIndex] || []; var optsHtml = '';
   for (var i=0; i<q.options.length; i++) { var cls = 'opt' + (sels.indexOf(i) > -1 ? ' selected' : ''); optsHtml += `<div class="${cls}" onclick="selectExam(${i})"><div class="opt-prefix">${String.fromCharCode(65+i)}</div><div>${q.options[i]}</div></div>`; }
   var typeName = q.type === 'single' ? '单选题' : q.type === 'multiple' ? '多选题' : '判断题';
   var sheetHtml = buildSheetHtml(examQuestions, examIndex, examSelections, 'exam');
   var m = Math.floor(examRemainingSeconds / 60); var s = examRemainingSeconds % 60; var timerStr = (m<10?'0':'') + m + ':' + (s<10?'0':'') + s;
-  
+
   appContainer.innerHTML = `
     <div class="toolbar">
       <div>
@@ -776,37 +758,45 @@ function selectExam(idx) {
 function nextExam() { if (examIndex === examQuestions.length - 1) { confirmSubmitExam(); } else { examIndex++; renderExam(); } }
 function prevExam() { if (examIndex > 0) { examIndex--; renderExam(); } }
 
-// ===== 考试中途低于合格分弹窗 =====
-function checkExamScoreWarning() {
-  if (currentMode !== 'exam') return;
-  if (examRemainingSeconds <= 0) return;
-  var got = 0, total = 0;
+/* 改：只统计已答题目的真实得分；仅在设置了合格线时检查 */
+function calcCurrentExamScore() {
+  var got = 0;
   for (var i = 0; i < examQuestions.length; i++) {
+    var sel = examSelections[i] || [];
+    if (sel.length === 0) continue; // 未作答不计
     var q = examQuestions[i];
     var pts = q.type==='single' ? examConfig.scoreSingle : q.type==='multiple' ? examConfig.scoreMultiple : examConfig.scoreJudge;
-    total += pts;
-    var sel = examSelections[i] || [];
-    if (sel.length === 0) continue;
     var ans = q.answer.slice().sort();
     var s = sel.slice().sort();
     var isCorrect = ans.length === s.length && ans.every(function(v, idx){ return v === s[idx]; });
     if (isCorrect) got += pts;
   }
-  if (total > 0 && got < examConfig.passScore && !window.__examLowScoreWarned) {
+  return got;
+}
+
+function checkExamScoreWarning() {
+  if (currentMode !== 'exam') return;
+  if (examRemainingSeconds <= 0) return;
+  if (!examConfig.passScore || examConfig.passScore <= 0) return; // 未设置合格线，不检查
+  if (window.__examLowScoreWarned) return;
+
+  var got = calcCurrentExamScore();
+  if (got < examConfig.passScore) {
     window.__examLowScoreWarned = true;
     showAppConfirm(
-      '成绩提醒',
+      '考试结束',
       '<div class="maoti-fail">考试不合格，不要气馁，继续加油，多去练练吧！</div>',
-      '继续答题',
-      '退出考试',
-      function() {},
-      function() { confirmExitExam(); }
+      '查看成绩',
+      '查看成绩',
+      function() { submitExam(true); },
+      function() { submitExam(true); }
     );
   }
 }
 
-function submitExam() {
+function submitExam(aborted) {
   if (examTimer) { clearInterval(examTimer); examTimer = null; }
+  examAborted = !!aborted;
   var usedSec = Math.floor((Date.now() - examStartTime) / 1000); var usedTimeStr = Math.floor(usedSec/60) + '分' + (usedSec%60) + '秒';
   var got = 0, total = 0;
   for (var i=0; i<examQuestions.length; i++) {
@@ -817,15 +807,20 @@ function submitExam() {
     else { var exist = false; for (var j=0; j<wrongBook.length; j++) { if (wrongBook[j].id === q.id) exist = true; } if (!exist) { wrongBook.push({ id: q.id, question: q.question, type: q.type, options: q.options, answer: q.answer, analysis: q.analysis, streak: 0 }); } }
   }
   saveData(); examScore = { got: got, total: total, usedTime: usedTimeStr };
-  
+
   var isFull = examScore.got >= examScore.total;
   if (isFull) launchFireworks(3500);
 
-  var tipHtml = isFull
-    ? '<div class="maoti-result full">你真棒，继续加油哦！</div>'
-    : '<div class="maoti-fail">别气馁，多去刷刷题，满分等着你！</div>';
+  var tipHtml;
+  if (examAborted) {
+    tipHtml = '<div class="maoti-fail">考试不合格，不要气馁，继续加油，多去练练吧！</div>';
+  } else if (isFull) {
+    tipHtml = '<div class="maoti-result full">你真棒，继续加油哦！</div>';
+  } else {
+    tipHtml = '<div class="maoti-fail">别气馁，多去刷刷题，满分等着你！</div>';
+  }
   showAppConfirm(
-    isFull ? '恭喜满分' : '考试完成',
+    examAborted ? '考试已结束' : (isFull ? '恭喜满分' : '考试完成'),
     tipHtml,
     '查看结果',
     '返回首页',
@@ -836,16 +831,17 @@ function submitExam() {
 
 function renderResult() {
   var isFull = examScore.got === examScore.total && examScore.total > 0;
-  var isPass = examScore.got >= examConfig.passScore;
+  var hasPass = examConfig.passScore && examConfig.passScore > 0;
+  var isPass = hasPass ? (examScore.got >= examConfig.passScore) : true;
   if (isFull) launchFireworks(3500);
-  
+
   var msg = '';
   var msgClass = 'maoti-result';
-  
+
   if (isFull) {
     msg = '你真棒，继续加油哦！';
     msgClass += ' full';
-  } else if (!isPass) {
+  } else if (hasPass && !isPass) {
     msg = '考试不合格，不要气馁，继续加油，多去练练吧！';
     msgClass = 'maoti-fail';
   } else {
@@ -856,12 +852,12 @@ function renderResult() {
     <div class="card score-box">
       <h2 style="color:#0d47a1;margin-bottom:20px;">📊 考试成绩</h2>
       <div class="score-num">${examScore.got}</div>
-      <div style="font-size:1.1rem;color:#64748b;font-weight:bold;margin-bottom:20px;">总分：${examScore.total} 分 ｜ 合格线：${examConfig.passScore} 分</div>
-      
+      <div style="font-size:1.1rem;color:#64748b;font-weight:bold;margin-bottom:20px;">
+        总分：${examScore.total} 分
+        ${hasPass ? '｜ 合格线：' + examConfig.passScore + ' 分' : '｜ 未设合格线'}
+      </div>
       <div class="${msgClass}">${msg}</div>
-      
       <div style="color:#64748b;font-size:0.9rem;margin-bottom:30px;">本次用时：${examScore.usedTime}</div>
-      
       <div style="display:flex;gap:10px;">
         <button class="btn btn-primary" style="flex:1;" onclick="currentMode='home';render()">返回首页</button>
         <button class="btn btn-outline" style="flex:1;" onclick="currentMode='review';render()">查看错题</button>
@@ -893,15 +889,7 @@ function launchFireworks(duration) {
     for (var i = 0; i < count; i++) {
       var angle = Math.PI * 2 * (i / count) + rand(-0.05, 0.05);
       var speed = rand(2, 6);
-      particles.push({
-        x: x, y: y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        life: 1,
-        decay: rand(0.008, 0.02),
-        color: color,
-        size: rand(1.5, 3)
-      });
+      particles.push({ x: x, y: y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 1, decay: rand(0.008, 0.02), color: color, size: rand(1.5, 3) });
     }
   }
 
@@ -910,40 +898,19 @@ function launchFireworks(duration) {
 
   function animate() {
     var elapsed = Date.now() - startTime;
-    if (elapsed > duration) {
-      canvas.remove();
-      return;
-    }
-
+    if (elapsed > duration) { canvas.remove(); return; }
     ctx.globalCompositeOperation = 'destination-out';
     ctx.fillStyle = 'rgba(0,0,0,0.15)';
     ctx.fillRect(0, 0, W, H);
     ctx.globalCompositeOperation = 'lighter';
-
-    if (elapsed - lastBurst > 350) {
-      lastBurst = elapsed;
-      createBurst(rand(W * 0.2, W * 0.8), rand(H * 0.15, H * 0.55));
-    }
-
+    if (elapsed - lastBurst > 350) { lastBurst = elapsed; createBurst(rand(W * 0.2, W * 0.8), rand(H * 0.15, H * 0.55)); }
     for (var i = particles.length - 1; i >= 0; i--) {
       var p = particles[i];
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vy += 0.06;
-      p.vx *= 0.99;
-      p.vy *= 0.99;
-      p.life -= p.decay;
-
+      p.x += p.vx; p.y += p.vy; p.vy += 0.06; p.vx *= 0.99; p.vy *= 0.99; p.life -= p.decay;
       if (p.life <= 0) { particles.splice(i, 1); continue; }
-
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fillStyle = p.color;
-      ctx.globalAlpha = p.life;
-      ctx.fill();
-      ctx.globalAlpha = 1;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = p.color; ctx.globalAlpha = p.life; ctx.fill(); ctx.globalAlpha = 1;
     }
-
     requestAnimationFrame(animate);
   }
   animate();
