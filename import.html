@@ -59,7 +59,7 @@
   .modal-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.6); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
   .modal-box { background: #fff; border-radius: 16px; width: 100%; max-width: 400px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
   .modal-header { padding: 15px; background: #fff; color: #b71c1c; font-weight: bold; border-bottom: 1px solid #eee; font-size: 1.1rem; text-align: center; }
-  .modal-body { padding: 20px; font-size: 0.95rem; line-height: 1.6; color: #333; text-align: center; max-height: 50vh; overflow-y: auto;}
+  .modal-body { padding: 20px; font-size: 0.95rem; line-height: 1.6; color: #333; text-align: center; max-height: 60vh; overflow-y: auto;}
   .modal-footer { padding: 15px; text-align: center; border-top: 1px solid #eee; display: flex; gap: 10px; }
   .modal-footer .btn { flex: 1; }
   
@@ -78,7 +78,7 @@
 <div class="card" style="text-align:center; padding:40px 15px;">
   <h2 style="color:#b71c1c;margin-bottom:15px;">📥 上传文件</h2>
   <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;line-height:1.6;">
-    全自动扫描引擎，智能跨越空行。<br>自动识别单选、多选、判断、解析。
+    支持 Excel 格式。<br>系统将进行严格对齐，并在入库前生成报告。
   </p>
   
   <input type="file" id="fileUpload" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)">
@@ -97,9 +97,7 @@
       <div id="modalText"></div>
       <input type="text" id="modalInput" class="custom-input" style="display:none;">
     </div>
-    <div class="modal-footer" id="modalFooter">
-      <!-- 按钮动态生成 -->
-    </div>
+    <div class="modal-footer" id="modalFooter"></div>
   </div>
 </div>
 
@@ -108,57 +106,56 @@ var pendingQuestions = [];
 var pendingName = "";
 
 // ================= App 专属弹窗系统 =================
-// 显示 Alert 提示
 function showAlert(title, msg, onOk) {
   document.getElementById('modalTitle').innerText = title;
   document.getElementById('modalText').innerHTML = msg;
   document.getElementById('modalInput').style.display = 'none';
-  
   var footer = document.getElementById('modalFooter');
   footer.innerHTML = `<button class="btn btn-primary" onclick="closeModal()">我知道了</button>`;
-  
   window.onModalClose = onOk || null;
   document.getElementById('appModal').style.display = 'flex';
 }
 
-// 显示 Prompt 输入框
+function showConfirm(title, msg, onOk, onCancel) {
+  document.getElementById('modalTitle').innerText = title;
+  document.getElementById('modalText').innerHTML = msg;
+  document.getElementById('modalInput').style.display = 'none';
+  var footer = document.getElementById('modalFooter');
+  footer.innerHTML = `
+    <button class="btn btn-outline" onclick="closeModal(true)">取消</button>
+    <button class="btn btn-primary" onclick="closeModal(false)">确认导入</button>
+  `;
+  window.onModalOk = onOk;
+  window.onModalCancel = onCancel || null;
+  document.getElementById('appModal').style.display = 'flex';
+}
+
 function showPrompt(title, defaultValue, onOk, onCancel) {
   document.getElementById('modalTitle').innerText = title;
-  document.getElementById('modalText').innerText = '请输入题库名称：';
-  
+  document.getElementById('modalText').innerText = '请为该题库命名：';
   var input = document.getElementById('modalInput');
   input.style.display = 'block';
   input.value = defaultValue;
-  
   var footer = document.getElementById('modalFooter');
   footer.innerHTML = `
     <button class="btn btn-outline" onclick="closeModal(true)">取消</button>
     <button class="btn btn-primary" onclick="submitModal()">确定</button>
   `;
-  
   window.onModalOk = onOk;
   window.onModalCancel = onCancel || null;
   document.getElementById('appModal').style.display = 'flex';
   setTimeout(function(){ input.focus(); }, 100);
 }
 
-// 关闭弹窗
 function closeModal(isCancel) {
   document.getElementById('appModal').style.display = 'none';
-  if (isCancel && window.onModalCancel) {
-    window.onModalCancel();
-  } else if (!isCancel && window.onModalClose) {
-    window.onModalClose();
-  }
+  if (isCancel && window.onModalCancel) window.onModalCancel();
+  else if (!isCancel && window.onModalOk) window.onModalOk();
 }
 
-// 提交输入
 function submitModal() {
   var val = document.getElementById('modalInput').value.trim();
-  if (!val) {
-    alert('题库名称不能为空！');
-    return;
-  }
+  if (!val) { alert('名称不能为空！'); return; }
   document.getElementById('appModal').style.display = 'none';
   if (window.onModalOk) window.onModalOk(val);
 }
@@ -179,43 +176,60 @@ function handleFileSelect(e) {
       
       var parsed = result.data;
       var errors = result.errors;
+      var stats = result.stats;
 
-      if (parsed.length === 0 && errors.length === 0) {
-        document.getElementById('loadingText').style.display = 'none';
-        return showAlert('解析失败', '未能找到任何有效题目，请检查表格列名。');
-      }
-      
+      document.getElementById('loadingText').style.display = 'none';
+
       if (parsed.length === 0) {
-        document.getElementById('loadingText').style.display = 'none';
-        showErrorModal(errors);
-        return;
+        return showAlert('解析失败', '未能提取到任何有效题目，请检查表格中是否有“题目”和“答案”列。');
       }
 
       pendingQuestions = parsed;
       pendingName = file.name.replace(/\.[^/.]+$/, "");
 
+      // 生成导入报告
+      var reportHtml = `
+        <div style="text-align:left; margin-bottom:15px; padding:15px; background:#f0f4f8; border-radius:8px;">
+          <div style="font-size:1.1rem; font-weight:bold; color:#0d47a1; margin-bottom:10px;">📊 解析报告</div>
+          <div>成功抓取题目：<b style="color:#b71c1c; font-size:1.2rem;">${parsed.length}</b> 题</div>
+          <div style="margin-top:8px; color:#666; font-size:0.9rem;">
+            单选题：${stats.single} 题<br>
+            多选题：${stats.multiple} 题<br>
+            判断题：${stats.judge} 题
+          </div>
+        </div>
+      `;
+
       if (errors.length > 0) {
-        showErrorModal(errors);
-      } else {
-        askForName();
+        reportHtml += `<div style="text-align:left; color:#d32f2f; font-weight:bold; margin-bottom:10px;">⚠️ 拦截异常行 (共 ${errors.length} 条):</div>`;
+        reportHtml += `<div style="text-align:left; font-size:0.85rem; max-height:150px; overflow-y:auto; background:#fff5f5; padding:10px; border-radius:8px; border:1px solid #ffcdd2;">`;
+        errors.forEach(function(err) {
+          reportHtml += `<div style="margin-bottom:6px; border-bottom:1px dashed #ffcdd2; padding-bottom:4px;">
+            <strong>${err.pos}</strong>：${err.msg}
+          </div>`;
+        });
+        reportHtml += `</div>`;
       }
-      
+
+      // 弹出确认窗口
+      showConfirm('导入确认', reportHtml, function() {
+        // 确认导入，进入命名
+        showPrompt('命名题库', pendingName, function(bankName) {
+          saveAndGo(bankName);
+        }, function() {
+          saveAndGo(pendingName);
+        });
+      }, function() {
+        // 取消导入
+        document.getElementById('fileUpload').value = '';
+      });
+
     } catch(err) {
       document.getElementById('loadingText').style.display = 'none';
       showAlert('解析失败', err.message || '请检查表格格式');
     }
   };
   reader.readAsArrayBuffer(file);
-}
-
-function askForName() {
-  document.getElementById('loadingText').style.display = 'none';
-  showPrompt('导入成功', pendingName, function(bankName) {
-    saveAndGo(bankName);
-  }, function() {
-    // 取消命名，默认用文件名
-    saveAndGo(pendingName);
-  });
 }
 
 function saveAndGo(bankName) {
@@ -228,25 +242,11 @@ function saveAndGo(bankName) {
   window.location.href = 'index.html';
 }
 
-function showErrorModal(errors) {
-  var title = `⚠️ 成功抓取 ${pendingQuestions.length} 题`;
-  var msg = `<div style="text-align:left; margin-bottom:15px; color:#666;">拦截了 ${errors.length} 道异常题，建议修改表格后重试：</div>`;
-  
-  errors.forEach(function(err) {
-    msg += `<div style="text-align:left; font-size:0.85rem; border-bottom:1px dashed #eee; padding:8px 0;">
-      <strong style="color:#d32f2f;">${err.pos}</strong>：${err.msg}
-    </div>`;
-  });
-
-  showAlert(title, msg, function() {
-    askForName();
-  });
-}
-
-// ================= 终极智能解析 =================
+// ================= 绝对死锁对齐引擎 =================
 function parseExcel(wb) {
   var allParsed = [];
   var errorList = []; 
+  var stats = { single: 0, multiple: 0, judge: 0 };
   
   wb.SheetNames.forEach(function(sheetName) {
     var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '', raw: false });
@@ -256,6 +256,7 @@ function parseExcel(wb) {
     var optCols = [];
     var headerRowIndex = -1;
 
+    // 1. 锁定表头（扩大匹配范围，保证兼容所有题库）
     for (var r = 0; r < Math.min(rows.length, 30); r++) {
       var row = rows[r];
       if (!row || row.length === 0) continue;
@@ -283,12 +284,13 @@ function parseExcel(wb) {
 
     if (headerRowIndex === -1) return; 
 
+    // 2. 逐行绝对对齐提取
     for (var r = headerRowIndex + 1; r < rows.length; r++) {
       var row = rows[r];
       if (!row || row.length === 0) continue;
 
       var qText = String(row[colQ] || '').trim();
-      if (!qText) continue;
+      if (!qText) continue; // 没题目直接跳过
 
       var opts = [];
       for (var o = 0; o < optCols.length; o++) {
@@ -302,10 +304,11 @@ function parseExcel(wb) {
       var excelRow = r + 1; 
 
       if (!ansRaw) {
-        errorList.push({ pos: `工作表[${sheetName}] 第 ${excelRow} 行`, msg: `题目【${qText.substring(0,10)}...】缺少答案` });
+        errorList.push({ pos: `第 ${excelRow} 行`, msg: `题目【${qText.substring(0,10)}...】缺少答案` });
         continue;
       }
 
+      // 清洗多选特殊字符
       ansRaw = ansRaw.replace(/[，、\s\/\#\-]/g, ',');
       var type = 'single';
       var ansIndices = [];
@@ -313,6 +316,7 @@ function parseExcel(wb) {
       var judgeT = ['正确','对','T','TRUE','Y','YES','√','V','是','A'];
       var judgeF = ['错误','错','不对','F','FALSE','N','NO','×','X','否','B'];
 
+      // 题型判定
       if (typeStr.indexOf('判') > -1 || judgeT.indexOf(ansRaw) > -1 || judgeF.indexOf(ansRaw) > -1) {
         type = 'judge';
         opts = ['正确', '错误']; 
@@ -333,13 +337,14 @@ function parseExcel(wb) {
       }
 
       if (ansIndices.length === 0) {
-        errorList.push({ pos: `工作表[${sheetName}] 第 ${excelRow} 行`, msg: `题目【${qText.substring(0,10)}...】的答案【${ansRaw}】无法解析为字母` });
+        errorList.push({ pos: `第 ${excelRow} 行`, msg: `题目【${qText.substring(0,10)}...】的答案【${ansRaw}】无法解析为字母` });
         continue;
       }
 
+      // 校验选项是否存在
       var maxAns = Math.max.apply(null, ansIndices);
       if (opts.length <= maxAns && type !== 'judge') {
-         errorList.push({ pos: `工作表[${sheetName}] 第 ${excelRow} 行`, msg: `题目【${qText.substring(0,10)}...】答案选了 ${String.fromCharCode(65+maxAns)}，但表格缺失该选项` });
+         errorList.push({ pos: `第 ${excelRow} 行`, msg: `题目【${qText.substring(0,10)}...】答案选了 ${String.fromCharCode(65+maxAns)}，但表格缺失该选项` });
          continue;
       }
 
@@ -352,10 +357,12 @@ function parseExcel(wb) {
         analysis: anaText, 
         streak: 0
       });
+      
+      stats[type]++;
     }
   });
 
-  return { data: allParsed, errors: errorList };
+  return { data: allParsed, errors: errorList, stats: stats };
 }
 </script>
 </body>
