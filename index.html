@@ -128,30 +128,47 @@
   .prompt-box input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin: 15px 0; font-size: 1rem; }
   .footer { text-align: center; color: #94a3b8; font-size: 0.8rem; margin-top: 20px; padding-bottom: 20px; }
 
-  /* ====== 答题对错反馈动画（毛体文字版） ====== */
+  /* ====== 答题对错反馈（题目右上方，毛体红圈） ====== */
   .feedback-overlay {
     position: absolute;
-    top: 40%; left: 50%;
-    transform: translate(-50%, -50%);
+    top: -14px;
+    right: -6px;
     pointer-events: none;
-    z-index: 10;
+    z-index: 30;
     opacity: 0;
-    animation: popFeedback 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    transform: rotate(-15deg) scale(0);
+    animation: stampFeedback 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
   }
   .feedback-text {
     font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive;
-    font-size: 6rem;
+    font-size: 2.2rem;
     font-weight: bold;
     color: #d32f2f;
-    text-shadow: 3px 3px 0px #fff, 0 10px 20px rgba(0,0,0,0.2);
-    transform: rotate(-10deg);
+    width: 58px;
+    height: 58px;
+    border: 4px solid #d32f2f;
+    border-radius: 50%;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    line-height: 1;
+    padding-top: 2px;
   }
-  
-  @keyframes popFeedback {
-    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5) rotate(-20deg); }
-    20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1) rotate(0deg); }
-    80% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
-    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2) rotate(10deg); }
+  @keyframes stampFeedback {
+    0%   { opacity: 0; transform: rotate(-30deg) scale(0); }
+    80%  { opacity: 1; transform: rotate(-10deg) scale(1.1); }
+    100% { opacity: 1; transform: rotate(-15deg) scale(1); }
+  }
+
+  /* ====== 满分烟花 ====== */
+  #fireworks-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 9998;
   }
 </style>
 </head>
@@ -286,8 +303,8 @@ function showAppConfirm(title, msg, okText, cancelText, onOk, onCancel) {
   mask.innerHTML = `
     <div class="app-box">
       <h3>${title}</h3>
-      <p>${msg}</p>
-      <div class="actions">
+      <div>${msg}</div>
+      <div class="actions" style="margin-top:20px;">
         <button class="btn btn-outline" id="btnCancel">${cancelText}</button>
         <button class="btn btn-primary" id="btnOk">${okText}</button>
       </div>
@@ -511,7 +528,7 @@ function buildSheetHtml(questions, currentIdx, selections, type) {
   return html;
 }
 
-// ================= 练习模式（加入毛体反馈） =================
+// ================= 练习模式 =================
 function startPractice(type) {
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
   if (type === 'wrong') {
@@ -547,7 +564,7 @@ function renderPractice() {
   var streakHtml = isWrongPracticeMode ? `<span style="float:right;font-size:0.8rem;color:#ef4444;font-weight:bold;">🔥连对: ${q.streak}/5</span>` : '';
   var sheetHtml = buildSheetHtml(practiceQuestions, practiceIndex, practiceSelections, 'practice');
   
-  // 毛体文字反馈
+  // 毛体红圈反馈（题目右上方）
   var feedbackAnim = '';
   if (showAns) {
     feedbackAnim = `<div class="feedback-overlay"><div class="feedback-text">${isCorrect ? '对' : '错'}</div></div>`;
@@ -562,9 +579,8 @@ function renderPractice() {
       <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
     </div>
     <div class="card">
-      ${feedbackAnim}
       <span class="tag">${typeName}</span>${streakHtml}
-      <div class="q-text">${q.question}</div>${optsHtml}
+      <div class="q-text" style="position:relative;">${q.question}${feedbackAnim}</div>${optsHtml}
       <div class="analysis ${showAns ? (isCorrect ? 'success' : 'error') : ''}" style="display:${showAns ? 'block' : 'none'};">
         <div style="font-weight:bold;margin-bottom:5px;">正确答案：<span style="color:#10b981;">${q.answer.map(function(i){ return String.fromCharCode(65+i); }).join(', ')}</span></div>
         ${q.analysis ? `<div style="margin-top:8px; font-weight:bold; color:#0d47a1;">解析：</div><div style="color:#475569; margin-top:4px;">${q.analysis}</div>` : ''}
@@ -658,7 +674,7 @@ function renderReview() {
   appContainer.innerHTML = html + `<div class="footer">技术支持：秦十三郎</div>`;
 }
 
-// ================= 考试模式（加入合格线与不及格弹窗） =================
+// ================= 考试模式 =================
 function startExamSetup() { currentMode = 'examSetup'; render(); }
 function renderExamSetup() {
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
@@ -696,6 +712,7 @@ function startExam() {
   examConfig = { scoreSingle: parseInt(document.getElementById('pS').value) || 1, scoreMultiple: parseInt(document.getElementById('pM').value) || 1, scoreJudge: parseInt(document.getElementById('pJ').value) || 1, timeLimit: tLimit, passScore: pScore };
   examIndex = 0; examSelections = []; for (var i=0; i<examQuestions.length; i++) examSelections.push([]);
   examStartTime = Date.now(); examRemainingSeconds = tLimit * 60;
+  window.__examLowScoreWarned = false;
   if (examTimer) clearInterval(examTimer);
   examTimer = setInterval(function() {
     examRemainingSeconds--;
@@ -752,10 +769,41 @@ function selectExam(idx) {
   var q = examQuestions[examIndex]; var sels = examSelections[examIndex] || [];
   if (q.type === 'multiple') { var pos = sels.indexOf(idx); if (pos > -1) sels.splice(pos, 1); else sels.push(idx); }
   else { sels = [idx]; }
-  examSelections[examIndex] = sels; renderExam();
+  examSelections[examIndex] = sels;
+  renderExam();
+  checkExamScoreWarning();
 }
 function nextExam() { if (examIndex === examQuestions.length - 1) { confirmSubmitExam(); } else { examIndex++; renderExam(); } }
 function prevExam() { if (examIndex > 0) { examIndex--; renderExam(); } }
+
+// ===== 考试中途低于合格分弹窗 =====
+function checkExamScoreWarning() {
+  if (currentMode !== 'exam') return;
+  if (examRemainingSeconds <= 0) return;
+  var got = 0, total = 0;
+  for (var i = 0; i < examQuestions.length; i++) {
+    var q = examQuestions[i];
+    var pts = q.type==='single' ? examConfig.scoreSingle : q.type==='multiple' ? examConfig.scoreMultiple : examConfig.scoreJudge;
+    total += pts;
+    var sel = examSelections[i] || [];
+    if (sel.length === 0) continue;
+    var ans = q.answer.slice().sort();
+    var s = sel.slice().sort();
+    var isCorrect = ans.length === s.length && ans.every(function(v, idx){ return v === s[idx]; });
+    if (isCorrect) got += pts;
+  }
+  if (total > 0 && got < examConfig.passScore && !window.__examLowScoreWarned) {
+    window.__examLowScoreWarned = true;
+    showAppConfirm(
+      '成绩提醒',
+      '<div class="maoti-fail">考试不合格，不要气馁，继续加油，多去练练吧！</div>',
+      '继续答题',
+      '退出考试',
+      function() {},
+      function() { confirmExitExam(); }
+    );
+  }
+}
 
 function submitExam() {
   if (examTimer) { clearInterval(examTimer); examTimer = null; }
@@ -768,28 +816,38 @@ function submitExam() {
     if (isCorrect) got += pts;
     else { var exist = false; for (var j=0; j<wrongBook.length; j++) { if (wrongBook[j].id === q.id) exist = true; } if (!exist) { wrongBook.push({ id: q.id, question: q.question, type: q.type, options: q.options, answer: q.answer, analysis: q.analysis, streak: 0 }); } }
   }
-  saveData(); examScore = { got: got, total: total, usedTime: usedTimeStr }; currentMode = 'result'; render();
+  saveData(); examScore = { got: got, total: total, usedTime: usedTimeStr };
+  
+  var isFull = examScore.got >= examScore.total;
+  if (isFull) launchFireworks(3500);
+
+  var tipHtml = isFull
+    ? '<div class="maoti-result full">你真棒，继续加油哦！</div>'
+    : '<div class="maoti-fail">别气馁，多去刷刷题，满分等着你！</div>';
+  showAppConfirm(
+    isFull ? '恭喜满分' : '考试完成',
+    tipHtml,
+    '查看结果',
+    '返回首页',
+    function() { currentMode = 'result'; render(); },
+    function() { currentMode = 'home'; render(); }
+  );
 }
 
 function renderResult() {
   var isFull = examScore.got === examScore.total && examScore.total > 0;
   var isPass = examScore.got >= examConfig.passScore;
+  if (isFull) launchFireworks(3500);
   
   var msg = '';
   var msgClass = 'maoti-result';
   
   if (isFull) {
-    msg = '你真棒，继续加油！';
+    msg = '你真棒，继续加油哦！';
     msgClass += ' full';
   } else if (!isPass) {
-    // 不及格，弹出毛体大弹窗
-    showAppConfirm('铁途学练', '<div class="maoti-fail">考试不合格<br>不要气馁<br>继续加油<br>多去练练吧！</div>', '去练练', '看成绩', function() {
-      currentMode = 'home'; render();
-    }, function() {
-      // 留在成绩页
-    });
     msg = '考试不合格，不要气馁，继续加油，多去练练吧！';
-    msgClass += ' full';
+    msgClass = 'maoti-fail';
   } else {
     msg = '考试合格，再接再厉！';
   }
@@ -810,6 +868,85 @@ function renderResult() {
       </div>
     </div>
   `;
+}
+
+// ===== 满分烟花 =====
+function launchFireworks(duration) {
+  var old = document.getElementById('fireworks-canvas');
+  if (old) old.remove();
+
+  var canvas = document.createElement('canvas');
+  canvas.id = 'fireworks-canvas';
+  document.body.appendChild(canvas);
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width = window.innerWidth;
+  var H = canvas.height = window.innerHeight;
+
+  var particles = [];
+  var colors = ['#ff4757','#ffa502','#2ed573','#1e90ff','#e056fd','#ff6b81','#f9ca24'];
+
+  function rand(min, max) { return Math.random() * (max - min) + min; }
+
+  function createBurst(x, y) {
+    var color = colors[Math.floor(Math.random() * colors.length)];
+    var count = 60 + Math.floor(Math.random() * 40);
+    for (var i = 0; i < count; i++) {
+      var angle = Math.PI * 2 * (i / count) + rand(-0.05, 0.05);
+      var speed = rand(2, 6);
+      particles.push({
+        x: x, y: y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 1,
+        decay: rand(0.008, 0.02),
+        color: color,
+        size: rand(1.5, 3)
+      });
+    }
+  }
+
+  var startTime = Date.now();
+  var lastBurst = 0;
+
+  function animate() {
+    var elapsed = Date.now() - startTime;
+    if (elapsed > duration) {
+      canvas.remove();
+      return;
+    }
+
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'lighter';
+
+    if (elapsed - lastBurst > 350) {
+      lastBurst = elapsed;
+      createBurst(rand(W * 0.2, W * 0.8), rand(H * 0.15, H * 0.55));
+    }
+
+    for (var i = particles.length - 1; i >= 0; i--) {
+      var p = particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.06;
+      p.vx *= 0.99;
+      p.vy *= 0.99;
+      p.life -= p.decay;
+
+      if (p.life <= 0) { particles.splice(i, 1); continue; }
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.life;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    requestAnimationFrame(animate);
+  }
+  animate();
 }
 
 loadData();
