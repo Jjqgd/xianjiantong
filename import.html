@@ -267,7 +267,7 @@ function saveAndGo(bankName) {
   window.location.href = 'index.html';
 }
 
-// ================= 绝对死锁对齐引擎（严格执行新规） =================
+// ================= 绝对死锁对齐引擎（加入解析提取） =================
 function parseExcel(wb) {
   var allParsed = [];
   var errorList = []; 
@@ -277,8 +277,8 @@ function parseExcel(wb) {
     var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '', raw: false });
     if (!rows || rows.length < 2) return;
 
-    // 1. 严格查找表头（只认第一行，或者前几行包含规定字眼的）
-    var colQ = -1, colAns = -1, colType = -1;
+    // 1. 严格查找表头（只认前5行）
+    var colQ = -1, colAns = -1, colType = -1, colAna = -1;
     var optCols = {};
     var headerRowIndex = -1;
 
@@ -286,44 +286,43 @@ function parseExcel(wb) {
       var row = rows[r];
       if (!row) continue;
       
-      var tempQ = -1, tempAns = -1, tempType = -1;
+      var tempQ = -1, tempAns = -1, tempType = -1, tempAna = -1;
       var tempOpts = {};
 
       for (var c = 0; c < row.length; c++) {
-        var h = String(row[c] || '').trim().toUpperCase(); // 统一转大写，严格匹配
+        var h = String(row[c] || '').trim().toUpperCase();
         if (!h) continue;
 
-        // 死锁核心表头（一字不差）
         if (tempQ === -1 && (h === '题目' || h === 'QUESTION')) tempQ = c;
         else if (tempAns === -1 && (h === '答案' || h === 'ANSWER')) tempAns = c;
         else if (tempType === -1 && (h === '题型' || h === 'TYPE')) tempType = c;
+        else if (tempAna === -1 && (h === '解析' || h === 'EXPLANATION')) tempAna = c;
         else if (/^选项[A-G]$/.test(h)) {
           var letter = h.replace('选项', '');
           tempOpts[letter] = c;
         }
       }
 
-      // 必须同时有题目、答案、题型，否则视为无效表头
       if (tempQ !== -1 && tempAns !== -1 && tempType !== -1) {
-        colQ = tempQ; colAns = tempAns; colType = tempType; optCols = tempOpts; headerRowIndex = r;
+        colQ = tempQ; colAns = tempAns; colType = tempType; colAna = tempAna;
+        optCols = tempOpts; headerRowIndex = r;
         break;
       }
     }
 
-    if (headerRowIndex === -1) return; // 如果这个Sheet连核心表头都没有，直接跳过
+    if (headerRowIndex === -1) return;
 
     // 2. 逐行严格提取数据
     for (var r = headerRowIndex + 1; r < rows.length; r++) {
       var row = rows[r];
       if (!row || row.length === 0) continue;
 
-      // 检查是否为空行
       var isEmpty = true;
       for (var i=0; i<row.length; i++) { if (String(row[i]).trim() !== '') { isEmpty = false; break; } }
       if (isEmpty) continue; 
 
       var qText = String(row[colQ] || '').trim();
-      if (!qText) continue; // 没题目的行直接跳过
+      if (!qText) continue;
 
       var opts = [];
       ['A','B','C','D','E','F','G'].forEach(function(letter) {
@@ -335,6 +334,9 @@ function parseExcel(wb) {
 
       var ansRaw = String(row[colAns] || '').trim().toUpperCase();
       var typeStr = String(row[colType] || '').trim(); 
+      // 【核心修复】：提取解析内容
+      var anaText = colAna !== -1 ? String(row[colAna] || '').trim() : '';
+      
       var excelRow = r + 1; 
 
       if (!ansRaw) {
@@ -346,11 +348,9 @@ function parseExcel(wb) {
       var type = '';
       var ansIndices = [];
       
-      // 严格根据题型列分配
       if (typeStr.indexOf('判') > -1) {
         type = 'judge';
         opts = ['正确', '错误'];
-        // 兼容各种判断答案
         var jT = ['正确','对','T','TRUE','Y','YES','√','V','是','A'];
         var jF = ['错误','错','不对','F','FALSE','N','NO','×','X','否','B'];
         if (jT.indexOf(ansRaw) > -1) ansIndices = [0];
@@ -360,11 +360,9 @@ function parseExcel(wb) {
       } else if (typeStr.indexOf('单') > -1) {
         type = 'single';
       } else {
-        // 如果题型写得乱七八糟，按字符串长度盲猜保底
         type = ansRaw.length > 1 ? 'multiple' : 'single';
       }
 
-      // 提取答案字母
       if (ansIndices.length === 0) {
         var letters = ansRaw.match(/[A-G]/g) || [];
         for (var l = 0; l < letters.length; l++) {
@@ -379,21 +377,20 @@ function parseExcel(wb) {
         continue;
       }
 
-      // 校验选项是否够
       var maxAns = Math.max.apply(null, ansIndices);
       if (opts.length <= maxAns && type !== 'judge') {
          errorList.push({ pos: `第 ${excelRow} 行`, msg: `答案选了 ${String.fromCharCode(65+maxAns)}，但表格缺失该选项` });
          continue;
       }
 
-      // 成功入库
+      // 保存解析
       allParsed.push({
         id: 'q_' + r + '_' + Date.now() + Math.floor(Math.random()*1000),
         question: qText,
         type: type,
         options: opts.length > 1 ? opts : (type === 'judge' ? ['正确', '错误'] : opts), 
         answer: ansIndices,
-        analysis: '', 
+        analysis: anaText, // 存入解析
         streak: 0
       });
       
