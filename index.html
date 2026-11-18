@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -420,63 +421,288 @@ function changeFontSize(delta) {
 var splashDelay = 4800;
 setTimeout(function() { document.getElementById('splash-screen').classList.add('hidden'); }, splashDelay);
 
-// ================= 授权系统 =================
-var isAuthorized = false; var isTrialMode = false; var trialDays = 2; 
-function setAuthCookie(val) { var d = new Date(); d.setTime(d.getTime() + (36500 * 24 * 60 * 60 * 1000)); document.cookie = "xjt_auth_status=" + val + "; expires=" + d.toUTCString() + "; path=/"; }
-function getAuthCookie() { var name = "xjt_auth_status="; var decodedCookie = decodeURIComponent(document.cookie); var ca = decodedCookie.split(';'); for(var i = 0; i < ca.length; i++) { var c = ca[i].trim(); if (c.indexOf(name) == 0) return c.substring(name.length, c.length); } return ""; }
-function setAuthDB(val) { try { var req = indexedDB.open("XJT_Auth_DB", 1); req.onupgradeneeded = function(e) { var db = e.target.result; if (!db.objectStoreNames.contains("auth")) db.createObjectStore("auth"); }; req.onsuccess = function(e) { var db = e.target.result; var tx = db.transaction("auth", "readwrite"); tx.objectStore("auth").put(val, "status"); }; } catch(e) {} }
-function getAuthDB(callback) { try { var req = indexedDB.open("XJT_Auth_DB", 1); req.onupgradeneeded = function(e) { var db = e.target.result; if (!db.objectStoreNames.contains("auth")) db.createObjectStore("auth"); }; req.onsuccess = function(e) { var db = e.target.result; var tx = db.transaction("auth", "readonly"); var getReq = tx.objectStore("auth").get("status"); getReq.onsuccess = function() { callback(getReq.result); }; getReq.onerror = function() { callback(null); }; }; req.onerror = function() { callback(null); }; } catch(e) { callback(null); } }
-function writeTrialFile(timeStr) { if (typeof plus === 'undefined') return; try { plus.io.resolveLocalFileSystemURL("_doc/", function(entry) { entry.getFile("sys_data.bin", { create: true }, function(fileEntry) { fileEntry.createWriter(function(writer) { writer.write("sys_" + timeStr + "_core"); }); }); }); } catch(e) {} }
-function readTrialFile(callback) { if (typeof plus === 'undefined') { callback(null); return; } try { plus.io.resolveLocalFileSystemURL("_doc/", function(entry) { entry.getFile("sys_data.bin", { create: false }, function(fileEntry) { fileEntry.file(function(file) { var reader = new plus.io.FileReader(); reader.onloadend = function(evt) { var content = evt.target.result; if (content && content.indexOf("sys_") === 0) { callback(content.split("_")[1]); } else { callback(null); } }; reader.readAsText(file, 'utf-8'); }); }, function() { callback(null); }); }, function() { callback(null); }); } catch(e) { callback(null); } }
+// ================= 授权系统（强制联网校验 / 一机一码 / 免费试用 2 天） =================
+/* 部署前必读：
+   1) AUTH_SECRET 已随机生成并与发码脚本 gen-code.js 的 SECRET 保持一致（如需换密钥，两处必须同时改）；
+   2) 必须使用 HTTPS 部署（HTTP 下浏览器不开放 crypto.subtle，会自动降级为内置纯 JS 实现，功能不变）；
+   3) 发码方式：node gen-code.js 设备码 [天数]   （不填天数即为永久授权）。 */
+var AUTH_SECRET = 'ETwGVfCXjcDu3d1PUGDzPBQIV1f0oTsGKSsN56tH6dEt';
+var AUTH_TRIAL_MS = 48 * 60 * 60 * 1000;         /* 免费试用 2 天 */
+var AUTH_HEARTBEAT = 20 * 60 * 1000;             /* 联网心跳 20 分钟 */
+var AUTH_PERM = 4102444800000;                   /* 2100-01-01，代表永久授权 */
+var AUTH_B32 = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+var AUTH_KEYS = { ls: 'xjt_lic_v2', ck: 'xjt_lic', ss: 'xjt_lic', idb: 'xjt_lic_db', dom: 'data-xjt-lic' };
 
-function checkAuth() {
-  var expireTime = localStorage.getItem('xjt_expire_time'); var authLS = localStorage.getItem('xjt_offline_auth') === 'true'; var authCK = getAuthCookie() === 'true';
-  if (expireTime && new Date().getTime() > parseInt(expireTime)) { localStorage.removeItem('xjt_offline_auth'); localStorage.removeItem('xjt_expire_time'); isAuthorized = false; isTrialMode = false; render(); return; }
-  if (authLS || authCK) { isAuthorized = true; isTrialMode = false; setAuthCookie('true'); setAuthDB('true'); localStorage.setItem('xjt_offline_auth', 'true'); render(); }
-  else { getAuthDB(function(dbVal) { if (dbVal === 'true') { isAuthorized = true; isTrialMode = false; localStorage.setItem('xjt_offline_auth', 'true'); setAuthCookie('true'); render(); } else { validateTrial(); } }); }
+var isAuthorized = false; var isTrialMode = false; var trialDays = 2;
+var authReady = false; var authMode = ''; var authLockReason = '';
+var authExpire = 0; var authDeviceCode = ''; var authFp = ''; var authFpLoose = '';
+
+/* ---------- 哈希与编码（WebCrypto 优先，非安全上下文自动降级，两者结果一致） ---------- */
+function authHex(u8) { var s = ''; for (var i = 0; i < u8.length; i++) s += (u8[i] < 16 ? '0' : '') + u8[i].toString(16); return s; }
+function authHexU8(h) { var u = new Uint8Array(h.length / 2); for (var i = 0; i < u.length; i++) u[i] = parseInt(h.substr(i * 2, 2), 16); return u; }
+function authB32(u8, n) { var o = ''; for (var i = 0; i < u8.length; i++) { o += AUTH_B32[u8[i] >> 3]; if (o.length >= n) break; } return o.slice(0, n); }
+function authGroup(s, n) { return s.replace(new RegExp('(.{' + n + '})(?=.)', 'g'), '$1-'); }
+
+function authSha256(msg) {
+  if (window.crypto && window.crypto.subtle && window.TextEncoder) {
+    return window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg)).then(function (b) { return authHex(new Uint8Array(b)); });
+  }
+  return Promise.resolve(authSha256Pure(msg));
 }
-function validateTrial() {
-  readTrialFile(function(fileStartTime) {
-    var startTimeStr = fileStartTime || localStorage.getItem('xjt_trial_start') || getAuthCookie().replace('trial_', '');
-    if (!startTimeStr) { isAuthorized = false; isTrialMode = false; render(); return; }
-    var startTime = parseInt(startTimeStr); var now = new Date().getTime(); var lastRun = parseInt(localStorage.getItem('xjt_last_run') || '0');
-    if (lastRun > 0 && now < lastRun - 1000 * 60 * 60 * 24) { isAuthorized = false; isTrialMode = false; showAppConfirm('检测到异常', '检测到系统时间被篡改，试用功能已被永久封禁！', '知道了', '关闭', function(){}, function(){}); render(); return; }
-    localStorage.setItem('xjt_last_run', now);
-    var trialDuration = trialDays * 24 * 60 * 60 * 1000;
-    if (now - startTime <= trialDuration) { isAuthorized = true; isTrialMode = true; } else { isAuthorized = false; isTrialMode = false; }
-    render();
+function authSha256Pure(msg) {
+  function rr(x, n) { return (x >>> n) | (x << (32 - n)); }
+  var K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+  0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+  0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+  0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+  0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+  0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+  0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+  0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  var H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  var bytes = new TextEncoder().encode(msg), l = bytes.length;
+  var blocks = Math.ceil((l + 1 + 8) / 64), total = blocks * 64, buf = new Uint8Array(total);
+  buf.set(bytes); buf[l] = 0x80;
+  var dv = new DataView(buf.buffer);
+  dv.setUint32(total - 4, (l * 8) >>> 0, false);
+  dv.setUint32(total - 8, Math.floor(l * 8 / 4294967296), false);
+  var w = new Uint32Array(64);
+  for (var b = 0; b < blocks; b++) {
+    for (var i = 0; i < 16; i++) w[i] = dv.getUint32(b * 64 + i * 4, false);
+    for (i = 16; i < 64; i++) {
+      var s0 = rr(w[i - 15], 7) ^ rr(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+      var s1 = rr(w[i - 2], 17) ^ rr(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+      w[i] = (w[i - 16] + s0 + w[i - 7] + s1) >>> 0;
+    }
+    var a = H[0], b2 = H[1], c = H[2], d = H[3], e = H[4], f = H[5], gg = H[6], h = H[7];
+    for (i = 0; i < 64; i++) {
+      var S1 = rr(e, 6) ^ rr(e, 11) ^ rr(e, 25), ch = (e & f) ^ (~e & gg);
+      var t1 = (h + S1 + ch + K[i] + w[i]) >>> 0;
+      var S0 = rr(a, 2) ^ rr(a, 13) ^ rr(a, 22), maj = (a & b2) ^ (a & c) ^ (b2 & c);
+      var t2 = (S0 + maj) >>> 0;
+      h = gg; gg = f; f = e; e = (d + t1) >>> 0; d = c; c = b2; b2 = a; a = (t1 + t2) >>> 0;
+    }
+    H[0] = (H[0] + a) >>> 0; H[1] = (H[1] + b2) >>> 0; H[2] = (H[2] + c) >>> 0; H[3] = (H[3] + d) >>> 0;
+    H[4] = (H[4] + e) >>> 0; H[5] = (H[5] + f) >>> 0; H[6] = (H[6] + gg) >>> 0; H[7] = (H[7] + h) >>> 0;
+  }
+  var out = ''; for (var j = 0; j < 8; j++) out += ('00000000' + H[j].toString(16)).slice(-8);
+  return out;
+}
+
+/* ---------- 设备指纹（strict 全量 / loose 稳定子集，容忍浏览器小版本升级） ---------- */
+function authCanvasSig() {
+  try {
+    var c = document.createElement('canvas'); c.width = 320; c.height = 120;
+    var x = c.getContext('2d'); x.textBaseline = 'top'; x.font = '16px Arial';
+    x.fillStyle = '#f60'; x.fillRect(0, 0, 320, 120);
+    x.fillStyle = 'rgba(102,204,0,0.47829)'; x.fillRect(10, 10, 100, 50);
+    x.fillStyle = '#069'; x.fillText('TieTuXueLian fp 7', 2, 2);
+    return c.toDataURL();
+  } catch (e) { return 'na'; }
+}
+function authGlSig() {
+  try {
+    var c = document.createElement('canvas');
+    var gl = c.getContext('webgl') || c.getContext('experimental-webgl'); if (!gl) return 'na';
+    var d = gl.getExtension('WEBGL_debug_renderer_info');
+    return String(gl.getParameter(d ? d.UNMASKED_VENDOR_WEBGL : gl.VENDOR)) + '|' + String(gl.getParameter(d ? d.UNMASKED_RENDERER_WEBGL : gl.RENDERER));
+  } catch (e) { return 'na'; }
+}
+function authUaLoose() {
+  var m = navigator.userAgent.match(/(Chrome|Safari|Firefox|Edg|OPR)\/(\d+)/);
+  return (m ? m[1] + m[2] : 'na') + '|' + (navigator.platform || 'na');
+}
+function authComps() {
+  return { ua: navigator.userAgent, ual: authUaLoose(), lang: navigator.language, tz: new Date().getTimezoneOffset(),
+    sw: screen.width, sh: screen.height, cd: screen.colorDepth, hc: navigator.hardwareConcurrency || 0,
+    dm: navigator.deviceMemory || 0, mt: navigator.maxTouchPoints || 0, cv: authCanvasSig(), gl: authGlSig() };
+}
+function authFpOf(c, loose) {
+  var o = loose ? { ual: c.ual, lang: c.lang, tz: c.tz, sw: c.sw, sh: c.sh, cd: c.cd, hc: c.hc, dm: c.dm, mt: c.mt, gl: c.gl } : c;
+  return authSha256(JSON.stringify(o));
+}
+function authDeviceCodeOf(fp) { return authGroup(authB32(authHexU8(fp).slice(0, 15), 15), 5); }
+
+/* ---------- 冗余存储（localStorage + Cookie + sessionStorage + IndexedDB + 隐藏 DOM 属性） ---------- */
+function authIdb() {
+  return new Promise(function (res, rej) {
+    var r = indexedDB.open(AUTH_KEYS.idb, 1);
+    r.onupgradeneeded = function () { r.result.createObjectStore('kv'); };
+    r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); };
   });
 }
-function startTrial() {
-  var now = new Date().getTime().toString(); localStorage.setItem('xjt_trial_start', now); localStorage.setItem('xjt_last_run', now);
-  setAuthCookie('trial_' + now); setAuthDB('trial_' + now); writeTrialFile(now);
-  showToast('已开启 2 天全功能免费体验！');
-  isAuthorized = true; isTrialMode = true; currentMode = Object.keys(allBanks).length > 0 ? 'home' : 'import'; render();
+function authIdbPut(v) {
+  return authIdb().then(function (db) {
+    return new Promise(function (res, rej) {
+      var t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, 'lic');
+      t.oncomplete = function () { res(); }; t.onerror = function () { rej(t.error); };
+    });
+  }).catch(function () {});
+}
+function authIdbGet() {
+  return authIdb().then(function (db) {
+    return new Promise(function (res, rej) {
+      var t = db.transaction('kv', 'readonly'), q = t.objectStore('kv').get('lic');
+      q.onsuccess = function () { res(q.result); }; q.onerror = function () { rej(q.error); };
+    });
+  }).catch(function () { return null; });
+}
+function authCkSet(v) { try { document.cookie = AUTH_KEYS.ck + '=' + encodeURIComponent(v) + ';max-age=31536000;path=/;SameSite=Lax'; } catch (e) {} }
+function authCkGet() { var m = document.cookie.match(new RegExp('(?:^|; )' + AUTH_KEYS.ck + '=([^;]*)')); return m ? decodeURIComponent(m[1]) : null; }
+function authSign(rec) {
+  var c = Object.assign({}, rec); delete c.sig;
+  return authSha256(AUTH_SECRET + '|' + JSON.stringify(c)).then(function (h) { return h.slice(0, 16); });
+}
+function authSaveAll(rec) {
+  return authSign(rec).then(function (sig) {
+    rec.sig = sig; var s = JSON.stringify(rec);
+    try { localStorage.setItem(AUTH_KEYS.ls, s); } catch (e) {}
+    try { sessionStorage.setItem(AUTH_KEYS.ss, s); } catch (e) {}
+    authCkSet(s); authIdbPut(s);
+    var el = document.querySelector('[' + AUTH_KEYS.dom + ']');
+    if (!el) { el = document.createElement('div'); el.setAttribute(AUTH_KEYS.dom, s); el.style.display = 'none'; document.body.appendChild(el); }
+    else { el.setAttribute(AUTH_KEYS.dom, s); }
+  });
+}
+function authReadAll() {
+  var raw = [];
+  try { raw.push(localStorage.getItem(AUTH_KEYS.ls)); } catch (e) {}
+  try { raw.push(sessionStorage.getItem(AUTH_KEYS.ss)); } catch (e) {}
+  raw.push(authCkGet());
+  var el = document.querySelector('[' + AUTH_KEYS.dom + ']'); if (el) raw.push(el.getAttribute(AUTH_KEYS.dom));
+  return authIdbGet().then(function (v) { raw.push(v); return raw; }).then(function (list) {
+    var valid = [];
+    list.forEach(function (s) { if (!s) return; try { var r = JSON.parse(s); if (r && r.sig) valid.push(r); } catch (e) {} });
+    if (!valid.length) return { rec: null, tamper: false };
+    return Promise.all(valid.map(function (r) {
+      var c = Object.assign({}, r); delete c.sig;
+      return authSha256(AUTH_SECRET + '|' + JSON.stringify(c)).then(function (h) { return h.slice(0, 16) === r.sig; });
+    })).then(function (oks) {
+      var good = valid.filter(function (_, i) { return oks[i]; });
+      if (!good.length) return { rec: null, tamper: true };
+      var map = {};
+      good.forEach(function (r) { var k = JSON.stringify([r.fp, r.fpl, r.first, r.exp, r.act]); (map[k] = map[k] || []).push(r); });
+      var keys = Object.keys(map).sort(function (a, b) { return map[b].length - map[a].length; });
+      return { rec: map[keys[0]][0], tamper: keys.length > 1 };
+    });
+  });
 }
 
-function getDeviceId() {
-  var devId = localStorage.getItem('xjt_device_id'); if (devId) return devId;
-  var raw = ""; if (typeof plus !== 'undefined') { raw = plus.device.uuid + plus.device.vendor + plus.device.model + plus.os.name; } else { var nav = window.navigator; raw = nav.userAgent + nav.language + screen.width + screen.height; }
-  var hash = 0; for (var i = 0; i < raw.length; i++) { hash = ((hash << 5) - hash) + raw.charCodeAt(i); hash |= 0; }
-  var hex = Math.abs(hash).toString(16).toUpperCase().padStart(8, '0');
-  devId = 'DEV-' + hex.substring(0,4) + '-' + hex.substring(4,8);
-  localStorage.setItem('xjt_device_id', devId); return devId;
+/* ---------- 网络时间（不允许离线：取不到时间一律锁定） ---------- */
+function authNetTime() {
+  return fetch(location.pathname + (location.pathname.indexOf('?') > -1 ? '&' : '?') + '_t=' + Math.random(), { method: 'HEAD', cache: 'no-store' })
+    .then(function (r) { var d = r.headers.get('date') || r.headers.get('Date'); if (d) { var t = Date.parse(d); if (!isNaN(t)) return t; } throw new Error('no date header'); })
+    .catch(function () { return authNetTimeApi('https://timeapi.io/api/Time/current/zone?timeZone=Asia/Shanghai'); });
+}
+function authNetTimeApi(url) {
+  return fetch(url, { cache: 'no-store', mode: 'cors' }).then(function (r) {
+    if (!r.ok) throw new Error('http ' + r.status);
+    return r.json();
+  }).then(function (d) {
+    if (d && d.dateTime) return Date.parse(String(d.dateTime).slice(0, 19) + 'Z') - 8 * 3600000;
+    if (d && d.unixtime) return Number(d.unixtime) * 1000;
+    throw new Error('bad payload');
+  }).catch(function () { return authNetTimeApi('https://worldtimeapi.org/api/ip'); });
+}
+function netTime() { return authNetTime().catch(function () { return null; }); }
+
+/* ---------- 授权状态切换 ---------- */
+function authOk(mode, exp) {
+  authMode = mode; authExpire = exp; isAuthorized = true; isTrialMode = (mode === 'trial'); authLockReason = ''; authReady = true;
+  if (currentMode === 'login') { currentMode = Object.keys(allBanks).length > 0 ? 'home' : 'import'; }
+  render();
+}
+function authLock(reason) {
+  authLockReason = reason; authMode = ''; authReady = true; isAuthorized = false; isTrialMode = false;
+  if (examTimer) { clearInterval(examTimer); examTimer = null; }
+  currentMode = 'login'; render();
+}
+/* 关键入口埋点：未授权时拦截并弹回授权页 */
+function guardGate() {
+  if (authReady && isAuthorized) return true;
+  if (!authReady) { showToast('正在联网校验授权，请稍候', true); return false; }
+  authLock(authLockReason || 'device'); return false;
 }
 
+/* ---------- 激活码校验（与 gen-code.js 完全一致） ---------- */
+function authVerifyCode(code, devCode) {
+  var dc = devCode || authDeviceCode;
+  var p = String(code).toUpperCase().replace(/[^A-Z0-9-]/g, '').split('-');
+  if (p.length !== 3) return Promise.resolve(null);
+  var tag = p[2], got = p[0] + p[1];
+  return authSha256(AUTH_SECRET + '|' + dc + '|' + tag).then(function (h) {
+    if (authB32(authHexU8(h), 10) !== got) return null;
+    return tag === 'PERM' ? AUTH_PERM : parseInt(tag.slice(1), 36);
+  });
+}
 function doLogin() {
-  var inputCode = document.getElementById('regCodeInput').value.trim().toUpperCase();
-  var myDevId = getDeviceId(); var parts = inputCode.split('-');
-  if (parts.length !== 4 || parts[0] !== 'TT') return showToast('注册码格式错误，请核对后重试', true);
-  var durCode = parts[1], devSuffix = parts[2], inputHash = parts[3]; var myDevSuffix = myDevId.substring(4, 8);
-  if (devSuffix !== myDevSuffix) return showToast('该注册码非本机专属，已被绑定至其他设备！', true);
-  var salt = "TieTuXueLian2024Qin"; var raw = myDevSuffix + salt + durCode; var hash = 0;
-  for (var i = 0; i < raw.length; i++) { hash = ((hash << 5) - hash) + raw.charCodeAt(i); hash |= 0; }
-  var correctHash = Math.abs(hash).toString(16).toUpperCase().padStart(8, '0').substring(0, 6);
-  if (inputHash !== correctHash) return showToast('注册码无效或已损坏，请联系客服', true);
-  if (durCode === "9999") { localStorage.removeItem('xjt_expire_time'); showToast('永久授权激活成功！'); }
-  else { var days = parseInt(durCode); if (isNaN(days) || days <= 0) return showToast('授权时长无效', true); var durationMs = days * 24 * 60 * 60 * 1000; localStorage.setItem('xjt_expire_time', new Date().getTime() + durationMs); showToast('授权成功，有效期 ' + days + ' 天'); }
-  isAuthorized = true; isTrialMode = false; localStorage.setItem('xjt_offline_auth', 'true'); setAuthCookie('true'); setAuthDB('true');
-  currentMode = Object.keys(allBanks).length > 0 ? 'home' : 'import'; render();
+  var box = document.getElementById('regCodeInput');
+  var code = box ? box.value.trim() : '';
+  if (!code) return showToast('请先输入激活码', true);
+  if (!authDeviceCode) return showToast('设备码计算中，请稍候再试', true);
+  netTime().then(function (now) {
+    if (now == null) { showToast('需要联网激活，请连接网络后重试', true); return; }
+    authVerifyCode(code).then(function (exp) {
+      if (exp == null) { showToast('激活码无效或不属于本设备', true); return; }
+      authReadAll().then(function (res) {
+        var rec = res.rec || { v: 2, fp: authFp, fpl: authFpLoose, first: now, exp: 0, act: false, code: '', maxSeen: now };
+        rec.act = true; rec.exp = exp; rec.code = code; rec.maxSeen = now;
+        authSaveAll(rec).then(function () {
+          showToast(exp >= AUTH_PERM ? '永久授权激活成功' : '授权激活成功');
+          authOk('activated', exp);
+        });
+      });
+    });
+  });
+}
+
+/* ---------- 启动校验 ---------- */
+function authBoot() {
+  authReady = false;
+  var c = authComps();
+  Promise.all([authFpOf(c, false), authFpOf(c, true)]).then(function (f) {
+    authFp = f[0]; authFpLoose = f[1]; authDeviceCode = authDeviceCodeOf(f[0]);
+    if (currentMode === 'login') render();
+    return netTime();
+  }).then(function (now) {
+    if (now == null) { authLock('offline'); return; }             /* 不允许离线使用 */
+    return authReadAll().then(function (res) {
+      if (res.tamper) { authLock('tamper'); return; }
+      var rec = res.rec;
+      if (!rec) {                                                  /* 首次使用：以网络时间起算 2 天试用 */
+        rec = { v: 2, fp: authFp, fpl: authFpLoose, first: now, exp: now + AUTH_TRIAL_MS, act: false, code: '', maxSeen: now };
+        authSaveAll(rec);
+      }
+      if (rec.fp !== authFp && rec.fpl !== authFpLoose) { authLock('device'); return; }
+      if (rec.maxSeen && now < rec.maxSeen - 5 * 60000) { authLock('clock'); return; }   /* 时钟回拨 */
+      rec.maxSeen = now; authSaveAll(rec);
+      if (rec.act) { if (rec.exp <= now) { authLock('expired'); return; } authOk('activated', rec.exp); }
+      else { if (rec.exp <= now) { authLock('trial'); return; } authOk('trial', rec.exp); }
+    });
+  });
+}
+function authRetry() {
+  if (currentMode === 'login') { appContainer.innerHTML = '<div class="card" style="text-align:center;padding:40px 15px;">正在重新联网校验授权…</div>'; }
+  authBoot();
+}
+function authHeartbeat() {
+  netTime().then(function (now) {
+    if (now == null) { if (isAuthorized) authLock('offline'); return; }
+    if (!isAuthorized) return;
+    if (authExpire < AUTH_PERM && authExpire <= now) { authLock('expired'); return; }
+    authReadAll().then(function (res) {
+      if (res.tamper) { authLock('tamper'); return; }
+      if (res.rec) { res.rec.maxSeen = now; authSaveAll(res.rec); }
+    });
+  });
+}
+function getDeviceId() { return authDeviceCode || ''; }
+function checkAuth() {
+  currentMode = 'login'; render();
+  authBoot();
+  setInterval(authHeartbeat, AUTH_HEARTBEAT);
+  window.addEventListener('offline', function () { if (isAuthorized) authLock('offline'); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && isAuthorized) authHeartbeat(); });
 }
 
 // ================= 业务逻辑区 =================
@@ -531,31 +757,44 @@ function render() {
 }
 
 function renderLogin() {
-  var myDevId = getDeviceId(); var hasTrialed = localStorage.getItem('xjt_trial_start') !== null || getAuthCookie().indexOf('trial_') === 0;
-  var trialHtml = ''; if (!hasTrialed) { trialHtml = `<button class="btn btn-green btn-block" style="margin-bottom:20px; border-radius:8px; font-size:1.1rem; padding:15px; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);" onclick="startTrial()">🎁 免费体验 2 天全功能</button>`; } else { trialHtml = `<div class="tip-danger" style="color:#ef4444; font-size:0.9rem; font-weight:bold; margin-bottom:20px; padding:10px; background:#fef2f2; border:1px solid #fecaca; border-radius:6px;">您的免费体验已结束，请购买正式版继续使用。</div>`; }
+  var dc = authDeviceCode || '计算中…';
+  var reasonTip = '';
+  var tips = {
+    offline: '<b>需要联网验证授权</b><br>本软件必须联网使用，请连接网络后点击下方按钮重新校验。',
+    clock: '<b>检测到系统时间异常</b><br>授权记录与你当前时间不符，请联系客服处理。',
+    device: '<b>当前设备未授权</b><br>请把下方设备码发给客服，获取本机专属激活码。',
+    expired: '<b>授权已到期</b><br>续费或购买永久授权请联系客服，输入新激活码即可继续使用。',
+    trial: '<b>免费试用已结束</b><br>试用期为 2 天。请输入激活码继续使用。',
+    tamper: '<b>授权记录异常</b><br>检测到本地记录被修改，请重新输入激活码。'
+  };
+  if (authLockReason && tips[authLockReason]) { reasonTip = '<div class="tip-danger" style="background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; padding:12px; border-radius:8px; font-size:0.9rem; text-align:left; line-height:1.6; margin-bottom:15px;">' + tips[authLockReason] + '</div>'; }
+  else if (!authReady) { reasonTip = '<div class="tip-ok" style="background:#eff6ff; border:1px solid #bfdbfe; color:#1d4ed8; padding:12px; border-radius:8px; font-size:0.9rem; text-align:left; margin-bottom:15px;">正在联网校验授权，请稍候…</div>'; }
+  var retryBtn = authLockReason === 'offline' ? '<button class="btn btn-green btn-block" style="margin-bottom:15px; border-radius:8px; font-size:1rem; padding:13px;" onclick="authRetry()">重新联网校验</button>' : '';
+
   appContainer.innerHTML = `
     <div class="card" style="text-align:center; margin-top:10px; padding: 20px 15px;">
-      <h2 style="color:#b71c1c;margin-bottom:10px;">🔐 专属授权登录</h2>
-      <div class="tip-danger" style="background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; padding:12px; border-radius:8px; font-size:0.85rem; text-align:left; line-height:1.6; margin-bottom:15px;"><b>⚠️ 重要提示（必读）：</b><br>1. 本软件采用 <b>一机一码</b> 授权机制。<br>2. <b>请勿卸载本软件！</b> 一旦卸载，设备码将发生变化，需重新购买。<br>3. 软件纯离线，绝对保护隐私安全。</div>
-      ${trialHtml}
+      <h2 style="color:#b71c1c;margin-bottom:10px;">专属授权登录</h2>
+      ${reasonTip}
+      ${retryBtn}
+      <div class="tip-danger" style="background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; padding:12px; border-radius:8px; font-size:0.85rem; text-align:left; line-height:1.6; margin-bottom:15px;"><b>重要提示（必读）：</b><br>1. 本软件采用 <b>一机一码</b> 授权机制，激活码与设备绑定。<br>2. <b>必须联网使用</b>：授权有效期以网络时间为准，修改手机时间无效。<br>3. 请勿清除浏览器数据（清除后需重新输入激活码，激活码不变，无需重新购买）。</div>
       <div style="display:flex; gap:5px; margin-bottom:15px; text-align:center; flex-wrap:wrap;">
         <div style="flex:1; min-width:18%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#64748b; margin-bottom:5px;">7 天</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥2</div></div>
         <div style="flex:1; min-width:18%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#64748b; margin-bottom:5px;">15 天</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥4</div></div>
         <div style="flex:1; min-width:18%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#64748b; margin-bottom:5px;">30 天</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥5</div></div>
-        <div style="flex:1; min-width:18%; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:10px 2px; position:relative;"><div style="position:absolute; top:-8px; left:50%; transform:translateX(-50%); background:#ef4444; color:#fff; font-size:0.6rem; padding:2px 5px; border-radius:10px; white-space:nowrap; font-weight:bold;">🔥 热卖</div><div style="font-size:0.75rem; color:#d97706; margin-bottom:5px; margin-top:3px;">半年</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥15</div></div>
+        <div style="flex:1; min-width:18%; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:10px 2px; position:relative;"><div style="position:absolute; top:-8px; left:50%; transform:translateX(-50%); background:#ef4444; color:#fff; font-size:0.6rem; padding:2px 5px; border-radius:10px; white-space:nowrap; font-weight:bold;">热卖</div><div style="font-size:0.75rem; color:#d97706; margin-bottom:5px; margin-top:3px;">半年</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥15</div></div>
         <div style="flex:1; min-width:18%; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#1d4ed8; margin-bottom:5px;">永久</div><div style="font-size:1.1rem; color:#0d47a1; font-weight:bold;">￥49.9</div></div>
       </div>
       <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin-bottom:15px; border: 1px dashed #cbd5e1;">
         <div style="font-size:0.8rem; color:#64748b; margin-bottom:5px;">您的专属设备码</div>
-        <div style="font-size:1.3rem; font-weight:bold; color:#0d47a1; letter-spacing:2px;">${myDevId}</div>
-        <button class="btn btn-outline" style="margin-top:10px; padding:6px 12px; font-size:0.85rem; display:inline-block;" onclick="copyDeviceId('${myDevId}')">📋 一键复制并发送给客服</button>
+        <div style="font-size:1.15rem; font-weight:bold; color:#0d47a1; letter-spacing:1px; word-break:break-all;">${dc}</div>
+        <button class="btn btn-outline" style="margin-top:10px; padding:6px 12px; font-size:0.85rem; display:inline-block;" onclick="copyDeviceId('${authDeviceCode}')">一键复制设备码并发给客服</button>
       </div>
-      <div style="text-align:left; font-size:0.85rem; font-weight:bold; color:#475569; margin-bottom:5px;">请输入专属注册码：</div>
-      <input type="text" id="regCodeInput" placeholder="请联系客服购买后获取" style="width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:8px;text-align:center;font-size:1.1rem;margin-bottom:20px; text-transform:uppercase;">
+      <div style="text-align:left; font-size:0.85rem; font-weight:bold; color:#475569; margin-bottom:5px;">请输入专属激活码：</div>
+      <input type="text" id="regCodeInput" placeholder="请联系客服购买后获取" style="width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:8px;text-align:center;font-size:1rem;margin-bottom:20px; text-transform:uppercase;">
       <button class="btn btn-primary btn-block" onclick="doLogin()" style="padding:14px; font-size:1.1rem; box-shadow: 0 4px 10px rgba(13, 71, 161, 0.3);">立即激活正式版</button>
-      
+
       <div style="margin-top:20px; padding:15px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; text-align:left;">
-        <div style="font-size:0.85rem; color:#475569; font-weight:bold; margin-bottom:8px;">购买注册码或遇到问题，请联系客服：</div>
+        <div style="font-size:0.85rem; color:#475569; font-weight:bold; margin-bottom:8px;">购买激活码或遇到问题，请联系客服：</div>
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; font-size:0.9rem;">
           <span style="color:#166534;"><b>QQ号：</b>981730010</span>
           <button style="background:#e2e8f0; border:none; padding:4px 10px; border-radius:4px; font-size:0.75rem; color:#475569; cursor:pointer;" onclick="copyText('981730010')">复制</button>
@@ -564,7 +803,7 @@ function renderLogin() {
           <span style="color:#065f46;"><b>微信号：</b>LB981730010</span>
           <button style="background:#e2e8f0; border:none; padding:4px 10px; border-radius:4px; font-size:0.75rem; color:#475569; cursor:pointer;" onclick="copyText('LB981730010')">复制</button>
         </div>
-        <div style="font-size:0.75rem; color:#ef4444; margin-top:5px; font-weight:bold;">💡 添加客服时请备注：铁途学练</div>
+        <div style="font-size:0.75rem; color:#ef4444; margin-top:5px; font-weight:bold;">添加客服时请备注：铁途学练</div>
       </div>
     </div>
     <div class="footer">技术支持：秦十三郎</div>
@@ -587,13 +826,16 @@ function renderImport() {
 
 function renderHome() {
   var trialTip = '';
-  if (isTrialMode) {
-    var startTime = parseInt(localStorage.getItem('xjt_trial_start') || '0'); var now = new Date().getTime();
-    var endTime = startTime + (trialDays * 24 * 60 * 60 * 1000); var leftHours = Math.max(0, Math.floor((endTime - now) / (1000 * 60 * 60)));
-    trialTip = `<div class="tip-warn" style="background:#fef08a; color:#854d0e; padding:10px; border-radius:8px; font-size:0.85rem; font-weight:bold; margin-bottom:10px; text-align:center;">⏳ 免费体验中，剩余约 ${leftHours} 小时。请联系客服获取永久版！</div>`;
-  } else if (localStorage.getItem('xjt_expire_time')) {
-    var exp = parseInt(localStorage.getItem('xjt_expire_time')); var leftDays = Math.ceil((exp - new Date().getTime()) / (1000 * 60 * 60 * 24));
-    if (leftDays > 0) { trialTip = `<div class="tip-ok" style="background:#ecfdf5; color:#065f46; padding:10px; border-radius:8px; font-size:0.85rem; font-weight:bold; margin-bottom:10px; text-align:center;">✅ 限时授权中，剩余 ${leftDays} 天。如需永久版请联系客服。</div>`; }
+  if (authMode === 'trial') {
+    var leftMs = Math.max(0, authExpire - Date.now());
+    var leftHours = Math.floor(leftMs / 3600000);
+    var leftTxt = leftHours >= 24 ? (Math.floor(leftHours / 24) + '天' + (leftHours % 24) + '小时') : (leftHours + '小时');
+    trialTip = `<div class="tip-warn" style="background:#fef08a; color:#854d0e; padding:10px; border-radius:8px; font-size:0.85rem; font-weight:bold; margin-bottom:10px; text-align:center;">免费体验中，剩余约 ${leftTxt}。请联系客服获取正式版！</div>`;
+  } else if (authMode === 'activated' && authExpire < AUTH_PERM) {
+    var leftDays = Math.ceil((authExpire - Date.now()) / 86400000);
+    if (leftDays > 0) { trialTip = `<div class="tip-ok" style="background:#ecfdf5; color:#065f46; padding:10px; border-radius:8px; font-size:0.85rem; font-weight:bold; margin-bottom:10px; text-align:center;">限时授权中，剩余 ${leftDays} 天。如需永久版请联系客服。</div>`; }
+  } else if (authMode === 'activated') {
+    trialTip = `<div class="tip-ok" style="background:#ecfdf5; color:#065f46; padding:10px; border-radius:8px; font-size:0.85rem; font-weight:bold; margin-bottom:10px; text-align:center;">已激活永久授权，祝你学习顺利。</div>`;
   }
 
   var bankEntries = Object.keys(allBanks); var hasActive = activeBankId && allBanks[activeBankId]; var qs = hasActive ? allBanks[activeBankId].questions : []; var html = trialTip;
@@ -706,16 +948,17 @@ function renderHome() {
   appContainer.innerHTML = html;
 }
 
-function goToImport() { window.location.href='import.html'; }
+function goToImport() { if (!guardGate()) return; window.location.href='import.html'; }
 function switchBank(id) { activeBankId = id; saveData(); render(); }
 
 // ================= 新增：收藏 / 学习数据 / 题号跳转 =================
 function toggleFavorite(qid) {
+  if (!guardGate()) return;
   var pos = favorites.indexOf(qid);
   if (pos > -1) favorites.splice(pos, 1); else favorites.push(qid);
   saveData(); render();
 }
-function openFavReview() { currentMode = 'favReview'; render(); }
+function openFavReview() { if (!guardGate()) return; currentMode = 'favReview'; render(); }
 function renderFavReview() {
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
   var favQs = qs.filter(function(q){ return favorites.indexOf(q.id) > -1; });
@@ -743,7 +986,7 @@ function renderFavReview() {
   appContainer.innerHTML = html + `<div class="footer">技术支持：秦十三郎</div>`;
 }
 
-function openStudyStats() { currentMode = 'stats'; render(); }
+function openStudyStats() { if (!guardGate()) return; currentMode = 'stats'; render(); }
 function renderStudyStats() {
   var totalDone = 0, totalCorrect = 0;
   for (var i = 0; i < localStorage.length; i++) {
@@ -798,6 +1041,7 @@ function jumpToNumber() {
 }
 
 function startExamWrongPractice() {
+  if (!guardGate()) return;
   if (!examWrongList || examWrongList.length === 0) return showToast('本次没有错题', true);
   practiceQuestions = examWrongList.map(function(q){ var c = JSON.parse(JSON.stringify(q)); c.isAnswered = false; c.streak = 0; return c; });
   practiceIndex = 0; practiceSelections = []; isWrongPracticeMode = false;
@@ -859,6 +1103,7 @@ function buildSheetHtml(questions, currentIdx, selections, type) {
 }
 
 function startPractice(type) {
+  if (!guardGate()) return;
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
   if (type === 'wrong') {
     if (wrongBook.length === 0) return showToast('错题本为空', true);
@@ -883,6 +1128,7 @@ function startPractice(type) {
 }
 
 function startRecite(type) {
+  if (!guardGate()) return;
   var qs = activeBankId ? allBanks[activeBankId].questions : []; if (qs.length === 0) return showToast('题库为空', true);
   reciteJudgeFilter = 'all';
   var allQs = type === 'all' ? qs.slice() : qs.filter(function(q){ return q.type === type; });
@@ -1234,6 +1480,7 @@ function setExamMode(mode) {
 }
 
 function startExam() {
+  if (!guardGate()) return;
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
   var cS = parseInt(document.getElementById('cS').value) || 0;
   var cM = parseInt(document.getElementById('cM').value) || 0;
@@ -1428,6 +1675,7 @@ function checkExamScoreWarning() {
 }
 
 function submitExam(aborted) {
+  if (!aborted && !guardGate()) return;
   if (examTimer) { clearInterval(examTimer); examTimer = null; }
   examAborted = !!aborted;
   var usedSec = Math.floor((Date.now() - examStartTime) / 1000);
@@ -1636,7 +1884,7 @@ function launchFireworks(duration) {
 
 loadData();
 checkNewImport();
-checkAuth(); 
+checkAuth();
 setTimeout(function() { if (currentMode === 'home') restorePracticeProgress(); }, splashDelay + 500);
 </script>
 </body>
