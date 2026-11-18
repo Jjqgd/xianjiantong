@@ -18,7 +18,6 @@ main{max-width:1100px;margin:20px auto;padding:0 16px}
 .btn:hover{border-color:#c0c4cc}
 .btn-primary{background:#d03f3f;border-color:#d03f3f;color:#fff}
 .btn-primary:hover{background:#e65c5c}
-.btn-danger{background:#f56c6c;border-color:#f56c6c;color:#fff}
 .btn-ghost{background:transparent;border-color:transparent;color:#d03f3f}
 .card{background:#fff;border:1px solid #ebeef5;border-radius:8px;padding:16px;margin-bottom:12px}
 .card .meta{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
@@ -33,7 +32,6 @@ main{max-width:1100px;margin:20px auto;padding:0 16px}
 .ans b{color:#409eff}
 .empty{text-align:center;color:#909399;padding:40px 0}
 
-/* ===== 导入弹窗 —— 铁途风格 ===== */
 .modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
 .modal-mask.on{display:flex}
 .modal{background:#fff;border-radius:10px;width:680px;max-width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 30px rgba(0,0,0,.15)}
@@ -44,12 +42,10 @@ main{max-width:1100px;margin:20px auto;padding:0 16px}
 .modal-body{padding:20px;overflow-y:auto}
 .modal-footer{padding:14px 20px;border-top:1px solid #ebeef5;display:flex;justify-content:flex-end;gap:10px}
 
-/* 顶部红色标题区 */
 .import-hero{text-align:center;padding:10px 0 16px;border-bottom:2px solid #fce4ec;margin-bottom:16px}
 .import-hero h2{font-size:22px;color:#d03f3f;margin-bottom:4px}
 .import-hero .sub{color:#909399;font-size:13px}
 
-/* 左侧规则面板 */
 .rules-panel{background:linear-gradient(135deg,#fff5f5,#ffffff);border:1px solid #ffd4d4;border-radius:8px;padding:16px;margin-bottom:16px}
 .rules-panel h4{color:#d03f3f;font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .rules-panel ul{list-style:none;padding:0}
@@ -59,30 +55,25 @@ main{max-width:1100px;margin:20px auto;padding:0 16px}
 .rules-panel .tip-box{background:#fff;border-left:3px solid #d03f3f;padding:10px 12px;border-radius:0 6px 6px 0;margin-top:10px;font-size:12px;color:#888;line-height:1.6}
 .rules-panel code{background:#ffe8e8;padding:1px 5px;border-radius:3px;font-size:12px;color:#d03f3f}
 
-/* 题库名称输入 */
 .name-input{width:100%;padding:10px 14px;border:2px solid #d03f3f;border-radius:8px;font-size:14px;outline:none;margin-bottom:14px}
 .name-input::placeholder{color:#bbb}
 .name-input:focus{box-shadow:0 0 0 3px rgba(208,63,63,.12)}
 
-/* 标签切换：文件在左，粘贴在右 */
 .import-tabs{display:flex;gap:8px;margin-bottom:14px}
 .import-tabs button{flex:1;padding:10px;border:2px solid #d03f3f;background:#fff;border-radius:8px;cursor:pointer;color:#d03f3f;font-size:14px;font-weight:500;transition:all .2s}
 .import-tabs button:hover{background:#fff5f5}
 .import-tabs button.on{background:#d03f3f;color:#fff}
 
-/* 粘贴文本区 */
 .paste-box{width:100%;min-height:160px;padding:12px;border:2px solid #e4e7ed;border-radius:8px;font-size:13px;font-family:monospace;resize:vertical;outline:none;line-height:1.6}
 .paste-box:focus{border-color:#d03f3f}
 .paste-box::placeholder{color:#bbb}
 
-/* 文件选择区 */
 .file-box{border:2px dashed #d03f3f;border-radius:8px;padding:24px 16px;text-align:center;background:#fffbfb}
 .file-box .icon{font-size:36px;margin-bottom:8px}
 .file-box .desc{color:#666;font-size:13px;margin-bottom:10px}
 .file-box input[type=file]{margin:8px 0}
 .file-box .name{color:#d03f3f;font-size:13px;margin-top:8px;font-weight:500}
 
-/* 预览区 */
 .preview-wrap{margin-top:16px}
 .preview-wrap h4{font-size:14px;color:#333;margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .preview-wrap .stat-line{display:flex;gap:16px;margin-bottom:12px;font-size:13px}
@@ -219,12 +210,7 @@ function parseAnswer(type, raw, validKeys){
 }
 const TYPE_MAP = {'单选':'single','单选题':'single','single':'single','多选':'multi','多选题':'multi','multi':'multi','判断':'judge','判断题':'judge','judge':'judge'};
 
-/* ================= 弹窗 ================= */
-function openModal({title, body}){
-  document.getElementById('mTitle').textContent = title;
-  document.getElementById('mBody').innerHTML = body;
-  document.getElementById('mask').classList.add('on');
-}
+/* ================= 弹窗控制 ================= */
 function closeModal(){ document.getElementById('mask').classList.remove('on'); }
 document.getElementById('mask').addEventListener('click', e => { if(e.target.id==='mask') closeModal(); });
 function toast(msg, type='ok'){
@@ -232,7 +218,7 @@ function toast(msg, type='ok'){
   clearTimeout(t._h); t._h = setTimeout(()=>t.className='', 2200);
 }
 
-/* ================= 列表 ================= */
+/* ================= 列表渲染 ================= */
 function render(){
   document.getElementById('stat').textContent = `共 ${questions.length} 题`;
   document.getElementById('list').innerHTML = questions.length ? questions.map(q => `
@@ -266,12 +252,11 @@ function openImport(){
      <button class="btn" id="btnDemo" onclick="fillDemo()">填充示例</button>
      <button class="btn" onclick="parseCurrent()">解析并校验题库</button>
      <button class="btn btn-primary" onclick="doImport()">确认导入</button>`;
-  openModal({title:'题库导入', body:`
+  document.getElementById('mBody').innerHTML = `
     <div class="import-hero">
       <h2>📥 导入新题库</h2>
       <div class="sub">支持 Excel（.xlsx/.xls）、CSV、TXT、JSON 或直接粘贴文本</div>
     </div>
-
     <div class="rules-panel">
       <h4>📋 操作步骤</h4>
       <ul>
@@ -292,18 +277,13 @@ function openImport(){
         <li>多选题：填全部正确字母（如 ABC，可带空格/顿号），至少2项</li>
         <li>判断题：正确→对/正确/√/T/A/1/是/Y；错误→错/错误/×/F/B/0/否/N</li>
       </ul>
-      <div class="section-title">【主观题】填空 / 简答 / 论述</div>
-      <ul><li>直接填写标准答案文本，填空题多空用分号分隔</li></ul>
       <div class="tip-box">💡 表头文字不可私自改动（如"题目"不能改"题干"），单次导入建议≤5000题</div>
     </div>
-
     <input class="name-input" id="impName" placeholder="请输入题库名称（如：普速线路专业题库）">
-
     <div class="import-tabs">
       <button id="tabFile" class="on" onclick="switchMode('file')">选择文件</button>
       <button id="tabText" onclick="switchMode('text')">粘贴文本</button>
     </div>
-
     <div id="paneFile">
       <div class="file-box">
         <div class="icon">📄</div>
@@ -312,13 +292,11 @@ function openImport(){
         <div class="name" id="fileLabel">${fileName?('已选：'+fileName):'尚未选择文件'}</div>
       </div>
     </div>
-
     <div id="paneText" style="display:none">
       <textarea class="paste-box" id="impText" placeholder="请将 Excel 的内容直接粘贴到这里…"></textarea>
     </div>
-
-    <div class="preview-wrap" id="impPreview"></div>
-  `});
+    <div class="preview-wrap" id="impPreview"></div>`;
+  document.getElementById('mask').classList.add('on');
   window._imp = {ok:[], fail:[]};
   switchMode(importMode);
 }
@@ -416,7 +394,7 @@ function rowsToRecords(rows){
   return recs;
 }
 
-/* ---- 解析预览：每种题型只显示第一道题 ---- */
+/* ---- 解析预览 ---- */
 function parseCurrent(source){
   const ok=[], fail=[];
   if(source==='文件' || (importMode==='file'&&fileRecords)){
@@ -440,12 +418,9 @@ function parseCurrent(source){
     }
   }
   window._imp = {ok, fail};
-
-  // 预览：每种题型第一道题
   const firstOf = {};
   ok.forEach(q=>{ if(!firstOf[q.type]) firstOf[q.type] = q; });
   const types = ['single','multi','judge'];
-
   document.getElementById('impPreview').innerHTML = `
     <h4>✅ 解析结果：<span class="stat-line"><span class="ok">成功 ${ok.length} 条</span><span class="fail">失败 ${fail.length} 条</span></span></h4>
     <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
@@ -460,11 +435,9 @@ function parseCurrent(source){
           <div class="ans-line">答案：<b>${ansText(q)}</b>${q.analysis?` | 解析：${esc(q.analysis)}`:''}</div>
         </div>`;
       }).join('')}
-      ${fail.length?`<div class="preview-card"><div class="fail-reason">⚠️ ${fail.length} 条数据未能识别（见控制台或修正后重试）</div></div>`:''}
       ${!ok.length&&fail.length?`<div class="preview-card"><div class="fail-reason">${fail.map(f=>`${f.line}：${f.reason}`).join('<br>')}</div></div>`:''}
     </div>`;
 }
-
 function normalize(it, from, ok, fail){
   try{
     const type = TYPE_MAP[String(it.type||'单选').trim().toLowerCase()] || 'single';
@@ -486,19 +459,19 @@ function normalize(it, from, ok, fail){
   }catch(e){ fail.push({line:from,reason:e.message||String(e)}); }
 }
 
+/* ---- 确认导入（核心：关闭弹窗 + 刷新列表 = 跳回主页面） ---- */
 function doImport(){
   const {ok,fail} = window._imp||{};
   if(!ok||!ok.length){ toast('没有可导入的数据，请先解析预览','err'); return; }
   const name = (document.getElementById('impName')?.value||'').trim();
   questions = ok.map(({id,type,stem,options,answer,analysis})=>({id,type,stem,options,answer,analysis})).concat(questions);
-  closeModal(); render();
+  closeModal();   // ← 关闭弹窗，跳回主页面
+  render();       // ← 刷新列表
   toast(name ? `「${name}」成功导入 ${ok.length} 题` : `成功导入 ${ok.length} 题`);
 }
 
+// 页面加载时只渲染列表，不弹窗
 render();
 </script>
 </body>
 </html>
-
-
-
