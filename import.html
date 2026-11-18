@@ -92,20 +92,22 @@
 
 <div class="card">
   <div class="format-alert">
-    <strong>⚠️ 题库格式强制规范（请严格核对）</strong>
-    您所导入的题库第一行必须包含以下表头且<strong style="color:#d32f2f; display:inline;">一字不差</strong>：<br>
-    <b>题型</b>、<b>题目</b>、<b>选项A</b>、<b>选项B</b>、<b>选项C</b>…以此类推、<b>答案</b>、<b>解析</b>。<br>
+    <strong>⚠️ 题库格式规范（已放宽：没有“题型”列也能导入）</strong>
+    第一行表头中，只有 <b>题目</b> 和 <b>答案</b> 两列是<strong style="color:#d32f2f; display:inline;">必须有</strong>的：<br>
+    <b>题目</b>、<b>答案</b> 为必填；<b>题型</b>、<b>选项A</b>、<b>选项B</b>…、<b>解析</b> 均可省略或整列留空。<br>
     <span style="font-size: 0.85rem; color: #bf360c; margin-top: 8px; display: inline-block;">
-      * 题型列的内容支持：<b>单选、多选、判断、填空、简答、论述</b>（填空/简答/论述也可写作"问答题、名词解释"等）。<br>
-      * <b>填空、简答、论述</b>这类主观题：<b>选项列可留空</b>，"答案"列填写<b>参考答案（文字）</b>即可。<br>
-      * 题库中绝不允许存在空行或合并单元格。
+      * <b>没有“题型”这一列也能抓</b>：系统按“有没有选项 + 答案长什么样 + 题干有没有括号空”自动判定单选/多选/判断/填空/简答/论述，报告里会注明自动判定了多少题。<br>
+      * 自动判定不放心时，可在解析报告里逐条核对；想完全控制就保留“题型”列，<b>写了就 100% 按你写的算</b>。<br>
+      * 有选项的题：答案写 A / ABC / A,B / A、B 均可；判断题答案写 对/错/√/×/正确/错误/T/F 均可，也可以直接抄选项原文。<br>
+      * 填空题多空：答案用<b>分号</b>隔开，如「调度集中；分散自律」；简答、论述直接把参考答案写在答案列，选项列留空。<br>
+      * 题库中不允许存在空行或合并单元格。
     </span>
   </div>
 
   <div style="text-align:center; padding:10px 0;">
     <h2 style="color:#b71c1c;margin-bottom:15px;">📥 上传文件</h2>
     <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;line-height:1.6;">
-      系统将执行最严格的对齐校验。<br>如果格式不符，系统会拦截并为您生成错误报告。
+      没有“题型”列的题库也能直接导入，系统自动判定题型。<br>缺答案、选项对不上等硬伤会被拦截并写进报告。
     </p>
     
     <input type="file" id="fileUpload" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)">
@@ -151,16 +153,4 @@ function showConfirm(title, msg, onOk, onCancel) {
   var footer = document.getElementById('modalFooter');
   footer.innerHTML = `
     <button class="btn btn-outline" onclick="closeModal(true)">取消</button>
-    <button class="btn btn-primary" onclick="closeModal(false)">确认导入</button>
-  `;
-  window.onModalOk = onOk;
-  window.onModalCancel = onCancel || null;
-  document.getElementById('appModal').style.display = 'flex';
-}
-
-function showPrompt(title, defaultValue, onOk, onCancel) {
-  document.getElementById('modalTitle').innerText = title;
-  document.getElementById('modalText').innerText = '请为该题库命名：';
-  var input = document.getElementById('modalInput');
-  input.style.display = 'block';
-  input.value = defaultValue
+    <button class="btn btn-primary" onc
