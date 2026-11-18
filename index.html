@@ -423,10 +423,10 @@ setTimeout(function() { document.getElementById('splash-screen').classList.add('
 
 // ================= 授权系统（强制联网校验 / 一机一码 / 免费试用 2 天） =================
 /* 部署前必读：
-   1) 把下面 AUTH_SECRET 改成一串随机长字符（建议 32 位以上），并与发码脚本 gen-code.js 中的 SECRET 完全一致；
+   1) AUTH_SECRET 已随机生成并与发码脚本 gen-code.js 的 SECRET 保持一致（如需换密钥，两处必须同时改）；
    2) 必须使用 HTTPS 部署（HTTP 下浏览器不开放 crypto.subtle，会自动降级为内置纯 JS 实现，功能不变）；
    3) 发码方式：node gen-code.js 设备码 [天数]   （不填天数即为永久授权）。 */
-var AUTH_SECRET = 'CHANGE_ME_TO_A_LONG_RANDOM_STRING_32PLUS';
+var AUTH_SECRET = 'ETwGVfCXjcDu3d1PUGDzPBQIV1f0oTsGKSsN56tH6dEt';
 var AUTH_TRIAL_MS = 48 * 60 * 60 * 1000;         /* 免费试用 2 天 */
 var AUTH_HEARTBEAT = 20 * 60 * 1000;             /* 联网心跳 20 分钟 */
 var AUTH_PERM = 4102444800000;                   /* 2100-01-01，代表永久授权 */
