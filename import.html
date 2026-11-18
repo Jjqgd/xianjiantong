@@ -1,257 +1,534 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>铁途学练 · 导入题库</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>题库管理系统</title>
 <style>
-  :root{--red:#b71c1c;--blue:#0d47a1;--green:#2e7d32;--bg:#f0f4f8;--card:#fff;}
-  body.dark{--bg:#0f172a;--card:#1e293b;color:#e2e8f0;}
-  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:#333;margin:0;padding:20px 15px 40px;font-size:15px;transition:.3s;}
-  .card{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:15px;}
-  .top-tip{background:#fff8e1;border-left:4px solid #ff9800;border-radius:8px;padding:14px 16px;margin-bottom:20px;color:#c65300;line-height:1.6;font-size:14px;}
-  .dark .top-tip{background:#2a2008;border-left-color:#ffb74d;color:#ffcc80;}
-  h1{font-size:22px;color:var(--red);text-align:center;margin:0 0 10px;}
-  p.sub{text-align:center;color:#666;margin:0 0 20px;font-size:14px;}
-  .dark p.sub{color:#94a3b8;}
-  .file-box{border:2px dashed #4285f4;border-radius:10px;padding:30px 15px;text-align:center;background:#f0f7ff;cursor:pointer;transition:.3s;}
-  .dark .file-box{border-color:#3b82f6;background:#1e293b;}
-  .file-box:active{background:#e0f0ff;}
-  input[type=file]{display:none;}
-  .file-name{color:var(--blue);font-weight:bold;margin-top:10px;display:block;}
-  .dark .file-name{color:#93c5fd;}
-  .btn{display:block;width:100%;padding:14px;border:none;border-radius:8px;font-size:16px;font-weight:bold;color:#fff;background:var(--red);margin-top:15px;cursor:pointer;}
-  .btn:active{opacity:.8;}
-  .progress-bar{height:6px;background:#e0e0e0;border-radius:3px;margin-top:15px;display:none;overflow:hidden;}
-  .dark .progress-bar{background:#334155;}
-  .progress-fill{height:100%;background:var(--green);width:0%;transition:width .1s linear;}
-  .log-box{background:#fafafa;border:1px solid #eee;border-radius:8px;padding:12px;margin-top:15px;max-height:240px;overflow-y:auto;font-size:13px;color:#555;display:none;line-height:1.6;}
-  .dark .log-box{background:#0f172a;border-color:#334155;color:#cbd5e1;}
-  .back-btn{text-align:center;margin-top:20px;}
-  .back-btn a{color:#666;text-decoration:none;font-size:14px;}
-  .dark .back-btn a{color:#94a3b8;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:#f5f7fa;color:#1f2d3d;font-size:14px}
+header{background:#fff;border-bottom:1px solid #e4e7ed;padding:16px 24px;display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:18px;font-weight:600}
+header .stat{color:#909399;font-size:13px}
+main{max-width:1100px;margin:20px auto;padding:0 16px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.toolbar input,.toolbar select{padding:8px 12px;border:1px solid #dcdfe6;border-radius:6px;font-size:14px;background:#fff}
+.toolbar input[type=search]{width:200px}
+.spacer{flex:1}
+.btn{padding:8px 16px;border:none;border-radius:6px;font-size:14px;cursor:pointer;background:#fff;border:1px solid #dcdfe6;color:#606266}
+.btn:hover{border-color:#c0c4cc}
+.btn-primary{background:#409eff;border-color:#409eff;color:#fff}
+.btn-primary:hover{background:#66b1ff}
+.btn-danger{background:#f56c6c;border-color:#f56c6c;color:#fff}
+.btn-ghost{background:transparent;border-color:transparent;color:#409eff}
+.card{background:#fff;border:1px solid #ebeef5;border-radius:8px;padding:16px;margin-bottom:12px}
+.card .meta{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.tag{padding:2px 8px;border-radius:4px;font-size:12px;background:#ecf5ff;color:#409eff}
+.tag.multi{background:#fdf6ec;color:#e6a23c}
+.tag.judge{background:#f0f9eb;color:#67c23a}
+.card .stem{font-weight:600;line-height:1.6;margin-bottom:10px}
+.opts{list-style:none;margin-bottom:10px}
+.opts li{padding:4px 0;color:#606266;line-height:1.6}
+.opts li.right{color:#67c23a;font-weight:600}
+.ans{background:#f8f9fb;border-radius:6px;padding:10px;line-height:1.7}
+.ans b{color:#409eff}
+.empty{text-align:center;color:#909399;padding:40px 0}
+.modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.modal-mask.on{display:flex}
+.modal{background:#fff;border-radius:10px;width:560px;max-width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 8px 30px rgba(0,0,0,.15)}
+.modal.wide{width:780px}
+.modal-header{padding:16px 20px;border-bottom:1px solid #ebeef5;display:flex;justify-content:space-between;align-items:center}
+.modal-header h3{font-size:16px;font-weight:600}
+.modal-header .close{cursor:pointer;color:#909399;font-size:20px;line-height:1;border:none;background:none}
+.modal-body{padding:20px;overflow-y:auto}
+.modal-footer{padding:14px 20px;border-top:1px solid #ebeef5;display:flex;justify-content:flex-end;gap:10px}
+.field{margin-bottom:16px}
+.field label{display:block;margin-bottom:6px;font-weight:600;color:#303133}
+.field .tip{font-weight:400;color:#909399;font-size:12px;margin-left:6px}
+.field input[type=text],.field textarea,.field select{width:100%;padding:9px 12px;border:1px solid #dcdfe6;border-radius:6px;font-size:14px;font-family:inherit}
+.field textarea{min-height:90px;resize:vertical}
+.opt-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.opt-row .key{width:26px;height:26px;border-radius:50%;background:#f0f2f5;display:flex;align-items:center;justify-content:center;font-size:13px;color:#606266;flex:none}
+.opt-row input{flex:1}
+.opt-row .del{color:#f56c6c;cursor:pointer;border:none;background:none;font-size:16px}
+.ans-box{border:1px dashed #dcdfe6;border-radius:6px;padding:12px}
+.ans-box .item{display:inline-flex;align-items:center;gap:6px;margin:4px 12px 4px 0;cursor:pointer}
+.ans-box .item input{cursor:pointer}
+.ans-box .item.off{color:#c0c4cc;cursor:not-allowed}
+.ans-box .none{color:#909399;font-size:13px}
+.ans-bar{display:flex;gap:8px;margin-bottom:8px}
+.ans-bar button{padding:4px 10px;font-size:12px;border:1px solid #dcdfe6;background:#fff;border-radius:4px;cursor:pointer;color:#606266}
+.ans-input{margin-top:10px;border-top:1px dashed #ebeef5;padding-top:10px}
+.ans-input input{width:100%;padding:8px 10px;border:1px solid #dcdfe6;border-radius:6px;font-size:13px}
+.hint{background:#fdf6ec;border:1px solid #faecd8;color:#b88230;border-radius:6px;padding:10px;line-height:1.7;margin-bottom:14px;font-size:13px}
+.import-tabs{display:flex;gap:8px;margin-bottom:12px}
+.import-tabs button{flex:1;padding:8px;border:1px solid #dcdfe6;background:#fff;border-radius:6px;cursor:pointer;color:#606266}
+.import-tabs button.on{border-color:#409eff;color:#409eff;background:#ecf5ff}
+table.prev{width:100%;border-collapse:collapse;font-size:13px}
+table.prev th,table.prev td{border:1px solid #ebeef5;padding:8px;text-align:left}
+table.prev th{background:#fafafa}
+table.prev td.ok{color:#67c23a}
+table.prev td.fail{color:#f56c6c}
+.result{background:#f8f9fb;border-radius:6px;padding:12px;line-height:1.8;font-size:13px}
+.result b{color:#409eff}
+#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:2000;display:none;background:#fff;border:1px solid #ebeef5;border-radius:8px;padding:12px 18px;box-shadow:0 4px 16px rgba(0,0,0,.12)}
+#toast.on{display:block}
+#toast.ok{border-left:4px solid #67c23a}
+#toast.err{border-left:4px solid #f56c6c}
 </style>
 </head>
 <body>
-
-<div class="top-tip">
-  <b>题库格式规范（已放宽：没有"题型"列也能导入）</b><br>
-  表头中只有 <b>题目</b> 和 <b>答案</b> 两列是必须的；题型、选项A/B/C…、解析 均可省略或整列留空。<br><br>
-  * <b>没有"题型"列也能抓：</b>系统按"答案长什么样 + 有没有选项 + 题干有没有括号空"自动判定题型。<br>
-  * <b>判断题：</b>没有选项也能抓——答案列直接写 <b>对/错/√/×/正确/错误/T/F/Y/N/是/否</b> 即自动判为判断题。<br>
-  * 有选项的题：答案写 A / ABC / A,B / A、B 均可。<br>
-  * 填空题多空：答案用分号隔开；简答、论述直接把参考答案写在答案列，选项列留空。<br>
-  * 写了"题型"列就 100% 按你写的算；缺答案等硬伤会被拦截并写进报告。<br>
-  * 题库中不允许存在空行或合并单元格。
-</div>
-
-<div class="card">
-  <h1>上传文件</h1>
-  <p class="sub">没有"题型"列、判断题没有选项的题库也能直接导入。<br>系统自动判定题型，硬伤会被拦截并写进报告。</p>
-  <div class="file-box" onclick="document.getElementById('fileInput').click()">
-    <input type="file" id="fileInput" accept=".xls,.xlsx">
-    <div>点击此处选择 .xlsx / .xls 文件</div>
-    <span class="file-name" id="fileNameDisplay"></span>
+<header>
+  <h1>题库管理系统</h1>
+  <div class="stat" id="stat"></div>
+</header>
+<main>
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="openForm()">+ 新增题目</button>
+    <button class="btn" onclick="openImport()">导入题库</button>
+    <button class="btn" onclick="exportData()">导出题库</button>
+    <button class="btn" onclick="openTester()">答案格式测试</button>
+    <span class="spacer"></span>
+    <select id="fType" onchange="render()">
+      <option value="">全部题型</option>
+      <option value="single">单选题</option>
+      <option value="multi">多选题</option>
+      <option value="judge">判断题</option>
+    </select>
+    <input type="search" id="fKey" placeholder="搜索题干/答案" oninput="render()">
   </div>
-  <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
-  <div class="log-box" id="logBox"></div>
-  <button class="btn" id="startBtn" style="display:none" onclick="startParse()">开始导入解析</button>
-  <div class="back-btn"><a href="index.html">取消并返回首页</a></div>
+  <div id="list"></div>
+</main>
+
+<div class="modal-mask" id="mask">
+  <div class="modal" id="modal">
+    <div class="modal-header"><h3 id="mTitle"></h3><button class="close" onclick="closeModal()">×</button></div>
+    <div class="modal-body" id="mBody"></div>
+    <div class="modal-footer" id="mFooter"></div>
+  </div>
 </div>
+<div id="toast"></div>
 
-<div style="text-align:center;color:#999;margin-top:30px;font-size:13px;">技术支持：秦十三郎</div>
-
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
-let rows = [];       // 二维数组
-let headerMap = {};  // 列名 -> 列下标
-let fileName = '';
+/* ================= 基础数据 ================= */
+let questions = [
+  {id:1,type:'single',stem:'下列哪一项属于中国的第一级行政区划？',options:[{k:'A',t:'省'},{k:'B',t:'市'},{k:'C',t:'县'},{k:'D',t:'乡'}],answer:['A'],analysis:'省、自治区、直辖市、特别行政区为第一级行政区划。'},
+  {id:2,type:'multi',stem:'以下属于可再生能源的有（多选）：',options:[{k:'A',t:'太阳能'},{k:'B',t:'风能'},{k:'C',t:'煤炭'},{k:'D',t:'水能'}],answer:['A','B','D'],analysis:'煤炭为不可再生能源。'},
+  {id:3,type:'judge',stem:'地球绕太阳公转一周约为 365 天。',options:[{k:'A',t:'正确'},{k:'B',t:'错误'}],answer:['A'],analysis:'约 365.24 天。'}
+];
+let editingId = null, importMode = 'text';
+const uid = () => Date.now() + Math.floor(Math.random()*1000);
+const TYPE_NAME = {single:'单选题', multi:'多选题', judge:'判断题'};
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');   // 选项字母扩到 26 个
+const MAX_OPT = LETTERS.length;
+const JUDGE_OPTS = [{k:'A',t:'正确'},{k:'B',t:'错误'}];
 
-const Q_KEYS = ['题目','题干','问题','内容'];
-const A_KEYS = ['答案','正确答案','参考答案','标准答案'];
-const T_KEYS = ['题型','类型','试题题型'];
-const N_KEYS = ['解析','答案解析','说明','试题解析','答题说明','备注'];
+/* ================= 答案解析（导入 / 编辑 / 测试 共用） ================= */
+// 全角转半角
+function toHalf(s){
+  return String(s==null?'':s)
+    .replace(/[\uFF10-\uFF19]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFF10+48))
+    .replace(/[\uFF21-\uFF3A]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFF21+65))
+    .replace(/[\uFF41-\uFF5A]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFF41+97))
+    .replace(/[\u3000]/g,' ');
+}
+// 需要忽略的干扰词（避免 and/or/true 里的字母被当成答案）
+const NOISE = ['正确答案','标准答案','答案','选项','下列','以及','和','与','及','或','包括','均','选','项','个','题','第',
+  'and','or','not','the','a','an','true','false','yes','no','all','none','ok','ng',
+  '全选','全部','所有','无','空','正确','错误','对','错','是','否','真','假','对勾','叉'];
+const SEP_RE = /[#|,，、;；:：.。·、\/\\()（）\[\]{}<>《》"'“”‘’\u2018\u2019]+/g;
+const CN_NUM = {'零':0,'〇':0,'一':1,'二':2,'两':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10};
+const JIA_NUM = {'甲':1,'乙':2,'丙':3,'丁':4,'戊':5,'己':6,'庚':7,'辛':8,'壬':9,'癸':10};
 
-function findVal(row, keys){
-  for(let i=0;i<keys.length;i++){
-    let idx = headerMap[keys[i]];
-    if(idx !== undefined){ let v = String(row[idx]==null?'':row[idx]).trim(); if(v) return v; }
+// 区间展开：A-D / A~D / A—D / A至D / 1-3 / 1到3
+function expandRanges(s){
+  return s.replace(/([A-Z0-9])\s*(?:[-~～—–]|至|到)\s*([A-Z0-9])/g,(m,a,b)=>{
+    if(/[A-Z]/.test(a)&&/[A-Z]/.test(b)&&a<=b) return LETTERS.slice(LETTERS.indexOf(a),LETTERS.indexOf(b)+1).join(' ');
+    if(/\d/.test(a)&&/\d/.test(b)&&+a<=+b) return LETTERS.slice(+a-1,+b).join(' ');
+    return m;
+  });
+}
+// 带圈数字 ①②…⑳ / ⓵…⓹ → 数字
+function circledToNum(ch){
+  const c = ch.charCodeAt(0);
+  if(c>=0x2460&&c<=0x2473) return c-0x2460+1;
+  if(c>=0x24F1&&c<=0x24F9) return c-0x24F1+11;
+  if(c===0x24FF) return 0;
+  return null;
+}
+function cnNum(s){
+  if(s==='十') return 10;
+  if(/^十[一二三四五六七八九]$/.test(s)) return 10+CN_NUM[s[1]];
+  if(CN_NUM.hasOwnProperty(s)) return CN_NUM[s];
+  if(JIA_NUM.hasOwnProperty(s)) return JIA_NUM[s];
+  return null;
+}
+// 核心：从任意写法中提取选项字母
+function extractLetters(raw){
+  let s = toHalf(raw).trim();
+  if(!s) return [];
+  if(/^(全选|全部|所有|all)$/i.test(s)) return 'ALL';
+  s = expandRanges(s);
+  s = s.replace(/[\u2460-\u2473\u24F1-\u24F9\u24FF]/g, ch => ' ' + circledToNum(ch) + ' ');
+  s = s.replace(SEP_RE,' ');
+  NOISE.slice().sort((a,b)=>b.length-a.length).forEach(w => { s = s.split(w).join(' '); });
+  s = s.replace(/([A-Za-z\u4e00-\u9fa5])(\d+)/g,'$1 $2').replace(/(\d+)([A-Za-z\u4e00-\u9fa5])/g,'$1 $2');
+  let out = [];
+  s.split(/\s+/).filter(Boolean).forEach(t => {
+    if(/^[A-Z]+$/i.test(t)) out = out.concat(t.toUpperCase().split(''));
+    else if(/^\d+$/.test(t)){ const n = parseInt(t,10); if(n>=1&&n<=MAX_OPT) out.push(LETTERS[n-1]); }
+    else { const n = cnNum(t); if(n!=null&&n>=1&&n<=MAX_OPT) out.push(LETTERS[n-1]); }
+  });
+  return [...new Set(out)].sort((a,b)=>LETTERS.indexOf(a)-LETTERS.indexOf(b));
+}
+// 判断题：正确/错误 的常见写法
+const JUDGE_TRUE  = new Set(['正确','对','√','✓','✔','y','yes','t','true','1','是','a','ok','pass','真','对勾','正确无误']);
+const JUDGE_FALSE = new Set(['错误','错','×','✗','✘','n','no','f','false','0','否','b','ng','fail','假','错啦']);
+function parseJudgeAnswer(raw){
+  let s = toHalf(raw).trim().toLowerCase().replace(SEP_RE,' ').replace(/\s+/g,' ').trim();
+  if(!s) return [];
+  if(JUDGE_TRUE.has(s))  return ['A'];
+  if(JUDGE_FALSE.has(s)) return ['B'];
+  const first = s.split(' ')[0];
+  if(JUDGE_TRUE.has(first))  return ['A'];
+  if(JUDGE_FALSE.has(first)) return ['B'];
+  if(/^(正确|对|√|✓|✔|y|yes|t|true|1|是|a)/.test(s))  return ['A'];
+  if(/^(错误|错|×|✗|✘|n|no|f|false|0|否|b)/.test(s)) return ['B'];
+  return [];
+}
+// 统一入口：type + 原始答案 + 有效选项字母 → 标准答案数组
+function parseAnswer(type, raw, validKeys){
+  if(type==='judge') return parseJudgeAnswer(raw);
+  const keys = (validKeys||LETTERS).filter(k=>LETTERS.includes(k));
+  let r = extractLetters(raw);
+  if(r==='ALL') return keys.slice();
+  r = r.filter(k=>keys.includes(k));
+  if(type==='single') r = r.slice(0,1);
+  return r;
+}
+
+/* ================= 统一弹窗 / 提示 ================= */
+function openModal({title, body, footer, wide}){
+  document.getElementById('mTitle').textContent = title;
+  document.getElementById('mBody').innerHTML = body;
+  document.getElementById('mFooter').innerHTML = footer;
+  document.getElementById('modal').className = 'modal' + (wide ? ' wide' : '');
+  document.getElementById('mask').classList.add('on');
+}
+function closeModal(){ document.getElementById('mask').classList.remove('on'); }
+document.getElementById('mask').addEventListener('click', e => { if(e.target.id==='mask') closeModal(); });
+function toast(msg, type='ok'){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'on ' + type;
+  clearTimeout(t._h); t._h = setTimeout(()=>t.className='', 2200);
+}
+function openConfirm(msg, onOk){
+  openModal({title:'操作确认', body:`<div class="hint">${msg}</div>`,
+    footer:`<button class="btn" onclick="closeModal()">取消</button>
+            <button class="btn btn-danger" id="okBtn">确定</button>`});
+  document.getElementById('okBtn').onclick = () => { closeModal(); onOk(); };
+}
+function openAlert(msg){
+  openModal({title:'提示', body:`<div class="hint">${msg}</div>`,
+    footer:`<button class="btn btn-primary" onclick="closeModal()">我知道了</button>`});
+}
+
+/* ================= 列表 ================= */
+function render(){
+  const type = document.getElementById('fType').value;
+  const key = document.getElementById('fKey').value.trim().toLowerCase();
+  const data = questions.filter(q =>
+    (!type || q.type===type) &&
+    (!key || q.stem.toLowerCase().includes(key) || ansText(q).toLowerCase().includes(key)));
+  document.getElementById('stat').textContent = `共 ${questions.length} 题，当前显示 ${data.length} 题`;
+  document.getElementById('list').innerHTML = data.length ? data.map(q => `
+    <div class="card">
+      <div class="meta">
+        <span class="tag ${q.type==='multi'?'multi':q.type==='judge'?'judge':''}">${TYPE_NAME[q.type]}</span>
+        <span style="color:#909399;font-size:12px">#${q.id}</span>
+        <span class="spacer"></span>
+        <button class="btn btn-ghost" onclick="openForm(${q.id})">编辑</button>
+        <button class="btn btn-ghost" style="color:#f56c6c" onclick="del(${q.id})">删除</button>
+      </div>
+      <div class="stem">${esc(q.stem)}</div>
+      <ul class="opts">${q.options.map(o =>
+        `<li class="${q.answer.includes(o.k)?'right':''}">${o.k}. ${esc(o.t)}${q.answer.includes(o.k)?' ✔':''}</li>`).join('')}</ul>
+      <div class="ans">答案：<b>${ansText(q)}</b>${q.analysis?`<br>解析：${esc(q.analysis)}`:''}</div>
+    </div>`).join('') : '<div class="empty">暂无题目，点击右上角「新增题目」或「导入题库」</div>';
+}
+function ansText(q){
+  if(q.type==='judge') return q.answer.map(k => k==='A'?'正确':'错误').join(' / ') || '—';
+  return q.answer.join('、') || '—';
+}
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function del(id){ openConfirm('确定删除该题目吗？删除后不可恢复。', () => {
+  questions = questions.filter(q => q.id!==id); render(); toast('已删除'); }); }
+
+/* ================= 新增 / 编辑 ================= */
+function openForm(id){
+  editingId = id || null;
+  const q = questions.find(x => x.id===id) || {type:'single', stem:'', options:[{k:'A',t:''},{k:'B',t:''},{k:'C',t:''},{k:'D',t:''}], answer:[], analysis:''};
+  openModal({
+    title: id ? '编辑题目' : '新增题目',
+    body: `
+      <div class="field"><label>题型</label>
+        <select id="fTypeSel" onchange="onTypeChange()">
+          <option value="single" ${q.type==='single'?'selected':''}>单选题</option>
+          <option value="multi" ${q.type==='multi'?'selected':''}>多选题</option>
+          <option value="judge" ${q.type==='judge'?'selected':''}>判断题</option>
+        </select></div>
+      <div class="field"><label>题干</label><textarea id="fStem">${esc(q.stem)}</textarea></div>
+      <div class="field"><label>选项</label><div id="fOpts"></div>
+        <button class="btn btn-ghost" id="addOpt" onclick="addOpt()">+ 添加选项</button></div>
+      <div class="field"><label>答案<span class="tip" id="ansTip"></span></label>
+        <div class="ans-box" id="fAns"></div></div>
+      <div class="field"><label>解析（选填）</label><textarea id="fAna">${esc(q.analysis||'')}</textarea></div>`,
+    footer: `<button class="btn" onclick="closeModal()">取消</button>
+             <button class="btn btn-primary" onclick="saveForm()">保存</button>`
+  });
+  window._draft = JSON.parse(JSON.stringify(q));
+  window._draft.ansRaw = '';
+  onTypeChange();
+}
+function onTypeChange(){
+  const type = document.getElementById('fTypeSel').value;
+  const d = window._draft;
+  if(type==='judge'){ d.options = JUDGE_OPTS.map(o=>({...o})); d.answer = d.answer.filter(k=>k==='A'||k==='B'); }
+  else if(type==='multi'){ d.options = d.options.filter(o=>o.t.trim()); while(d.options.length<4) d.options.push({k:LETTERS[d.options.length],t:''}); }
+  else { d.options = d.options.filter(o=>o.t.trim()); if(d.options.length<2) d.options = [{k:'A',t:''},{k:'B',t:''}]; }
+  renderOpts(); renderAns();
+  document.getElementById('addOpt').style.display = type==='judge' ? 'none' : '';
+  document.getElementById('ansTip').textContent =
+    type==='judge' ? '正确 / 错误（也支持 Y、N、√、×、T、F、是、否）'
+    : type==='multi' ? '可多选，答案区已列出 A~Z；支持 A#B#C、A B C、a b c、1-3 等写法'
+    : '单选一个选项';
+}
+function renderOpts(){
+  const d = window._draft, type = document.getElementById('fTypeSel').value;
+  document.getElementById('fOpts').innerHTML = d.options.map((o,i) => `
+    <div class="opt-row"><span class="key">${o.k}</span>
+      <input type="text" value="${esc(o.t)}" oninput="window._draft.options[${i}].t=this.value"
+        ${type==='judge'?'readonly':''}>
+      ${type==='judge'||d.options.length<=2?'':'<button class="del" onclick="delOpt('+i+')">×</button>'}</div>`).join('');
+}
+function addOpt(){
+  const d = window._draft;
+  if(d.options.length>=MAX_OPT){ toast('最多 '+MAX_OPT+' 个选项','err'); return; }
+  d.options.push({k:LETTERS[d.options.length], t:''}); renderOpts(); renderAns();
+}
+function delOpt(i){ window._draft.options.splice(i,1); renderOpts(); renderAns(); }
+
+/* 答案区：A~Z 全列出 + 文本批量录入 */
+function renderAns(){
+  const d = window._draft, type = document.getElementById('fTypeSel').value;
+  const valid = d.options.filter(o=>o.t.trim()).map(o=>o.k);
+  let html = '';
+  if(type==='multi'){
+    html += `<div class="ans-bar"><button onclick="bulkAns('all')">全选有效项</button>
+             <button onclick="bulkAns('none')">清空</button>
+             <button onclick="applyAnswerText(document.getElementById('ansText').value)">解析文本</button></div>`;
+    html += LETTERS.map(k => {
+      const on = valid.includes(k);
+      return `<label class="item ${on?'':'off'}" title="${on?'':'该字母暂无选项内容'}">
+        <input type="checkbox" name="ans" value="${k}" ${d.answer.includes(k)?'checked':''}
+          ${on?'':'disabled'} onchange="onAns(this)">选项 ${k}</label>`;
+    }).join('');
+  }else if(type==='judge'){
+    html += JUDGE_OPTS.map(o => `<label class="item">
+      <input type="radio" name="ans" value="${o.k}" ${d.answer.includes(o.k)?'checked':''}
+        onchange="onAns(this)">${o.t}（${o.k==='A'?'√ / Y / T / 是':'× / N / F / 否'}）</label>`).join('');
+  }else{
+    html += valid.map(k => {
+      const o = d.options.find(x=>x.k===k);
+      return `<label class="item"><input type="radio" name="ans" value="${k}"
+        ${d.answer.includes(k)?'checked':''} onchange="onAns(this)">${k}. ${esc(o.t)}</label>`;
+    }).join('') || '<span class="none">请先填写选项</span>';
   }
-  return '';
+  const ph = type==='judge'
+    ? '批量填写：正确 / 错误 / Y / N / √ / × / T / F / 是 / 否'
+    : '批量填写：A#B#C、A B C、a b c、A,B,C、A-D、1-3、①③、甲乙丙、全选';
+  document.getElementById('fAns').innerHTML = html +
+    `<div class="ans-input"><input type="text" id="ansText" value="${esc(d.ansRaw||'')}"
+       placeholder="${ph}" onchange="applyAnswerText(this.value)"></div>`;
 }
-function getCell(row, key){
-  let idx = headerMap[key];
-  return idx===undefined ? '' : String(row[idx]==null?'':row[idx]).trim();
+function onAns(el){
+  const d = window._draft, type = document.getElementById('fTypeSel').value;
+  if(type==='multi'){ el.checked ? d.answer.push(el.value) : d.answer = d.answer.filter(k=>k!==el.value); }
+  else d.answer = [el.value];
+}
+function bulkAns(mode){
+  const d = window._draft;
+  d.answer = mode==='all' ? d.options.filter(o=>o.t.trim()).map(o=>o.k) : [];
+  renderAns();
+}
+function applyAnswerText(raw){
+  const d = window._draft, type = document.getElementById('fTypeSel').value;
+  d.ansRaw = raw;
+  const valid = type==='judge' ? ['A','B'] : d.options.filter(o=>o.t.trim()).map(o=>o.k);
+  d.answer = parseAnswer(type, raw, valid);
+  renderAns();
+  if(raw.trim() && !d.answer.length) toast('答案未识别，请检查格式','err');
+}
+function saveForm(){
+  const d = window._draft, type = document.getElementById('fTypeSel').value;
+  const stem = document.getElementById('fStem').value.trim();
+  if(!stem){ toast('请填写题干','err'); return; }
+  const opts = d.options.filter(o => o.t.trim());
+  if(type!=='judge' && opts.length<2){ toast('至少填写 2 个选项','err'); return; }
+  const valid = type==='judge' ? ['A','B'] : opts.map(o=>o.k);
+  const ans = d.answer.filter(k => valid.includes(k));
+  if(!ans.length){ toast('请选择或填写答案','err'); return; }
+  const obj = {id: editingId || uid(), type, stem, options: type==='judge'?JUDGE_OPTS.map(o=>({...o})):opts, answer:ans, analysis:document.getElementById('fAna').value.trim()};
+  editingId ? questions = questions.map(q => q.id===editingId ? obj : q) : questions.unshift(obj);
+  closeModal(); render(); toast(editingId ? '已保存修改' : '已新增题目');
 }
 
-document.getElementById('fileInput').addEventListener('change', function(e){
-  const file = e.target.files[0];
-  if(!file) return;
-  if(!file.name.match(/\.(xlsx|xls)$/i)){ alert('请选择 .xlsx 或 .xls 文件'); return; }
-  fileName = file.name.replace(/\.(xlsx|xls)$/i,'');
-  document.getElementById('fileNameDisplay').textContent = file.name;
-  document.getElementById('startBtn').style.display = 'block';
-  document.getElementById('logBox').style.display='none';
-  rows = []; headerMap = {};
-
-  const reader = new FileReader();
-  reader.onload = function(ev){
+/* ================= 导入题库 ================= */
+function openImport(){
+  openModal({
+    title:'导入题库', wide:true,
+    body:`
+      <div class="hint">支持两种格式：<br>
+        ① 文本/CSV，每行一题：<code>题型|题干|选项1;选项2;选项3;选项4|答案|解析</code>（题型可写 单选/多选/判断，省略则为单选）<br>
+        ② JSON 数组：[{"type":"multi","stem":"…","options":["…"],"answer":["A","B"]}]<br>
+        <b>多选答案</b>：ABD、A#B#C、A B C、a b c、A,B,C、A、B、A|B、A和B、(A)(B)、["A","B"]、A-D、1-3、①③、甲乙丙、全选<br>
+        <b>判断答案</b>：正确/错误、对/错、Y/N、y/n、yes/no、√/×、T/F、true/false、1/0、是/否、A/B、OK/NG</div>
+      <div class="import-tabs">
+        <button id="tabText" class="on" onclick="switchMode('text')">粘贴文本</button>
+        <button id="tabFile" onclick="switchMode('file')">选择文件</button>
+      </div>
+      <div id="paneText"><textarea id="impText" style="min-height:180px" placeholder="在此粘贴题库内容…"></textarea></div>
+      <div id="paneFile" style="display:none">
+        <input type="file" id="impFile" accept=".txt,.csv,.json" onchange="readFile(this)">
+        <div id="fileName" style="margin-top:8px;color:#909399"></div></div>
+      <div id="impPreview" style="margin-top:14px"></div>`,
+    footer:`<button class="btn" onclick="closeModal()">取消</button>
+            <button class="btn" onclick="fillDemo()">填充示例</button>
+            <button class="btn" onclick="parseImport()">解析预览</button>
+            <button class="btn btn-primary" onclick="doImport()">确认导入</button>`
+  });
+  window._imp = {ok:[], fail:[]};
+}
+function switchMode(m){
+  importMode = m;
+  document.getElementById('tabText').className = m==='text'?'on':'';
+  document.getElementById('tabFile').className = m==='file'?'on':'';
+  document.getElementById('paneText').style.display = m==='text'?'':'none';
+  document.getElementById('paneFile').style.display = m==='file'?'':'none';
+}
+function readFile(input){
+  const f = input.files[0]; if(!f) return;
+  document.getElementById('fileName').textContent = '已选择：' + f.name;
+  const r = new FileReader();
+  r.onload = () => { document.getElementById('impText').value = r.result; parseImport(); };
+  r.readAsText(f, 'UTF-8');
+}
+function fillDemo(){
+  document.getElementById('impText').value =
+`单选|中国的首都是哪座城市？|北京;上海;广州;深圳|a|北京为首都。
+多选|下列属于可再生能源的有？|太阳能;风能;煤炭;水能|A#B#D|煤炭不可再生。
+多选|下列属于水果的有？|苹果;香蕉;白菜;橘子|a b c|白菜是蔬菜。
+多选|下列省份属于华东的有？|江苏;浙江;安徽;福建;江西;山东|A、B、C、D、E、F|华东六省。
+多选|下列数字为偶数的有？|1;2;3;4;5;6|1-3|示例区间写法。
+判断|地球绕太阳公转一周约 365 天。||Y|约 365.24 天。
+判断|1 公里等于 100 米。||N|应为 1000 米。`;
+  parseImport();
+}
+function parseImport(){
+  const text = document.getElementById('impText').value;
+  const ok = [], fail = [];
+  const lines = text.split(/\r?\n/).map(s=>s.trim()).filter(s => s && !s.startsWith('#'));
+  if(!lines.length){ toast('没有可解析的内容','err'); return; }
+  if(lines[0].startsWith('[') || lines[0].startsWith('{')){
     try{
-      const wb = XLSX.read(ev.target.result, {type:'binary'});
-      const sheet = wb.Sheets[wb.SheetNames[0]];
-      const aoa = XLSX.utils.sheet_to_json(sheet, {header:1, defval:'', blankrows:false});
-      let hIdx = -1;
-      for(let r=0;r<Math.min(aoa.length,10);r++){
-        const line = aoa[r].map(x=>String(x==null?'':x).replace(/\s/g,''));
-        const hasQ = line.some(t=>Q_KEYS.some(k=>t===k||t.indexOf(k)>-1));
-        const hasA = line.some(t=>A_KEYS.some(k=>t===k||t.indexOf(k)>-1));
-        if(hasQ && hasA){ hIdx = r; break; }
-      }
-      if(hIdx < 0){ alert('没找到表头行（必须含"题目/题干/问题"和"答案/正确答案"列）'); return; }
-      const header = aoa[hIdx].map(x=>String(x==null?'':x).replace(/\s/g,''));
-      header.forEach((name,i)=>{ if(name && headerMap[name]===undefined) headerMap[name]=i; });
-      rows = aoa.slice(hIdx+1).filter(r=> r.some(c=> String(c==null?'':c).trim()!=='') );
-      console.log('读取成功，数据 '+rows.length+' 行');
-    }catch(err){
-      alert('文件读取失败：'+err.message); console.error(err);
-    }
-  };
-  reader.onerror = function(){ alert('文件读取失败，请重试'); };
-  reader.readAsBinaryString(file);
-});
-
-function normType(t){
-  t = (t||'').trim();
-  if(!t) return '';
-  if(/多选/.test(t)) return 'multiple';
-  if(/单选/.test(t)) return 'single';
-  if(/判断|是非|对错/.test(t)) return 'judge';
-  if(/填空/.test(t)) return 'fill';
-  if(/简答/.test(t)) return 'short';
-  if(/论述|问答|材料|分析/.test(t)) return 'essay';
-  return '';
-}
-function judgeIdx(ans){
-  const a = ans.trim().toUpperCase();
-  if(/^(对|是|正确|√|✓|T|Y|YES|TRUE)$/.test(a)) return 0;
-  if(/^(错|否|错误|×|✗|X|F|N|NO|FALSE)$/.test(a)) return 1;
-  return -1;
-}
-function lettersToIdx(ans, optCount){
-  const s = ans.toUpperCase().replace(/[^A-Z]/g,'');
-  const out=[]; const bad=[];
-  for(let i=0;i<s.length;i++){
-    const n = s.charCodeAt(i)-65;
-    if(n>=0 && n<optCount) out.push(n); else bad.push(s[i]);
+      const arr = JSON.parse(text); (Array.isArray(arr)?arr:[arr]).forEach((it,i) => normalize(it, '第'+(i+1)+'条', ok, fail));
+    }catch(e){ fail.push({line:'JSON', reason:'JSON 解析失败：'+e.message}); }
+  }else{
+    lines.forEach((line, i) => {
+      const sep = line.includes('|') ? '|' : line.includes('\t') ? '\t' : ',';
+      const c = line.split(sep);
+      normalize({type:c[0], stem:c[1], options:(c[2]||'').split(/[;；]/), answer:c[3], analysis:c[4]}, '第'+(i+1)+'行', ok, fail);
+    });
   }
-  return {out: Array.from(new Set(out)).sort(), bad: bad};
+  window._imp = {ok, fail};
+  document.getElementById('impPreview').innerHTML =
+    `<div style="margin-bottom:8px">解析结果：成功 <b style="color:#67c23a">${ok.length}</b> 条，失败 <b style="color:#f56c6c">${fail.length}</b> 条</div>` +
+    (ok.length||fail.length ? `<table class="prev"><tr><th>来源</th><th>题型</th><th>题干</th><th>答案</th><th>状态</th></tr>` +
+      ok.map(x => `<tr><td>${x.from}</td><td>${TYPE_NAME[x.type]}</td><td>${esc(x.stem)}</td><td>${x.answer.join(',')}</td><td class="ok">可导入</td></tr>`).join('') +
+      fail.map(x => `<tr><td>${x.line}</td><td>—</td><td>—</td><td>—</td><td class="fail">${esc(x.reason)}</td></tr>`).join('') +
+      '</table>' : '');
+  if(fail.length && !ok.length) toast('全部解析失败，请检查格式','err');
 }
-function collectOptions(row, qText){
-  let opts=[];
-  const letters=['A','B','C','D','E','F'];
-  for(const L of letters){ const v = getCell(row,'选项'+L); if(v) opts.push(v); }
-  if(opts.length===0){
-    let merged = getCell(row,'选项') || getCell(row,'选项列');
-    if(merged){
-      let parts = merged.split(/\r?\n/).length>1 ? merged.split(/\r?\n/) : merged.split(/(?=[A-F][\.、:：\s])/);
-      parts.forEach(p=>{ p=p.replace(/^[A-F][\.、:：\s]/,'').trim(); if(p) opts.push(p); });
-    }
-  }
-  if(opts.length===0){
-    const m = qText.split(/(?=[A-F][\.、:：])/);
-    if(m.length>1){ m.forEach(p=>{ const t=p.replace(/^[A-F][\.、:：\s]/,'').trim(); if(t) opts.push(t); }); }
-  }
-  return opts;
-}
-
-async function startParse(){
-  if(!rows || rows.length===0){ alert('数据为空，请重新选择文件'); return; }
-  document.getElementById('startBtn').style.display='none';
-  document.getElementById('progressBar').style.display='block';
-  document.getElementById('logBox').style.display='block';
-
-  const bankId = 'bank'+Date.now();
-  let success=[], fail=[], warn=[], autoJudge=0;
-  const total = rows.length;
-
-  for(let i=0;i<total;i++){
-    document.getElementById('progressFill').style.width = ((i+1)/total*100)+'%';
-    if(i%50===0) await new Promise(r=>setTimeout(r,0));
-
-    const row = rows[i]; const lineNo = i+2;
-    const qText = findVal(row, Q_KEYS);
-    const ansText = findVal(row, A_KEYS);
-    const typeHint = findVal(row, T_KEYS);
-    const analysis = findVal(row, N_KEYS);
-
-    if(!qText){ fail.push('第'+lineNo+'行：题目为空'); continue; }
-    if(!ansText){ fail.push('第'+lineNo+'行：答案为空（题目：'+qText.slice(0,12)+'…）'); continue; }
-
-    const opts = collectOptions(row, qText);
-    let type = normType(typeHint);
-    let options=[], answer;
-
-    if(type===''){
-      const j = judgeIdx(ansText);
-      if(j>=0){ type='judge'; autoJudge++; }
-      else if(opts.length>=2 && /^[A-Za-z，,、\s]+$/.test(ansText)){ const r=lettersToIdx(ansText,opts.length); if(r.out.length){ type = r.out.length>1?'multiple':'single'; autoJudge++; } }
-      if(type===''){
-        if(/[（(]\s*[）)]|_{2,}|＿|□/.test(qText)){ type='fill'; autoJudge++; }
-        else { type = (ansText.length>40 || /[①②③一二三四]/.test(ansText)) ? 'essay' : 'short'; autoJudge++; }
-      }
-    }
-
+const TYPE_MAP = {'单选':'single','单选题':'single','single':'single','多选':'multi','多选题':'multi','multi':'multi','判断':'judge','判断题':'judge','judge':'judge'};
+function normalize(it, from, ok, fail){
+  try{
+    const type = TYPE_MAP[String(it.type||'单选').trim().toLowerCase()] || 'single';
+    const stem = String(it.stem||'').trim();
+    if(!stem) throw '题干为空';
+    let options, answer;
     if(type==='judge'){
-      let j = judgeIdx(ansText);
-      if(j<0){
-        if(/错|否|N|×|F|X/i.test(ansText)) j=1; else j=0;
-        warn.push('第'+lineNo+'行：判断题答案非关键词，已按含义判为'+(j===0?'正确':'错误'));
-      }
-      options = ['正确','错误'];
-      answer = [j];
+      options = JUDGE_OPTS.map(o=>({...o}));
+      answer = parseJudgeAnswer(it.answer);
+      if(!answer.length) throw '判断题答案无法识别：'+(it.answer||'空')+'（支持 正确/错误、Y/N、√/×、T/F、1/0、是/否）';
+    }else{
+      const raw = Array.isArray(it.options) ? it.options : String(it.options||'').split(/[;；]/);
+      options = raw.map((t,i) => ({k:LETTERS[i]||String.fromCharCode(65+i), t:String(t).trim()})).filter(o=>o.t).slice(0,MAX_OPT);
+      if(options.length<2) throw '选项不足 2 个';
+      const valid = options.map(o=>o.k);
+      answer = parseAnswer(type, it.answer, valid);
+      if(!answer.length) throw '答案无法识别或超出选项范围：'+(it.answer||'空');
     }
-    else if(type==='single' || type==='multiple'){
-      if(opts.length===0){ fail.push('第'+lineNo+'行：'+(type==='multiple'?'多选':'单选')+'题缺少选项（题目：'+qText.slice(0,12)+'…）'); continue; }
-      let r = lettersToIdx(ansText, opts.length);
-      if(r.out.length===0){
-        for(let k=0;k<opts.length;k++){ if(opts[k].toUpperCase()===ansText.toUpperCase()){ r.out=[k]; warn.push('第'+lineNo+'行：答案已按选项文字对应到'+String.fromCharCode(65+k)); break; } }
-      }
-      if(r.out.length===0){ fail.push('第'+lineNo+'行：答案"'+ansText+'"对不上任何选项'); continue; }
-      if(type==='single' && r.out.length>1){ type='multiple'; warn.push('第'+lineNo+'行：写了多个答案，自动改为多选'); }
-      if(r.bad.length) warn.push('第'+lineNo+'行：答案'+r.bad.join('')+'超出选项范围已忽略');
-      options = opts; answer = r.out;
-    }
-    else {
-      answer = ansText; options = [];
-      if(type==='fill'){
-        const parts = ansText.split(/[;；]/).map(s=>s.trim()).filter(Boolean);
-        if(parts.length>1) answer = parts;
-        const blanks = (qText.match(/[（(]\s*[）)]|_{2,}|＿|□/g)||[]).length;
-        if(blanks>1 && parts.length>1 && blanks!==parts.length) warn.push('第'+lineNo+'行：题干'+blanks+'个空，答案'+parts.length+'个，请核对分号');
-      }
-    }
-
-    success.push({ id: bankId+'_'+i, question: qText, type: type, options: options, answer: answer, analysis: analysis });
-  }
-
-  if(success.length){
-    localStorage.setItem('xjt_new_import', JSON.stringify({ id: bankId, name: fileName || '新导入题库', questions: success }));
-  }
-
-  const cnt = {single:0,multiple:0,judge:0,fill:0,short:0,essay:0};
-  success.forEach(q=>cnt[q.type]++);
-  let html='<b style="color:green">成功导入 '+success.length+' 题。</b>　单选'+cnt.single+' / 多选'+cnt.multiple+' / 判断'+cnt.judge+' / 填空'+cnt.fill+' / 简答'+cnt.short+' / 论述'+cnt.essay;
-  html+='　<span style="color:#888">(自动判定 '+autoJudge+' 题)</span><br>';
-  if(warn.length) html+='<span style="color:#d84315">'+warn.join('<br>')+'</span><br>';
-  if(fail.length) html+='<span style="color:red">'+fail.join('<br>')+'</span>';
-  if(success.length===0) html+='<br><b style="color:red">没有成功导入任何题目，请检查表格列名或内容。</b>';
-  document.getElementById('logBox').innerHTML = html;
-
-  setTimeout(function(){
-    if(success.length>0){ alert('导入完成！共 '+success.length+' 题，正在返回…'); window.location.href='index.html'; }
-  }, 1000);
+    ok.push({id:uid(), type, stem, options, answer, analysis:String(it.analysis||'').trim(), from});
+  }catch(e){ fail.push({line:from, reason:e.message||String(e)}); }
 }
+function doImport(){
+  const {ok, fail} = window._imp || {};
+  if(!ok || !ok.length){ toast('没有可导入的数据，请先解析预览','err'); return; }
+  questions = ok.map(({id,type,stem,options,answer,analysis}) => ({id,type,stem,options,answer,analysis})).concat(questions);
+  closeModal(); render();
+  toast(`成功导入 ${ok.length} 题` + (fail.length ? `，${fail.length} 条失败已跳过` : ''));
+}
+function exportData(){
+  const data = questions.map(q => ({type:q.type, stem:q.stem, options:q.options.map(o=>o.t), answer:q.answer, analysis:q.analysis}));
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)], {type:'application/json'}));
+  a.download = '题库_' + new Date().toISOString().slice(0,10) + '.json'; a.click();
+  toast('已导出 JSON 文件');
+}
+
+/* ================= 答案格式测试（同款弹窗） ================= */
+function openTester(){
+  openModal({
+    title:'答案格式测试', wide:true,
+    body:`
+      <div class="hint">输入任意答案写法，实时查看解析结果。多选可选范围 A~Z，判断自动识别 正确/错误 类写法。</div>
+      <div class="field"><label>题型</label>
+        <select id="tType" onchange="runTest()">
+          <option value="multi">多选题</option>
+          <option value="single">单选题</option>
+          <option value="judge">判断题</option>
+        </select></div>
+      <div class="field"><label>有效选项字母（多选/单选用，逗号分隔）</label>
+        <input type="text" id="tValid" value="A,B,C,D,E,F" oninput="runTest()"></div>
+      <div class="field"><label>答案原文</label>
+        <input type="text" id="tRaw" placeholder="如：A#B#C / a b c / 1-3 / ①③ / 甲乙 / Y / ×" oninput="runTest()"></div>
+      <div class="result" id="tOut">等待输入…</div>`,
+    footer:`<button class="btn" onclick="closeModal()">关闭</button>`
+  });
+  runTest();
+}
+function runTest(){
+  const type = document.getElementById('tType').value;
+  const raw = document.getElementById('tRaw').value;
+  const valid = document.getElementById('tValid').value.split(/[,,\s]+/).map(s=>s.trim().toUpperCase()).filter(s=>/^[A-Z]$/.test(s));
+  const out = document.getElementById('tOut');
+  if(!raw.trim()){ out.innerHTML = '等待输入…'; return; }
+  const ans = parseAnswer(type, raw, valid.length?valid:LETTERS);
+  out.innerHTML = `原文：<b>${esc(raw)}</b><br>题型：${TYPE_NAME[type]}<br>解析结果：<b>${
+    type==='judge' ? (ans.length? (ans[0]==='A'?'正确（A）':'错误（B）') : '未识别') : (ans.length?ans.join('、'):'未识别')
+  }</b>${ans.length?'':'<br><span style="color:#f56c6c">未能识别，请检查写法或有效选项范围</span>'}`;
+}
+render();
 </script>
 </body>
 </html>
