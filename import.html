@@ -20,26 +20,19 @@
     input[type=file] { display:none; }
     .file-name { color:var(--blue); font-weight:bold; margin-top:10px; display:block; }
     .dark .file-name { color:#93c5fd; }
-    
     .btn { display:block; width:100%; padding:14px; border:none; border-radius:8px; font-size:16px; font-weight:bold; color:#fff; background:var(--red); margin-top:15px; cursor:pointer; }
     .btn:active { opacity:.8; }
-    .btn.gray { background:#9e9e9e; }
-    .btn.blue { background:var(--blue); }
-    
     .progress-bar { height:6px; background:#e0e0e0; border-radius:3px; margin-top:15px; display:none; overflow:hidden; }
     .dark .progress-bar { background:#334155; }
     .progress-fill { height:100%; background:var(--green); width:0%; transition:width .1s linear; }
-    
     .log-box { background:#fafafa; border:1px solid #eee; border-radius:8px; padding:12px; margin-top:15px; max-height:200px; overflow-y:auto; font-size:13px; color:#555; display:none; }
     .dark .log-box { background:#0f172a; border-color:#334155; color:#cbd5e1; }
-    
     .modal { display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,.5); z-index:999; align-items:center; justify-content:center; }
     .modal-inner { background:#fff; border-radius:12px; padding:20px; width:85%; max-width:360px; text-align:center; }
     .dark .modal-inner { background:#1e293b; }
     .modal h3 { margin-top:0; color:var(--blue); }
     .modal-btns { display:flex; gap:10px; margin-top:20px; }
     .modal-btns button { flex:1; padding:10px; border:none; border-radius:6px; color:#fff; font-size:14px; }
-    
     .back-btn { text-align:center; margin-top:20px; }
     .back-btn a { color:#666; text-decoration:none; font-size:14px; }
     .dark .back-btn a { color:#94a3b8; }
@@ -48,169 +41,151 @@
 <body>
 
 <div class="top-tip">
-    <b>⚠️ 题库格式规范（已放宽：没有“题型”列也能导入）</b><br>
+    <b>⚠️ 题库格式规范（已放宽：没有"题型"列也能导入）</b><br>
     第一行表头中，只有 <b>题目</b> 和 <b>答案</b> 两列是必须的：<br>
     题目、答案 为必填；题型、选项A、选项B...、解析 均可省略或整列留空。<br><br>
-    * <b>没有“题型”这一列也能抓：</b>系统按“有没有选项 + 答案长什么样 + 题干有没有括号空”自动判定单选/多选/判断/填空/简答/论述。<br>
-    * 自动判定不放心时，可在解析报告里逐条核对；想完全控制就保留“题型”列，写了就 <b>100% 按你写的算</b>。<br>
-    * 有选项的题：答案写 A / ABC / A,B / A、B 均可；判断题答案写 对/错/√/×/正确/错误/T/F/Y/N 均可。<br>
-    * 填空题多空：答案用分号隔开，如「调度集中；分散自律」；简答、论述直接把参考答案写在答案列，选项列留空。<br>
+    * 没有"题型"列也能抓：系统按"有没有选项+答案长什么样+题干有没有括号空"自动判定题型。<br>
+    * 有选项的题：答案写 A/ABC/A,B/A、B 均可；判断题答案写 对/错/√/×/正确/错误/T/F/Y/N 均可。<br>
+    * 填空题多空：答案用分号隔开；简答/论述直接写参考答案，选项列留空。<br>
     * 题库中不允许存在空行或合并单元格。
 </div>
 
 <div class="card">
     <h1>📥 上传文件</h1>
-    <p class="sub">没有“题型”列的题库也能直接导入，系统自动判定题型。<br>缺答案、选项对不上等硬伤会被拦截并写进报告。</p>
-    
+    <p class="sub">没有"题型"列的题库也能直接导入，缺答案、选项对不上等硬伤会被拦截并写进报告。</p>
     <div class="file-box" onclick="document.getElementById('fileInput').click()">
         <input type="file" id="fileInput" accept=".xls,.xlsx">
         <div>点击此处选择 .xlsx / .xls 文件</div>
         <span class="file-name" id="fileNameDisplay"></span>
     </div>
-    
     <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
     <div class="log-box" id="logBox"></div>
-    
     <button class="btn" id="startBtn" style="display:none" onclick="startParse()">开始导入解析</button>
-    <div class="modal" id="warnModal">
-        <div class="modal-inner">
-            <h3 id="mTitle">警告</h3>
-            <p id="mContent"></p>
-            <div class="modal-btns">
-                <button style="background:#9e9e9e" onclick="closeModal()">关闭</button>
-                <button style="background:var(--blue)" onclick="closeModal()">知道了</button>
-            </div>
-        </div>
-    </div>
-    
-    <div class="back-btn"><a href="/">取消并返回首页</a></div>
+    <div class="back-btn"><a href="index.html">取消并返回首页</a></div>
 </div>
 
 <div style="text-align:center; color:#999; margin-top:30px; font-size:13px;">技术支持：秦十三郎</div>
 
-<!-- 必须引入完整版库，否则无法解析 .xls 老文件 -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
-    let rawData = [];
-    const fileInput = document.getElementById('fileInput');
-    const fileNameDisplay = document.getElementById('fileNameDisplay');
-    const startBtn = document.getElementById('startBtn');
-    const progressBar = document.getElementById('progressBar');
-    const progressFill = document.getElementById('progressFill');
-    const logBox = document.getElementById('logBox');
+let rawData = [];
 
-    // 兼容 .xls 和 .xlsx 的二进制安全读取方式
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        if(!file.name.match(/\.(xlsx|xls)$/i)){ alert('请选择 .xlsx 或 .xls 文件'); return; }
-        
-        fileNameDisplay.textContent = file.name;
-        startBtn.style.display = 'block';
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                // 兼容新版浏览器 API，同时保留二进制安全
-                let data = e.target.result;
-                if (file.arrayBuffer) {
-                    // 现代浏览器直接获取二进制流
-                    file.arrayBuffer().then(buffer => {
-                        const workbook = XLSX.read(buffer, { type: 'array', cellFormula: false, cellStyles: false });
-                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                        rawData = XLSX.utils.sheet_to_json(firstSheet, {defval:''});
-                    });
-                } else {
-                    // 传统浏览器 fallback
-                    const workbook = XLSX.read(data, { type: 'binary', cellFormula: false, cellStyles: false });
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    rawData = XLSX.utils.sheet_to_json(firstSheet, {defval:''});
-                }
-            } catch(err){ alert('文件读取失败，请检查是否为损坏的 Excel 文件'); console.error(err); }
-        };
-        reader.readAsBinaryString(file);
-    });
+document.getElementById('fileInput').addEventListener('change', function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    if(!file.name.match(/\.(xlsx|xls)$/i)){ alert('请选择 .xlsx 或 .xls 文件'); return; }
+    document.getElementById('fileNameDisplay').textContent = file.name;
+    document.getElementById('startBtn').style.display = 'block';
+    rawData = [];
 
-    async function startParse(){
-        if(!rawData.length) return;
-        startBtn.style.display = 'none';
-        progressBar.style.display = 'block';
-        logBox.style.display = 'block';
-        
-        let success = [], fail = [], warn = [];
-        const total = rawData.length;
-        
-        for(let i=0; i<total; i++){
-            progressFill.style.width = ((i+1)/total*100) + '%';
-            await new Promise(r => setTimeout(r, 0)); 
-            
-            let row = rawData[i];
-            let qText = (row['题目']||row['题干']||row['问题']||'').trim();
-            let ansText = (row['答案']||row['正确答案']||'').trim();
-            let typeHint = (row['题型']||'').trim();
-            let analysis = (row['解析']||row['答案解析']||row['说明']||'').trim();
-            let options = [row['选项A'],row['选项B'],row['选项C'],row['选项D'],row['选项E']].map(v=>String(v).trim()).filter(Boolean);
-            
-            if(!qText || !ansText) { fail.push(`第 ${i+2} 行：题目或答案缺失`); continue; }
-            
-            let qType = typeHint;
-            // 1. 自动判定题型
-            if(!qType){
-                let aUpper = ansText.toUpperCase().replace(/[，、\s]/g,',').split(',');
-                let isAlphabet = /^[A-Z]+$/.test(aUpper.join(''));
-                
-                if(options.length > 2 && isAlphabet) {
-                    qType = (aUpper.length > 1) ? '多选题' : '单选题';
-                } else if (options.length === 2) {
-                    qType = '判断题';
-                } else if (qText.match(/[（(].*?[）)]|__|＿＿/)) {
-                    qType = '填空题';
-                } else {
-                    qType = (ansText.length > 50 || ansText.match(/[①②一二三]/)) ? '论述题' : '简答题';
-                }
-            }
-            
-            let finalOpts = {}, finalAns = ansText;
-            
-            if(['单选题','多选题','判断题'].includes(qType)){
-                if(options.length===0){ fail.push(`第 ${i+2} 行：${qType}缺少选项`); continue; }
-                for(let j=0; j<options.length; j++) finalOpts[String.fromCharCode(65+j)] = options[j];
-                
-                if(qType==='判断题'){
-                    let map = {'对':'A','是':'A','正确':'A','√':'A','T':'A','Y':'A',
-                               '错':'B','否':'B','错误':'B','×':'B','F':'B','N':'B'};
-                    if(map[ansText]) finalAns = map[ansText];
-                    let uAns = ansText.toUpperCase();
-                    if(options[1] && uAns.includes(options[1].toUpperCase())) finalAns = 'B';
-                } else {
-                    let uAns = ansText.toUpperCase().replace(/[^A-Z]/g,'');
-                    for(let k=0; k<uAns.length; k++){
-                        if(!finalOpts[uAns[k]]){ warn.push(`第 ${i+2} 行：答案 ${uAns[k]} 超出选项范围，已自动忽略`); }
-                    }
-                }
-            } else if (qType==='填空题') {
-                if(ansText.includes(';')) finalAns = ansText.split(';').map(v=>v.trim()).filter(Boolean);
-            }
-            
-            success.push({ type:qType, text:qText, answer:finalAns, options:finalOpts, analysis:analysis, id:'q'+Date.now()+i });
+    const reader = new FileReader();
+    reader.onload = function(e){
+        try {
+            const data = e.target.result;
+            const workbook = XLSX.read(data, {type:'binary'});
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            rawData = XLSX.utils.sheet_to_json(firstSheet, {defval:''});
+            console.log('读取成功，共 '+rawData.length+' 行');
+        } catch(err){
+            alert('文件读取失败：'+err.message);
+            rawData = [];
         }
-        
-        if(success.length) localStorage.setItem('temp_bank', JSON.stringify(success));
-        
-        logBox.innerHTML = `<b style="color:green">成功导入 ${success.length} 题。</b><br>`;
-        if(warn.length) logBox.innerHTML += `<span style="color:#d84315">${warn.join('<br>')}</span><br>`;
-        if(fail.length) logBox.innerHTML += `<span style="color:red">${fail.join('<br>')}</span>`;
-        
-        setTimeout(() => {
-            alert('导入完成！正在跳转至题库...');
-            window.location.href = '/';
-        }, 800);
+    };
+    reader.onerror = function(){
+        alert('文件读取失败，请重试');
+        rawData = [];
+    };
+    reader.readAsBinaryString(file);
+});
+
+async function startParse(){
+    if(!rawData || rawData.length === 0){
+        alert('数据为空，请重新选择文件');
+        return;
+    }
+    document.getElementById('startBtn').style.display = 'none';
+    document.getElementById('progressBar').style.display = 'block';
+    document.getElementById('logBox').style.display = 'block';
+
+    let success=[], fail=[], warn=[];
+    const total = rawData.length;
+
+    for(let i=0; i<total; i++){
+        document.getElementById('progressFill').style.width = ((i+1)/total*100)+'%';
+        await new Promise(r=>setTimeout(r,0));
+
+        let row = rawData[i];
+        let qText = (row['题目']||row['题干']||row['问题']||'').trim();
+        let ansText = (row['答案']||row['正确答案']||'').trim();
+        let typeHint = (row['题型']||'').trim();
+        let analysis = (row['解析']||row['答案解析']||row['说明']||'').trim();
+        let options = [row['选项A'],row['选项B'],row['选项C'],row['选项D'],row['选项E']].map(v=>String(v).trim()).filter(Boolean);
+
+        if(!qText){ fail.push('第 '+(i+2)+' 行：题目为空'); continue; }
+        if(!ansText){ fail.push('第 '+(i+2)+' 行：答案为空'); continue; }
+
+        let qType = typeHint;
+        if(!qType){
+            let aUpper = ansText.toUpperCase().replace(/[，、\s]/g,',').split(',');
+            let isAlphabet = /^[A-Z]+$/.test(aUpper.join(''));
+            if(options.length >= 2 && isAlphabet){
+                qType = (aUpper.length > 1) ? '多选题' : '单选题';
+            } else if(options.length === 2){
+                qType = '判断题';
+            } else if(qText.match(/[（(].*?[）)]|__|＿＿/)){
+                qType = '填空题';
+            } else {
+                qType = (ansText.length > 50 || ansText.match(/[①②一二三]/)) ? '论述题' : '简答题';
+            }
+        }
+
+        let finalOpts = {}, finalAns = ansText;
+
+        if(['单选题','多选题','判断题'].includes(qType)){
+            if(options.length === 0){ fail.push('第 '+(i+2)+' 行：'+qType+'缺少选项'); continue; }
+            for(let j=0; j<options.length; j++) finalOpts[String.fromCharCode(65+j)] = options[j];
+
+            if(qType === '判断题'){
+                let map = {'对':'A','是':'A','正确':'A','√':'A','T':'A','Y':'A',
+                           '错':'B','否':'B','错误':'B','×':'B','F':'B','N':'B'};
+                if(map[ansText]) finalAns = map[ansText];
+                else if(map[ansText.trim()]) finalAns = map[ansText.trim()];
+                else {
+                    let uAns = ansText.toUpperCase();
+                    if(options[0] && uAns.includes(options[0].toUpperCase())) finalAns = 'A';
+                    else if(options[1] && uAns.includes(options[1].toUpperCase())) finalAns = 'B';
+                }
+            } else {
+                let uAns = ansText.toUpperCase().replace(/[^A-Z]/g,'');
+                for(let k=0; k<uAns.length; k++){
+                    if(!finalOpts[uAns[k]]){ warn.push('第 '+(i+2)+' 行：答案 '+uAns[k]+' 超出选项范围'); }
+                }
+            }
+        } else if(qType === '填空题'){
+            if(ansText.includes(';') || ansText.includes('；')){
+                finalAns = ansText.split(/[;；]/).map(v=>v.trim()).filter(Boolean);
+            }
+        }
+
+        success.push({ type:qType, text:qText, answer:finalAns, options:finalOpts, analysis:analysis, id:'q'+Date.now()+i });
     }
 
-    function showModal(t, c){ document.getElementById('mTitle').innerText=t; document.getElementById('mContent').innerText=c; document.getElementById('warnModal').style.display='flex'; }
-    function closeModal(){ document.getElementById('warnModal').style.display='none'; }
+    if(success.length) localStorage.setItem('temp_bank', JSON.stringify(success));
+
+    let html = '<b style="color:green">成功导入 '+success.length+' 题。</b><br>';
+    if(warn.length) html += '<span style="color:#d84315">'+warn.join('<br>')+'</span><br>';
+    if(fail.length) html += '<span style="color:red">'+fail.join('<br>')+'</span>';
+    document.getElementById('logBox').innerHTML = html;
+
+    setTimeout(function(){
+        if(success.length > 0){
+            alert('导入完成！共 '+success.length+' 题。');
+            window.location.href = 'index.html';
+        } else {
+            alert('没有成功导入任何题目，请查看下方报告。');
+        }
+    }, 800);
+}
 </script>
 </body>
 </html>
-
-
