@@ -32,7 +32,8 @@ body{background:var(--bg);color:var(--text);font-size:14px;padding:10px}
 .file-zone .text{font-size:13px;color:var(--sub)}
 .file-zone .file-name{color:var(--primary);font-weight:600;margin-top:10px}
 .file-input-wrap{position:absolute;top:0;left:0;width:100%;height:100%}
-.file-input-wrap input[type=file]{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.file-input-wrap input[type=file]{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;-webkit-appearance:none;appearance:none;border:none;background:transparent}
+.file-input-wrap input[type=file]::-webkit-file-upload-button{display:none;width:0;height:0;padding:0;margin:0;border:none;background:transparent}
 .paste-area{width:100%;height:200px;padding:12px;border:1px solid var(--border);border-radius:8px;font-size:13px;resize:vertical;outline:none;background:var(--input-bg);font-family:monospace}
 .paste-area:focus{border-color:var(--primary)}
 .actions{display:flex;gap:14px;margin-top:18px}
