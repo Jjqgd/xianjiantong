@@ -23,7 +23,7 @@ body{background:var(--bg);color:var(--text);font-size:14px;padding:10px}
 .input-name{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none;background:var(--input-bg);margin-bottom:14px}
 .input-name:focus{border-color:var(--primary)}
 .import-tabs{display:flex;gap:12px;margin-bottom:14px}
-.import-tabs button{flex:1;padding:12px 0;border:1.5px solid var(--primary);border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;background:#fff;color:var(--primary)}
+.import-tabs button{flex:1;padding:12px 0;border:1.5px solid var(--primary);border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;background:#fff;color:var(--primary)}
 .import-tabs button.active{background:var(--primary) !important;color:#fff !important;border-color:var(--primary) !important}
 .import-tabs button.inactive{background:#fff !important;color:var(--primary) !important;border-color:var(--primary) !important}
 #btnModeFile{background:var(--primary) !important;color:#fff !important;border-color:var(--primary) !important;}
@@ -71,8 +71,8 @@ body{background:var(--bg);color:var(--text);font-size:14px;padding:10px}
   </div>
   <input class="input-name" id="libName" placeholder="请输入题库名称（如：高铁线路专业题库）">
   <div class="import-tabs">
-    <button id="btnModeFile" class="active" onclick="switchMode('file')">📁 选择文件</button>
-    <button id="btnModeText" class="inactive" onclick="switchMode('text')">📋 粘贴文本</button>
+    <button id="btnModeFile" class="active" style="background:#b71c1c;color:#fff;border-color:#b71c1c" onclick="switchMode('file')">📁 选择文件</button>
+    <button id="btnModeText" class="inactive" style="background:#fff;color:#b71c1c;border-color:#b71c1c" onclick="switchMode('text')">📋 粘贴文本</button>
   </div>
   <label class="file-zone" id="paneFile" for="fileInput">
     <div class="icon">📄</div>
@@ -103,8 +103,11 @@ function escapeHtml(s){ return String(s).replace(/[&<>'"]/g,function(c){return {
 
 window.switchMode = function(mode){
   appState.mode = mode;
-  document.getElementById('btnModeFile').className = mode==='file' ? 'active':'inactive';
-  document.getElementById('btnModeText').className = mode==='text' ? 'active':'inactive';
+  var _bf=document.getElementById('btnModeFile'), _bt=document.getElementById('btnModeText');
+  _bf.className = mode==='file' ? 'active':'inactive';
+  _bt.className = mode==='text' ? 'active':'inactive';
+  _bf.style.cssText = mode==='file' ? 'background:#b71c1c;color:#fff;border-color:#b71c1c' : 'background:#fff;color:#b71c1c;border-color:#b71c1c';
+  _bt.style.cssText = mode==='text' ? 'background:#b71c1c;color:#fff;border-color:#b71c1c' : 'background:#fff;color:#b71c1c;border-color:#b71c1c';
   document.getElementById('paneFile').style.display = mode==='file' ? 'block':'none';
   document.getElementById('paneText').style.display = mode==='text' ? 'block':'none';
 };
