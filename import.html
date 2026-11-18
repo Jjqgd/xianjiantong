@@ -1,313 +1,378 @@
-
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>铁途学练 - 题库导入</title>
+<title>铁途学练 · 题库导入</title>
+<style>
+    /* 🎯 唯一修改：页面最顶层强行规定“选择文件”按钮的初始颜色，彻底杜绝加载时的白框闪现 */
+    #btnModeFile { background-color: #d03f3f !important; color: #fff !important; }
+</style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
-:root { --primary: #b71c1c; --blue: #0d47a1; --success: #10b981; --fail: #ef4444; --text: #1e293b; --sub: #64748b; --border: #e2e8f0; --bg: #f0f4f8; --input-bg: #f8fafc; }
-*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
-body{background:var(--bg);color:var(--text);font-size:14px;padding:10px}
-.container{max-width:800px;margin:0 auto;padding:10px 6px 40px}
-.page-header{text-align:center;margin:14px 0 18px}
-.page-header h2{font-size:22px;color:var(--primary);font-weight:700}
-.page-header p{font-size:12px;color:var(--sub);margin-top:6px}
-.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
-.title{font-size:1.05rem;font-weight:bold;margin-bottom:12px;border-left:4px solid var(--primary);padding-left:8px}
-.rules-card ul{list-style:none;padding-left:6px}
-.rules-card li{padding:3px 0;color:var(--sub);line-height:1.6;font-size:13px}
-.input-name{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none;background:var(--input-bg);margin-bottom:14px}
+:root { --primary: #d03f3f; --text: #303133; --gray: #999; --bg: #f2f3f5; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);font-size:14px;overflow-x:hidden;}
+
+.container{max-width:800px;margin:0 auto;padding:20px 16px 40px}
+.page-header{text-align:center;margin-bottom:24px;padding-top:20px}
+.page-header h2{font-size:22px;color:var(--primary);font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px}
+.page-header h2::before{content:'📥';font-size:24px}
+.page-header p{font-size:12px;color:var(--gray);margin-top:6px}
+
+.rules-card{background:#fff;border-radius:12px;padding:18px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,.04)}
+.rules-card h4{font-size:15px;margin-bottom:12px;display:flex;align-items:center;font-weight:600}
+.rules-card h4::before{content:'';display:inline-block;width:4px;height:18px;background:var(--primary);border-radius:2px;margin-right:8px}
+.rules-card ul{list-style:none;padding-left:4px}
+.rules-card li{padding:3px 0;color:#606266;line-height:1.6;font-size:13px}
+.rules-card .tip-box{background:#fdf6ec;border:1px solid #f5dab1;border-radius:8px;padding:12px;font-size:12px;color:#e6a23c;margin-top:12px}
+
+.input-name{width:100%;padding:12px 16px;border:1px solid #dcdfe6;border-radius:8px;font-size:14px;outline:none;background:#fff;margin-bottom:20px;transition:border-color .2s}
 .input-name:focus{border-color:var(--primary)}
-.import-tabs{display:flex;gap:12px;margin-bottom:14px}
-.import-tabs button{flex:1;padding:12px 0;border:1.5px solid var(--primary);border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;background:#fff;color:var(--primary)}
-.import-tabs button.active{background:var(--primary) !important;color:#fff !important;border-color:var(--primary) !important}
-.import-tabs button.inactive{background:#fff !important;color:var(--primary) !important;border-color:var(--primary) !important}
-.file-zone{border:2px dashed #fcdada;border-radius:12px;background:#fff;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+
+.import-tabs{display:flex;gap:14px;margin-bottom:20px}
+.import-tabs button{
+  flex:1;padding:12px 0;border:1.5px solid var(--primary);
+  border-radius:8px;font-size:15px;font-weight:500;cursor:pointer;
+  transition:all .2s;
+  background:#fff !important;color:var(--primary) !important;
+}
+.import-tabs button.active{
+  background:var(--primary) !important;color:#fff !important;
+}
+
+.file-zone{
+  border:2px dashed #fcdada;border-radius:12px;background:#fff;
+  padding:60px 20px;text-align:center;cursor:pointer;transition:all .2s;
+}
 .file-zone:hover{background:#fffafb;border-color:var(--primary)}
-.file-zone .icon{font-size:34px;margin-bottom:10px;opacity:.6}
-.file-zone .text{font-size:13px;color:var(--sub)}
-.file-zone .file-name{color:var(--primary);font-weight:600;margin-top:10px}
-.file-input-wrap{position:absolute;top:0;left:0;width:100%;height:100%}
+.file-zone .icon{font-size:48px;margin-bottom:16px;opacity:.6;pointer-events:none}
+.file-zone .text{font-size:13px;color:var(--gray);pointer-events:none}
+.file-zone .file-name{color:var(--primary);font-weight:600;margin-top:12px;pointer-events:none}
+.file-input-wrap{position:relative;width:100%;height:100%;margin-top:16px}
 .file-input-wrap input[type=file]{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer}
-.paste-area{width:100%;height:200px;padding:12px;border:1px solid var(--border);border-radius:8px;font-size:13px;resize:vertical;outline:none;background:var(--input-bg);font-family:monospace}
+
+.paste-area{
+  width:100%;height:220px;padding:14px;border:1px solid #dcdfe6;
+  border-radius:8px;font-size:13px;resize:vertical;outline:none;background:#fff;font-family:monospace;
+  transition:border-color .2s;
+}
 .paste-area:focus{border-color:var(--primary)}
-.actions{display:flex;gap:14px;margin-top:18px}
-.btn{flex:1;padding:14px 0;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer}
-.btn-parse{background:#fff;border:1.5px solid var(--border);color:var(--sub)}
-.btn-confirm{background:var(--primary);color:#fff}
-.result-box{margin-top:18px;display:none}
-.stat-line{display:flex;gap:20px;font-size:15px;font-weight:600}
-.stat-line .ok{color:var(--success)} .stat-line .fail{color:var(--fail)}
-.fail-list{background:#fff;border:1px solid #fecaca;border-radius:8px;padding:12px;max-height:260px;overflow-y:auto;font-size:12px;color:var(--fail);line-height:1.8;margin-top:10px}
-.demo-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px;margin-top:12px}
-.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;margin-bottom:8px;color:#fff;background:var(--blue)}
-.stem{font-weight:600;font-size:15px;margin-bottom:8px;line-height:1.5}
-.opts{list-style:none}.opts li{padding:4px 0;font-size:13px;color:var(--sub);border-bottom:1px dashed #f1f5f9}
-.opts li.correct{color:var(--success);font-weight:600}
-.ans-line{font-size:13px;color:var(--success);font-weight:bold;margin-top:6px}
-.tip{font-size:12px;color:var(--sub);margin:8px 0 0;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;line-height:1.5}
-#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:2000;display:none}
+
+.actions{display:flex;justify-content:space-between;align-items:center;margin-top:28px;gap:16px}
+.btn{flex:1;padding:14px 0;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn.parse{background:#fff;border:1.5px solid #dcdfe6;color:#606266}
+.btn.parse:active{background:#f5f7fa}
+.btn.confirm{background:var(--primary);color:#fff;box-shadow:0 4px 12px rgba(208,63,63,.25)}
+.btn.confirm:active{transform:scale(.98)}
+
+.result-box{margin-top:28px;display:none}
+.stat-line{display:flex;gap:20px;font-size:15px;font-weight:600;margin-top:12px}
+.stat-line .ok{color:#67c23a}.stat-line .fail{color:#f56c6c}
+.fail-list{
+  background:#fff;border:1px solid #fef0f0;border-radius:8px;
+  padding:16px;max-height:300px;overflow-y:auto;
+  font-size:12px;color:#f56c6c;line-height:1.8;margin-top:12px;
+}
+.success-demo{margin-top:16px}
+.demo-card{background:#fff;border:1px solid #ebeef5;border-radius:8px;padding:16px;margin-top:14px;box-shadow:0 2px 8px rgba(0,0,0,.02)}
+.demo-card .tag{display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:600;margin-bottom:10px}
+.demo-card .tag.s{background:#ecf5ff;color:#409eff}
+.demo-card .tag.m{background:#fdf6ec;color:#e6a23c}
+.demo-card .tag.j{background:#f0f9eb;color:#67c23a}
+.demo-card .tag.f{background:#f4f4f5;color:#909399}
+.demo-card .tag.w{background:#ecf5ff;color:#409eff}
+.demo-card .stem{font-weight:600;font-size:16px;margin-bottom:12px;line-height:1.6}
+.demo-card .opts{list-style:none}
+.demo-card .opts li{padding:6px 0;font-size:14px;color:#606266;border-bottom:1px dashed #f2f6fc}
+.demo-card .opts li:last-child{border-bottom:none}
+.demo-card .opts li.correct{color:#67c23a;font-weight:600}
+
+#toast{
+  position:fixed;top:24px;left:50%;transform:translateX(-50%);
+  background:#fff;border:1px solid #ebeef5;padding:12px 24px;
+  border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:2000;
+  font-size:13px;display:none;white-space:nowrap;max-width:80%;text-align:center;
+}
 </style>
 </head>
 <body>
-<div class="container">
+
+<div id="importPage" class="container">
   <div class="page-header">
-    <h2>📥 铁途学练 · 题库导入</h2>
+    <h2>铁途学练 · 题库导入</h2>
     <p>解析后自动写回主程序，点「确认导入」即跳转进入刷题</p>
   </div>
-  <div class="card rules-card">
-    <div class="title">支持的格式</div>
+  
+  <div class="rules-card">
+    <h4>支持的格式</h4>
     <ul>
-      <li>📁 上传 Excel（.xlsx / .xls / .csv），或在 Excel 框选复制后「粘贴文本」</li>
-      <li>🔤 题型可不填：缺列时按「选项+答案」自动判断单选/多选/判断/填空/简答</li>
+      <li>📁 上传 Excel (.xlsx / .xls / .csv)，或在 Excel 框选复制后「粘贴文本」</li>
+      <li>🆕 题型可不填：缺列时按「选项+答案」自动判断单选/多选/判断/填空/简答</li>
       <li>✅ 答案支持：ABCD / A,B / A#B / A+B / 正确·错 / √·× / Y·N 等全部写法</li>
     </ul>
-    <div class="tip">💡 列结构自动识别：序号 / 编码 / 题型 / 题目 / 选项A~F / 答案 / 解析；编码列若存在将作为题目唯一 ID。</div>
+    <div class="tip-box">
+      💡 列结构自动识别：序号 / 编码 / 题型 / 题目 / 选项A~F / 答案 / 解析；编码列若存在将作为题目唯一 ID。
+    </div>
   </div>
+
   <input class="input-name" id="libName" placeholder="请输入题库名称（如：高铁线路专业题库）">
+  
   <div class="import-tabs">
-    <button id="btnModeFile" class="active" onclick="switchMode('file')">📁 选择文件</button>
-    <button id="btnModeText" class="inactive" onclick="switchMode('text')">📋 粘贴文本</button>
+    <button class="active" id="btnModeFile" onclick="switchMode('file')">📁 选择文件</button>
+    <button id="btnModeText" onclick="switchMode('text')">📋 粘贴文本</button>
   </div>
+
   <label class="file-zone" id="paneFile" for="fileInput">
     <div class="icon">📄</div>
     <div class="text">点击此处选择 Excel 文件</div>
-    <div class="file-input-wrap"><input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="onFileChange(this.files[0])"></div>
+    <div class="file-input-wrap">
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="onFileChange(this.files[0])">
+    </div>
     <div id="fileNameDisplay" class="file-name"></div>
   </label>
+
   <div id="paneText" style="display:none">
-    <textarea class="paste-area" id="textArea" placeholder="从 Excel 框选数据（含表头行）→ Ctrl+C 复制 → Ctrl+V 粘贴到这里..."></textarea>
+    <textarea class="paste-area" id="textArea" placeholder="请从 Excel 中框选数据区域（含表头），Ctrl+C 复制后，Ctrl+V 粘贴到这里..."></textarea>
   </div>
+
   <div class="actions">
-    <button class="btn btn-parse" onclick="startParse()">解析并校验题库</button>
-    <button class="btn btn-confirm" onclick="confirmImport()">确认导入</button>
+    <button class="btn parse" onclick="startParse()">解析并校验题库</button>
+    <button class="btn confirm" onclick="confirmImport()">确认导入</button>
   </div>
+
   <div id="resultBox" class="result-box">
-    <span class="stat-line"><span class="ok" id="sucCount">成功 0 条</span><span class="fail" id="failCount">失败 0 条</span></span>
+    <span class="stat-line">
+      <span class="ok" id="sucCount">成功 0 条</span>
+      <span class="fail" id="failCount">失败 0 条</span>
+    </span>
     <div id="failList" class="fail-list" style="display:none"></div>
-    <div id="successDemo"></div>
+    <div id="successDemo" class="success-demo"></div>
   </div>
 </div>
+
 <div id="toast"></div>
 
 <script>
-var appState = { mode:'file', tempRaw:[], finalParsed:[], failErrors:[] };
+let appState = { mode: 'file', tempRawRecords: [], finalParsedData: [], failErrors: [] };
 
-function showToast(msg){ var d=document.getElementById('toast'); d.innerText=msg; d.style.display='block'; clearTimeout(d._h); d._h=setTimeout(function(){d.style.display='none';},3000); }
-function escapeHtml(s){ return String(s).replace(/[&<>'"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c];}); }
+const CoreParser = {
+  parseGrid: (grid) => {
+    if (!grid || grid.length === 0) return [];
+    const cleanCell = c => String(c == null ? '' : c).trim();
+    
+    let startIndex = 0;
+    for (let i = 0; i < Math.min(5, grid.length); i++) {
+      const rowStr = grid[i].map(cleanCell).join('').toLowerCase();
+      if (rowStr.includes('题目') || rowStr.includes('选项')) {
+        startIndex = i + 1; break;
+      }
+    }
 
-window.switchMode = function(mode){
-  appState.mode = mode;
-  document.getElementById('btnModeFile').className = mode==='file' ? 'active':'inactive';
-  document.getElementById('btnModeText').className = mode==='text' ? 'active':'inactive';
-  document.getElementById('paneFile').style.display = mode==='file' ? 'block':'none';
-  document.getElementById('paneText').style.display = mode==='text' ? 'block':'none';
+    const records = [];
+    let hasTypeCol = false;
+
+    for (let i = startIndex; i < grid.length; i++) {
+      const row = grid[i].map(cleanCell);
+      if (!row.some(Boolean)) continue;
+
+      let typeCol = 2, stemCol = 3, ansCol = 10, anaCol = 11;
+      if (startIndex > 0) {
+        const headerRow = grid[startIndex - 1].map(cleanCell);
+        headerRow.forEach((cell, idx) => {
+          const c = cell.toLowerCase();
+          if (c === '题型') hasTypeCol = true;
+          if (c === '答案') ansCol = idx;
+          if (c === '解析') anaCol = idx;
+        });
+      }
+      
+      const type = hasTypeCol ? (row[typeCol] || '') : '';
+      const stem = hasTypeCol ? (row[stemCol] || '') : (row[typeCol] || '');
+      if (!stem) continue;
+
+      let optionsStr = [];
+      const optStart = hasTypeCol ? 4 : 3; 
+      
+      for (let j = optStart; j <= optStart + 5 && j < row.length; j++) {
+        const val = row[j];
+        if (val && val !== '-' && val !== '--' && val !== '无') {
+          optionsStr.push(val); 
+        }
+      }
+
+      records.push({
+        type: type,
+        stem: stem,
+        options: optionsStr.join(';'),
+        answer: row[ansCol] || '',
+        analysis: row[anaCol] || ''
+      });
+    }
+    return records;
+  },
+
+  parseItem: (raw) => {
+    try {
+      const t = (raw.type || '').toLowerCase();
+      const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      let options = [], answer = [], qType = 'single';
+
+      const extractLetters = (ansStr) => {
+        let ans = String(ansStr || '').toUpperCase().trim().replace(/[^A-Z]/g, ' ');
+        let matches = [...new Set(ans.split(/\s+/).filter(Boolean))];
+        return matches.filter(a => LETTERS.includes(a) && options.find(o => o.k === a));
+      };
+
+      const hasOpts = String(raw.options || '').trim().length > 0;
+      
+      if (hasOpts) {
+        let rawOpts = String(raw.options || '').split(/[;；|]/).filter(Boolean);
+        options = rawOpts.map((txt, i) => ({ k: LETTERS[i], t: txt.trim() })); 
+        
+        let matches = extractLetters(raw.answer);
+        
+        const isJudge = t.includes('判') || (raw.answer.trim() === '正确' || raw.answer.trim() === '错误' || raw.answer.trim() === '对' || raw.answer.trim() === '错' || raw.answer.trim() === '√' || raw.answer.trim() === '×' || raw.answer.trim() === 'Y' || raw.answer.trim() === 'N');
+        
+        if (isJudge) {
+          options = [{k:'A',t:'正确'},{k:'B',t:'错误'}];
+          let a = String(raw.answer || '').trim().replace(/[.,，。;；:：\s]+$/g, '').toUpperCase();
+          if (['正确','对','√','✔','Y','YES','1','是','A','TRUE'].includes(a)) matches = ['A'];
+          else if (['错误','错','×','✗','N','NO','0','否','B','FALSE'].includes(a)) matches = ['B'];
+          qType = 'judge';
+        } else {
+          if (matches.length > 1) qType = 'multiple';
+          else qType = 'single';
+        }
+
+        if (!matches.length) return { error: `答案 "${raw.answer}" 无法识别` };
+        const indexAns = matches.map(m => m.charCodeAt(0) - 65);
+        
+        return { id: Date.now() + Math.random()*10000, type: qType, question: raw.stem, options: options.map(o=>o.t), answer: indexAns, analysis: raw.analysis || '' };
+      }
+
+      let rawAns = String(raw.answer || '').trim();
+      if (!rawAns) return { error: '答案为空' };
+      
+      const parts = rawAns.split(/[;；、\n]/).map(a => a.trim()).filter(Boolean);
+      if (t.includes('填')) qType = 'fill';
+      else if (t.includes('论')) qType = 'essay';
+      else qType = parts.length > 1 ? 'fill' : 'short';
+
+      return { id: Date.now() + Math.random()*10000, type: qType, question: raw.stem, options: [], answer: parts, analysis: raw.analysis || '' };
+    } catch(e) { return { error: '解析异常' }; }
+  }
 };
 
-window.onFileChange = function(file){
-  if(!file) return;
-  document.getElementById('fileNameDisplay').textContent = '✅ 已选：'+file.name;
-  var _ln = document.getElementById('libName');
-  if(!_ln.value.trim()){ _ln.value = file.name.replace(/\.[^/.]+$/, ''); }
-  var reader = new FileReader();
-  reader.onload = function(e){
-    try{
-      var wb = XLSX.read(e.target.result,{type:'array'});
-      var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,blankrows:false,defval:''});
-      appState.tempRaw = parseGrid(rows);
-      showToast('成功读取 '+appState.tempRaw.length+' 条，请点击「解析并校验」');
-    }catch(err){ showToast('文件读取失败'); }
+function showToast(msg) {
+  const d = document.getElementById('toast');
+  d.textContent = msg;
+  d.style.display = 'block';
+  d.style.borderLeft = `4px solid ${msg.includes('失败') || msg.includes('请先') ? '#f56c6c' : '#67c23a'}`;
+  clearTimeout(d._h);
+  d._h = setTimeout(() => d.style.display = 'none', 3000);
+}
+
+function escapeHtml(str) { return String(str).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":"&#39;",'"':'&quot;'}[c])); }
+
+window.switchMode = function(mode) {
+  appState.mode = mode;
+  const btnFile = document.getElementById('btnModeFile');
+  const btnText = document.getElementById('btnModeText');
+  
+  if (mode === 'file') {
+    btnFile.className = 'active';
+    btnText.className = '';
+    document.getElementById('paneFile').style.display = 'block';
+    document.getElementById('paneText').style.display = 'none';
+  } else {
+    btnText.className = 'active';
+    btnFile.className = '';
+    document.getElementById('paneText').style.display = 'block';
+    document.getElementById('paneFile').style.display = 'none';
+  }
+};
+
+window.onFileChange = function(file) {
+  if (!file) return;
+  document.getElementById('fileNameDisplay').textContent = `✅ 已选：${file.name}`;
+  
+  // 🎯 导入文件自动填写题库名字
+  const libNameInput = document.getElementById('libName');
+  if (libNameInput.value === '') {
+    libNameInput.value = file.name.replace(/\.[^/.]+$/, '');
+  }
+  
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const wb = XLSX.read(e.target.result, {type:'array'});
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, blankrows:false, defval:''});
+      appState.tempRawRecords = CoreParser.parseGrid(rows);
+      showToast(`成功读取 ${appState.tempRawRecords.length} 条数据，请点击解析`);
+    } catch(err) { showToast('文件读取失败'); }
   };
   reader.readAsArrayBuffer(file);
 };
 
-// ===== 把二维表解析成「主程序题目对象」列表 =====
-function parseGrid(grid){
-  if(!grid || !grid.length) return [];
-  var cc = function(c){ return String(c==null?'':c).trim(); };
-
-  // 1. 定位表头行
-  var headIdx = -1;
-  for(var i=0;i<Math.min(6,grid.length);i++){
-    var s = grid[i].map(cc).join('').toLowerCase();
-    if(s.indexOf('题目')>-1 || s.indexOf('题干')>-1 || s.indexOf('选项')>-1 || s.indexOf('题型')>-1){ headIdx=i; break; }
+window.startParse = function() {
+  appState.finalParsedData = [];
+  appState.failErrors = [];
+  let data = [];
+  
+  if (appState.mode === 'file') {
+    if (!appState.tempRawRecords.length) return showToast('请先选择文件');
+    data = appState.tempRawRecords;
+  } else {
+    const text = document.getElementById('textArea').value.trim();
+    if (!text) return showToast('请先粘贴数据');
+    data = CoreParser.parseGrid(text.split(/\r?\n/).map(l => l.split('\t')));
   }
 
-  // 2. 列定位：优先表头关键字，缺省用默认列序
-  var cols = { type:-1, stem:-1, ans:-1, ana:-1, code:-1, opt:[] };
-  if(headIdx>-1){
-    grid[headIdx].map(cc).forEach(function(cell,idx){
-      var c = cell.toLowerCase();
-      if(cols.type<0 && c.indexOf('题型')>-1) cols.type=idx;
-      if(cols.stem<0 && (c.indexOf('题目')>-1 || c.indexOf('题干')>-1 || c==='内容')) cols.stem=idx;
-      if(cols.ans<0 && (c.indexOf('答案')>-1 || c==='answer')) cols.ans=idx;
-      if(cols.ana<0 && (c.indexOf('解析')>-1 || c.indexOf('answer analysis')>-1 || c==='analysis')) cols.ana=idx;
-      if(cols.code<0 && (c.indexOf('编码')>-1 || c.indexOf('编号')>-1 || c.indexOf('id')>-1)) cols.code=idx;
-      var m = c.match(/选项\s*([a-h])/);
-      if(m) cols.opt.push(idx);
-      else if(/^[a-h][\.、．]/.test(cell)) cols.opt.push(idx);
-    });
-  }
-  // 兜底默认列：仅在「完全没识别到表头」时才整列兜底（默认列序：序号0 编码1 题型2 题目3 选项A4-9 答案10 解析11）。
-  // 若已靠表头识别到题目/选项列却没找到题型列 -> 说明本表无题型列，保持 type=-1，强制走「选项+答案」自动推断。
-  var headerLocated = headIdx>-1 && (cols.stem>-1 || cols.opt.length>0);
-  if(!headerLocated){
-    if(cols.type<0) cols.type=2;
-    if(cols.stem<0) cols.stem=3;
-    if(cols.ans<0) cols.ans=10;
-    if(cols.ana<0) cols.ana=11;
-    if(cols.code<0) cols.code=1;
-    if(!cols.opt.length){ for(var k=4;k<=9;k++) cols.opt.push(k); }
-  }
-  // 选项列按出现顺序去重排序
-  cols.opt = cols.opt.filter(function(v,i,a){return a.indexOf(v)===i;}).sort(function(a,b){return a-b;});
-
-  var startRow = headIdx>-1 ? headIdx+1 : 0;
-  var out = [];
-  for(var r=startRow;r<grid.length;r++){
-    var row = grid[r].map(cc);
-    if(!row.some(function(x){return x;})) continue;
-    var code = cols.code>-1 ? (row[cols.code]||'') : '';
-    var typeText = row[cols.type]||'';
-    var stem = row[cols.stem]||'';
-    if(!stem) continue;
-    var ansRaw = (cols.ans>-1 ? row[cols.ans] : '')||'';
-    var ana = (cols.ana>-1 ? row[cols.ana] : '')||'';
-    var optTexts = [];
-    for(var j=0;j<cols.opt.length;j++){ var v=row[cols.opt[j]]||''; if(v && v!=='-' && v!=='--' && v!=='无') optTexts.push(v); }
-    var id = code ? String(code) : ('q_'+r+'_'+stem.substring(0,6));
-    out.push(buildQuestion(id, typeText, stem, optTexts, ansRaw, ana));
-  }
-  return out;
-}
-
-// ===== 规范化题型 =====
-function normType(t){
-  var s=(t||'').toLowerCase();
-  if(s.indexOf('单')>-1) return 'single';
-  if(s.indexOf('多')>-1) return 'multiple';
-  if(s.indexOf('判')>-1) return 'judge';
-  if(s.indexOf('填')>-1) return 'fill';
-  if(s.indexOf('简')>-1) return 'short';
-  if(s.indexOf('论')>-1) return 'essay';
-  return '';
-}
-
-var TRUE_SET = ['正确','对','√','✔','✓','y','yes','1','是','true','t','a','√'];
-var FALSE_SET = ['错误','错','×','✗','✘','n','no','0','否','false','f','b','x'];
-
-function buildQuestion(id, typeText, stem, optTexts, ansRaw, ana){
-  var type = normType(typeText);
-  var hasOpts = optTexts && optTexts.length>0;
-
-  // 题型缺失 -> 推断
-  if(!type){
-    var a = String(ansRaw||'').trim().toLowerCase();
-    var optAllJudge = hasOpts && optTexts.length<=2 && optTexts.every(function(o){return TRUE_SET.indexOf(o.toLowerCase())>-1||FALSE_SET.indexOf(o.toLowerCase())>-1;});
-    if(optAllJudge || (!hasOpts && (TRUE_SET.indexOf(a)>-1||FALSE_SET.indexOf(a)>-1))) type='judge';
-    else if(hasOpts) type='single';            // 有选项默认单选，下面按答案字母数升级多选
-    else type = 'short';                        // 无选项 -> 主观题，默认简答
-  }
-
-  var q = { id:id, type:type, question:stem, options:[], answer:[], analysis:ana||'' };
-
-  if(type==='single' || type==='multiple'){
-    q.options = optTexts.slice();
-    if(q.options.length<2){ return {__err:'选项不足2个：'+stem.substring(0,10)}; }
-    var idx = lettersToIndex(ansRaw, q.options.length);
-    if(!idx.length) return {__err:'答案"'+ansRaw+'"无法识别：'+stem.substring(0,10)};
-    if(idx.length>1) q.type='multiple';
-    q.answer = idx;
-  }
-  else if(type==='judge'){
-    q.options = ['正确','错误'];
-    var v = String(ansRaw||'').trim().toLowerCase().replace(/[.,，。;；:：\s]+$/g,'');
-    if(TRUE_SET.indexOf(v)>-1) q.answer=[0];
-    else if(FALSE_SET.indexOf(v)>-1) q.answer=[1];
-    else return {__err:'判断题答案"'+ansRaw+'"无法识别：'+stem.substring(0,10)};
-  }
-  else { // fill / short / essay 主观题
-    var raw = String(ansRaw||'').trim();
-    if(!raw) return {__err:'主观题答案为空白：'+stem.substring(0,10)};
-    if(type==='fill'){
-      var parts = raw.split(/[；;、\n]/).map(function(x){return x.trim();}).filter(Boolean);
-      q.answer = parts.length?parts:[raw];
-    } else {
-      q.answer = raw;   // 字符串，主程序展示用
-    }
-  }
-  return q;
-}
-
-// 字母答案 -> 索引数组：支持 ABCD / A,B / A#B / A+B / A-B / A.B / A B / A、B
-function lettersToIndex(ansRaw, optCount){
-  var s = String(ansRaw||'').toUpperCase();
-  var matches = s.match(/[A-Z]/g);
-  if(!matches) return [];
-  var seen = {}; var idx=[];
-  for(var i=0;i<matches.length;i++){
-    var pos = matches[i].charCodeAt(0)-65;
-    if(pos>=0 && pos<optCount && !seen[pos]){ seen[pos]=1; idx.push(pos); }
-  }
-  return idx;
-}
-
-window.startParse = function(){
-  appState.finalParsed = []; appState.failErrors = [];
-  var data = [];
-  if(appState.mode==='file'){
-    if(!appState.tempRaw.length) return showToast('请先选择文件');
-    data = appState.tempRaw;
-  }else{
-    var text = document.getElementById('textArea').value;
-    if(!text.trim()) return showToast('请先粘贴数据');
-    var grid = text.split(/\r?\n/).map(function(l){return l.split('\t');});
-    data = parseGrid(grid);
-  }
-  data.forEach(function(q,i){
-    if(q && q.__err) appState.failErrors.push({line:'第'+(i+1)+'条', msg:q.__err});
-    else if(q) appState.finalParsed.push(q);
+  data.forEach((raw, i) => {
+    const res = CoreParser.parseItem(raw);
+    if (res && !res.error) appState.finalParsedData.push(res);
+    else appState.failErrors.push({line: `第${i+1}行`, msg: res?.error || '未知错误'});
   });
 
-  document.getElementById('resultBox').style.display='block';
-  document.getElementById('sucCount').textContent='成功 '+appState.finalParsed.length+' 条';
-  document.getElementById('failCount').textContent='失败 '+appState.failErrors.length+' 条';
-  var fl = document.getElementById('failList');
-  if(appState.failErrors.length){ fl.style.display='block'; fl.innerHTML = appState.failErrors.map(function(e){return e.line+'：'+e.msg;}).join('<br>'); }
-  else fl.style.display='none';
+  document.getElementById('resultBox').style.display = 'block';
+  document.getElementById('sucCount').textContent = `成功 ${appState.finalParsedData.length} 条`;
+  document.getElementById('failCount').textContent = `失败 ${appState.failErrors.length} 条`;
+  document.getElementById('failList').style.display = appState.failErrors.length ? 'block' : 'none';
+  document.getElementById('failList').innerHTML = appState.failErrors.map(e => `${e.line}：${e.msg}`).join('<br>');
 
-  var demo = document.getElementById('successDemo');
-  if(appState.finalParsed.length){
-    var names={single:'单选题',multiple:'多选题',judge:'判断题',fill:'填空题',short:'简答题',essay:'论述题'};
-    var html='<div style="font-size:12px;color:var(--sub);margin-top:14px">解析示例（前3条）：</div>';
-    appState.finalParsed.slice(0,3).forEach(function(q){
-      var ansShow = (q.type==='fill'||q.type==='short'||q.type==='essay')
-        ? (Array.isArray(q.answer)?q.answer.join('；'):q.answer)
-        : q.answer.map(function(i){return String.fromCharCode(65+i);}).join('、');
-      var optsHtml = (q.type==='fill'||q.type==='short'||q.type==='essay') ? '' :
-        '<ul class="opts">'+q.options.map(function(o,i){
-          var isAns = q.answer.indexOf(i)>-1;
-          return '<li class="'+(isAns?'correct':'')+'">'+String.fromCharCode(65+i)+'. '+escapeHtml(o)+'</li>';
-        }).join('')+'</ul>';
-      html += '<div class="demo-card"><span class="tag">'+names[q.type]+'</span>'+
-        '<div class="stem">'+escapeHtml(q.question)+'</div>'+optsHtml+
-        '<div class="ans-line">答案：'+escapeHtml(ansShow)+'</div></div>';
+  const demoDiv = document.getElementById('successDemo');
+  if (appState.finalParsedData.length) {
+    let html = '<div style="font-size:12px;color:#999;margin-bottom:8px;margin-top:16px">解析示例：</div>';
+    appState.finalParsedData.slice(0, 3).forEach(q => {
+      const tags = {single:'s',multiple:'m',judge:'j',fill:'f',short:'w',essay:'w'};
+      const names = {single:'单选题',multiple:'多选题',judge:'判断题',fill:'填空题',short:'简答题',essay:'论述题'};
+      html += `<div class="demo-card">
+        <span class="tag ${tags[q.type]}">${names[q.type]}</span>
+        <div class="stem">${escapeHtml(q.question)}</div>
+        ${q.options.length > 0 ? `<ul class="opts">${q.options.map((o, idx) => `<li class="${q.answer.includes(idx)?'correct':''}">${escapeHtml(o)}</li>`).join('')}</ul>` : ''}
+        ${q.type !== 'single' && q.type !== 'multiple' && q.type !== 'judge' ? `<div style="margin-top:8px;font-size:13px;color:#606266">参考答案：${q.answer.join('、')}</div>` : ''}
+      </div>`;
     });
-    demo.innerHTML = html;
-  } else demo.innerHTML='';
+    demoDiv.innerHTML = html;
+  }
 };
 
-window.confirmImport = function(){
-  if(!appState.finalParsed.length){ showToast('请先解析题库'); return; }
-  var name = document.getElementById('libName').value.trim() || ('题库'+new Date().getTime());
-  var bank = { id:'bank_'+new Date().getTime(), name:name, questions:appState.finalParsed };
-  localStorage.setItem('xjt_new_import', JSON.stringify(bank));
-  showToast('✅ 已导入 '+appState.finalParsed.length+' 题，正在进入刷题...');
-  setTimeout(function(){ window.location.href = 'index.html'; }, 600);
+window.confirmImport = function() {
+  const name = document.getElementById('libName').value.trim() || '未命名题库';
+  if (!appState.finalParsedData.length) return showToast('请先解析数据');
+  
+  localStorage.setItem('xjt_new_import', JSON.stringify({ id: Date.now(), name: name, questions: appState.finalParsedData }));
+  showToast(`✅ 成功导入 ${appState.finalParsedData.length} 题，正在跳转...`);
+  
+  setTimeout(() => {
+    window.location.href = 'index.html';
+  }, 800);
 };
+
+window.onload = function() {
+  switchMode(appState.mode);
+}
 </script>
 </body>
 </html>
