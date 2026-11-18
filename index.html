@@ -1,188 +1,256 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>铁途学练</title>
-<meta name="apple-mobile-web-app-title" content="铁途学练">
 <link rel="icon" href="logo.png">
-
-<!-- 🔒 防盗锁 -->
-<script>
-  (function() {
-    var allowedDomains = ["jjqgd.github.io", "localhost", "127.0.0.1"];
-    var host = window.location.hostname;
-    var isAllowed = false;
-    for (var i = 0; i < allowedDomains.length; i++) {
-      if (host === allowedDomains[i] || host.endsWith("." + allowedDomains[i])) { isAllowed = true; break; }
-    }
-    if (!isAllowed) {
-      document.documentElement.innerHTML = '<div style="text-align:center; margin-top:50px; font-size:20px; color:red; font-weight:bold;">🛑 未经授权，禁止盗用本系统！</div>';
-      throw new Error("Unauthorized Domain");
-    }
-  })();
-</script>
-
-<script src="https://cdn.staticfile.org/xlsx/0.18.5/xlsx.full.min.js"></script>
-
+<script src="xlsx.full.min.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Zhi+Mang+Xing&display=swap');
+  @font-face { font-family: 'MaoTi'; src: url('font.ttf') format('truetype'); font-weight: bold; font-style: normal; font-display: swap; }
+  :root { --bg-color: #f0f4f8; --card-bg: #ffffff; --text-main: #1e293b; --text-sub: #64748b; --border-color: #e2e8f0; --input-bg: #f8fafc; }
+  body.dark-mode { --bg-color: #0f172a; --card-bg: #1e293b; --text-main: #f1f5f9; --text-sub: #94a3b8; --border-color: #334155; --input-bg: #0f172a; }
   * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, "Microsoft YaHei", sans-serif; }
-  body { background-color: #f0f4f8; color: #1e293b; padding: 10px; -webkit-tap-highlight-color: transparent; }
+  body { background-color: var(--bg-color); color: var(--text-main); padding: 10px; -webkit-tap-highlight-color: transparent; transition: background-color 0.3s, color 0.3s; }
 
   /* 开屏动画 */
   #splash-screen { position: fixed; top:0; left:0; right:0; bottom:0; background: #fcf9f2; z-index: 9999; display: flex; align-items: center; justify-content: center; transition: opacity 0.8s; }
   #splash-screen.hidden { opacity: 0; pointer-events: none; }
-  
-  .splash-container { position: relative; width: 200px; height: 300px; display: flex; align-items: center; justify-content: center; }
-  
-  .calligraphy-group { display: flex; gap: 40px; position: absolute; transition: opacity 0.8s ease; }
+  .splash-container { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+  .calligraphy-group { display: flex; gap: 40px; position: absolute; transition: opacity 0.8s ease; align-items: center; justify-content: center; }
   .calligraphy-group.fade-out { opacity: 0; pointer-events: none; }
-  
-  .calligraphy-col { font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive; font-size: 3.5rem; font-weight: bold; writing-mode: vertical-rl; color: #b71c1c; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); opacity: 0; transform: scale(1.1); animation: inkReveal 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-  .col-1 { margin-top: 60px; }
-  .col-2 { margin-bottom: 60px; animation-delay: 0.5s; }
-  
-  .holiday-group { display: none; gap: 40px; position: absolute; opacity: 0; }
-  .holiday-group.show { display: flex; opacity: 1; }
-  .holiday-col { font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive; font-size: 3.5rem; font-weight: bold; writing-mode: vertical-rl; color: #b71c1c; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); transform: scale(1.1); animation: inkReveal 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-  .holiday-col.h-col-1 { margin-top: 60px; }
-  .holiday-col.h-col-2 { margin-bottom: 60px; animation-delay: 0.5s; }
-
+  .calligraphy-col { font-family: 'MaoTi', 'STXingkai', 'KaiTi', cursive; font-size: 3.5rem; font-weight: bold; writing-mode: vertical-rl; color: #b71c1c; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); opacity: 0; transform: scale(1.1); animation: inkReveal 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+  .col-1 { margin-top: 60px; } .col-2 { margin-bottom: 60px; animation-delay: 0.5s; }
+  .second-splash { display: none; position: absolute; opacity: 0; width: 100%; height: 100%; }
+  .second-splash.show { display: block; opacity: 1; }
+  .main-text-group { display: flex; align-items: flex-start; justify-content: center; gap: 15px; position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); }
+  .second-col { font-family: 'MaoTi', 'STXingkai', 'KaiTi', cursive; font-weight: bold; writing-mode: vertical-rl; color: #b71c1c; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); animation: inkReveal 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; }
+  .second-col.s-col-1 { font-size: 3.2rem; margin-top: 30px; }
+  .second-col.s-col-2 { font-size: 3.6rem; animation-delay: 0.5s; }
+  .signature { font-family: 'MaoTi', 'STXingkai', cursive; font-size: 1.2rem; color: #b71c1c; writing-mode: vertical-rl; opacity: 0; animation: inkReveal 1.5s 1s forwards; margin-top: 150px; margin-left: 5px; }
   @keyframes inkReveal { 0% { opacity: 0; filter: blur(10px); transform: scale(1.1); } 100% { opacity: 1; filter: blur(0); transform: scale(1); } }
 
-  .nav { background: #fff; padding: 10px 15px; border-bottom: 2px solid #b71c1c; display: flex; justify-content: space-between; align-items: center; border-radius: 10px; margin-bottom: 10px; }
+  /* 基础样式 */
+  .nav { background: var(--card-bg); padding: 10px 15px; border-bottom: 2px solid #b71c1c; display: flex; justify-content: space-between; align-items: center; border-radius: 10px; margin-bottom: 10px; }
   .nav-logo { font-size: 1.2rem; font-weight: bold; color: #b71c1c; display: flex; align-items: center; gap: 8px; }
   .nav-logo img { width: 30px; height: 30px; object-fit: contain; }
-  .nav-right { font-size: 0.8rem; color: #64748b; }
+  .nav-right { font-size: 0.8rem; color: var(--text-sub); cursor: pointer; display: flex; align-items: center; gap: 5px; }
 
-  .card { background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); position: relative; overflow: visible; }
+  .card { background: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); position: relative; overflow: visible; }
   .title { font-size: 1.1rem; font-weight: bold; margin-bottom: 12px; border-left: 4px solid #b71c1c; padding-left: 8px; }
   .banner { background: #e0f2fe; color: #0369a1; padding: 12px; border-radius: 8px; font-size: 0.8rem; margin-bottom: 15px; line-height: 1.5; }
 
-  .bank-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; }
-  .bank-item.active { border-color: #0d47a1; background: #eff6ff; }
+  .bank-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 10px; }
+  .bank-item.active { border-color: #0d47a1; background: rgba(13,71,161,0.1); }
   .bank-title { font-weight: bold; font-size: 0.95rem; }
-  .bank-meta { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
+  .bank-meta { font-size: 0.75rem; color: var(--text-sub); margin-top: 4px; }
 
   .stats { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
-  .stat-item { flex: 1; min-width: 60px; background: #f8fafc; padding: 10px; border-radius: 8px; text-align: center; }
+  .stat-item { flex: 1; min-width: 60px; background: var(--input-bg); padding: 10px; border-radius: 8px; text-align: center; }
   .stat-num { font-size: 1.2rem; font-weight: bold; color: #0d47a1; }
-  .stat-label { font-size: 0.75rem; color: #64748b; }
+  .stat-label { font-size: 0.75rem; color: var(--text-sub); }
+
+  /* 圆饼图 */
+  .pie-chart-container { display: flex; align-items: center; justify-content: space-between; background: var(--input-bg); padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+  .pie-chart { width: 70px; height: 70px; border-radius: 50%; background: conic-gradient(#10b981 0%, #10b981 var(--percentage), var(--border-color) var(--percentage), var(--border-color) 100%); display: flex; align-items: center; justify-content: center; position: relative; }
+  .pie-chart::after { content: ''; position: absolute; width: 50px; height: 50px; background: var(--card-bg); border-radius: 50%; }
+  .pie-chart-text { position: absolute; z-index: 1; font-weight: bold; color: var(--text-main); font-size: 1rem; }
+  .pie-info { flex: 1; padding-left: 20px; text-align: left; }
+  .pie-info div { font-size: 0.85rem; color: var(--text-sub); margin-bottom: 5px; }
+  .pie-info span { font-size: 1.1rem; font-weight: bold; color: #0d47a1; }
 
   .menu { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
-  .menu-btn { flex: 1; min-width: 45%; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px; text-align: center; font-weight: bold; font-size: 0.95rem; cursor: pointer; }
-  .menu-btn:active { background: #f1f5f9; }
-  .sub-menu { display: flex; gap: 8px; margin-bottom: 8px; }
-  .sub-menu .btn { flex: 1; padding: 8px 0; font-size: 0.85rem; border-radius: 6px; }
+  .menu-btn { flex: 1; min-width: 30%; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 2px; text-align: center; font-weight: bold; font-size: 0.82rem; cursor: pointer; color: var(--text-main); white-space: nowrap; display: flex; align-items: center; justify-content: center; line-height: 1.2; }
+  .menu-btn:active { background: var(--input-bg); }
+  .sub-menu { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .sub-menu .btn { flex: 1; min-width: 18%; padding: 8px 0; font-size: 0.85rem; border-radius: 6px; }
 
-  .btn { border: none; border-radius: 8px; padding: 12px 15px; font-size: 0.95rem; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+  .btn { border: none; border-radius: 8px; padding: 12px 15px; font-size: 0.95rem; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; white-space: nowrap; }
   .btn:active { opacity: 0.8; }
   .btn-primary { background: #0d47a1; color: #fff; }
   .btn-danger { background: #b71c1c; color: #fff; }
-  .btn-outline { background: #fff; border: 1px solid #cbd5e1; color: #1e293b; }
+  .btn-outline { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); }
   .btn-block { width: 100%; margin-top: 10px; }
   .btn-green { background: #10b981; color: #fff; }
+  .btn-small { padding: 6px 10px; font-size: 0.8rem; }
 
-  .toolbar { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 10px 15px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .toolbar { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 10px 15px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
   .timer { font-family: monospace; font-size: 1.1rem; font-weight: bold; color: #ef4444; }
-  .q-progress { font-size: 0.85rem; color: #64748b; font-weight: bold; }
+  .q-progress { font-size: 0.85rem; color: var(--text-sub); font-weight: bold; }
 
   .sheet-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.6); z-index: 999; display: flex; align-items: flex-end; transition: opacity 0.2s; }
-  .sheet-content { background: #f8fafc; width: 100%; max-height: 75vh; border-radius: 20px 20px 0 0; padding: 20px; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s; }
+  .sheet-content { background: var(--bg-color); width: 100%; max-height: 75vh; border-radius: 20px 20px 0 0; padding: 20px; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s; }
   .sheet-mask.show .sheet-content { transform: translateY(0); }
   .sheet-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
   
-  .acc-group { margin-bottom: 12px; background: #fff; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
-  .acc-header { padding: 12px 15px; background: #f1f5f9; font-weight: bold; font-size: 0.95rem; color: #0d47a1; display: flex; justify-content: space-between; cursor: pointer; }
-  .acc-header span { font-size: 0.8rem; color: #64748b; font-weight: normal; }
-  .acc-body { padding: 15px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; border-top: 1px solid #e2e8f0; }
+  .acc-group { margin-bottom: 12px; background: var(--card-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); }
+  .acc-header { padding: 12px 15px; background: var(--input-bg); font-weight: bold; font-size: 0.95rem; color: #0d47a1; display: flex; justify-content: space-between; cursor: pointer; }
+  .acc-header span { font-size: 0.8rem; color: var(--text-sub); font-weight: normal; }
+  .acc-body { padding: 15px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; border-top: 1px solid var(--border-color); }
   .acc-body.hidden { display: none; }
-  .num-btn { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: #f8fafc; border-radius: 6px; font-weight: bold; color: #1e293b; border: 1px solid #cbd5e1; cursor: pointer; }
+  .num-btn { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: var(--input-bg); border-radius: 6px; font-weight: bold; color: var(--text-main); border: 1px solid var(--border-color); cursor: pointer; }
   .num-btn.done { background: #0d47a1; color: #fff; border-color: #0d47a1; }
   .num-btn.wrong { background: #ef4444; color: #fff; border-color: #ef4444; }
 
   .tag { display: inline-block; padding: 2px 8px; background: #0d47a1; color: #fff; border-radius: 4px; font-size: 0.75rem; font-weight: bold; margin-bottom: 10px; }
   .q-text { font-size: 1.05rem; font-weight: bold; line-height: 1.5; margin-bottom: 15px; position: relative; padding-right: 65px; }
-  .opt { border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; gap: 10px; font-size: 0.95rem; cursor: pointer; transition: all 0.15s; position: relative; }
-  .opt:hover:not(.disabled) { border-color: #94a3b8; background: #f8fafc; }
-  .opt.selected { border-color: #0d47a1; background: #eff6ff; }
-  .opt.correct { border-color: #10b981; background: #ecfdf5; }
-  .opt.wrong { border-color: #ef4444; background: #fef2f2; }
+  
+  /* 主观题答案区 */
+  .subjective-answer { background: var(--input-bg); border: 2px solid #10b981; border-radius: 10px; padding: 12px; margin-bottom: 15px; }
+  .subjective-answer .sa-title { font-weight: bold; color: #10b981; margin-bottom: 8px; font-size: 0.9rem; }
+  .subjective-answer .sa-content { line-height: 1.6; font-size: 0.95rem; white-space: pre-wrap; color: var(--text-main); }
+
+  .opt { border: 2px solid var(--border-color); border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; gap: 10px; font-size: 0.95rem; cursor: pointer; transition: all 0.15s; position: relative; background: var(--card-bg); }
+  .opt:hover:not(.disabled) { border-color: #94a3b8; }
+  .opt.selected { border-color: #0d47a1; background: rgba(13,71,161,0.1); }
+  .opt.correct { border-color: #10b981; background: rgba(16,185,129,0.1); }
+  .opt.wrong { border-color: #ef4444; background: rgba(239,68,68,0.1); }
   .opt.disabled { cursor: not-allowed; }
-  .opt-prefix { width: 22px; height: 22px; border-radius: 50%; background: #f1f5f9; border: 1px solid #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; flex-shrink: 0; color: #64748b; }
+  .opt-prefix { width: 22px; height: 22px; border-radius: 50%; background: var(--input-bg); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; flex-shrink: 0; color: var(--text-sub); }
   .opt.selected .opt-prefix { background: #0d47a1; color: #fff; border-color: #0d47a1; }
   .opt.correct .opt-prefix { background: #10b981; color: #fff; border-color: #10b981; }
   .opt.wrong .opt-prefix { background: #ef4444; color: #fff; border-color: #ef4444; }
 
-  .analysis { padding: 12px; background: #f8fafc; border-radius: 8px; margin-top: 15px; font-size: 0.85rem; border-left: 4px solid #0d47a1; line-height: 1.5; color: #475569; display: none; }
+  .analysis { padding: 12px; background: var(--input-bg); border-radius: 8px; margin-top: 15px; font-size: 0.85rem; border-left: 4px solid #0d47a1; line-height: 1.5; color: var(--text-sub); display: none; }
   .analysis.show { display: block; }
-  .analysis.error { border-left-color: #ef4444; background: #fef2f2; }
-  .analysis.success { border-left-color: #10b981; background: #ecfdf5; }
+  .analysis.error { border-left-color: #ef4444; }
+  .analysis.success { border-left-color: #10b981; }
 
-  .exam-review-box { margin-top: 15px; padding: 12px; border-radius: 8px; font-size: 0.85rem; line-height: 1.5; }
-  .exam-review-box.err { border-left: 4px solid #ef4444; background: #fef2f2; }
-  .exam-review-box.ok { border-left: 4px solid #10b981; background: #ecfdf5; }
+  .exam-review-box { margin-top: 15px; padding: 12px; border-radius: 8px; font-size: 0.85rem; line-height: 1.5; background: var(--input-bg); }
+  .exam-review-box.err { border-left: 4px solid #ef4444; }
+  .exam-review-box.ok { border-left: 4px solid #10b981; }
 
+  /* 单选组样式 */
+  .radio-group { display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
+  .radio-item { flex: 1; min-width: 30%; padding: 8px; text-align: center; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.85rem; cursor: pointer; background: var(--card-bg); }
+  .radio-item.active { background: #0d47a1; color: #fff; border-color: #0d47a1; }
+
+  /* 毛体分数 */
   .score-box { text-align: center; padding: 30px 0; }
-  .score-num { font-family: "Georgia", serif; color: #d32f2f; font-size: 5rem; font-weight: bold; display: inline-block; border-bottom: 4px double #d32f2f; line-height: 1; margin-bottom: 15px; padding: 0 10px; }
+  .score-num { font-family: 'MaoTi', 'STXingkai', 'KaiTi', cursive; color: #d32f2f; font-size: 6rem; font-weight: bold; display: inline-block; border-bottom: 4px double #d32f2f; line-height: 1; margin-bottom: 15px; padding: 0 10px; }
   .bottom-actions { display: flex; gap: 10px; margin-top: 20px; }
   .bottom-actions .btn { flex: 1; }
   
-  .maoti-result { font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive; font-size: 2.2rem; color: #0d47a1; text-align: center; margin: 20px 0; line-height: 1.4; }
+  .maoti-result { font-family: 'MaoTi', 'STXingkai', 'KaiTi', cursive; font-size: 2.2rem; color: #0d47a1; text-align: center; margin: 20px 0; line-height: 1.4; }
   .maoti-result.full { color: #b71c1c; }
-  .maoti-fail { font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive; font-size: 2rem; color: #d32f2f; text-align: center; line-height: 1.5; }
+  .maoti-fail { font-family: 'MaoTi', 'STXingkai', 'KaiTi', cursive; font-size: 2rem; color: #d32f2f; text-align: center; line-height: 1.5; }
   
   .toast { position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 0.85rem; z-index: 9999; display: none; }
   
   .app-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-  .app-box { background: #fff; padding: 25px; border-radius: 16px; width: 80%; max-width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+  .app-box { background: var(--card-bg); padding: 25px; border-radius: 16px; width: 80%; max-width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
   .app-box h3 { font-size: 1.2rem; color: #b71c1c; margin-bottom: 10px; font-weight: bold; }
-  .app-box p { font-size: 0.95rem; color: #475569; margin-bottom: 20px; line-height: 1.5; }
+  .app-box p { font-size: 0.95rem; color: var(--text-sub); margin-bottom: 20px; line-height: 1.5; }
   .app-box .actions { display: flex; gap: 10px; }
   .app-box .btn { flex: 1; padding: 10px; font-size: 0.95rem; border-radius: 8px; }
   
-  .footer { text-align: center; color: #94a3b8; font-size: 0.8rem; margin-top: 20px; padding-bottom: 20px; }
+  .footer { text-align: center; color: var(--text-sub); font-size: 0.8rem; margin-top: 20px; padding-bottom: 20px; }
 
-  /* ====== 答题反馈：加粗红毛笔圈 + 毛体对错 ====== */
-  .feedback-badge {
-    position: absolute;
-    top: -30px;
-    right: -35px;
-    width: 90px;
-    height: 90px;
-    pointer-events: none;
-    z-index: 40;
-    opacity: 0;
-    transform: rotate(-10deg) scale(0);
-    animation: stampIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .feedback-badge::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 42 8 C 15 12, 2 35, 8 60 C 12 85, 35 96, 60 92 C 82 88, 94 70, 90 45 C 88 28, 78 15, 62 10 C 50 6, 40 12, 35 25' fill='none' stroke='%23d32f2f' stroke-width='7' stroke-linecap='round' stroke-linejoin='round' opacity='0.9' /%3E%3C/svg%3E");
-    background-size: contain;
-    background-repeat: no-repeat;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
-  }
-  .feedback-text {
-    font-family: 'Zhi Mang Xing', 'STXingkai', 'KaiTi', cursive;
-    font-size: 3rem;
-    font-weight: bold;
-    color: #d32f2f;
-    transform: rotate(-10deg);
-    margin-top: -6px; margin-left: -4px;
-  }
-  @keyframes stampIn {
-    0% { transform: rotate(-30deg) scale(0); opacity: 0; }
-    80% { transform: rotate(-8deg) scale(1.1); opacity: 1; }
-    100% { transform: rotate(-10deg) scale(1); opacity: 1; }
-  }
+  .search-tip { text-align: center; font-size: 0.75rem; color: #64748b; line-height: 1.5; margin: 2px 4px 14px; padding: 7px 10px; background: var(--input-bg); border: 1px dashed var(--border-color); border-radius: 8px; }
+  .search-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.6); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+  .search-box { background: var(--card-bg); border-radius: 12px; width: 90%; max-width: 400px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; }
+  .search-header { padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+  .search-header h3 { font-size: 1.1rem; color: #0d47a1; margin: 0; }
+  .search-input-group { padding: 15px; background: var(--input-bg); }
+  .search-input-group input { width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 1rem; outline: none; background: var(--card-bg); color: var(--text-main); }
+  .search-input-group input:focus { border-color: #0d47a1; }
+  .search-filters { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .search-filters button { flex: 1; min-width: 15%; padding: 6px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-main); cursor: pointer; }
+  .search-filters button.active { background: #0d47a1; color: #fff; border-color: #0d47a1; }
+  .search-results { flex: 1; overflow-y: auto; padding: 15px; }
+  .search-item { border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; margin-bottom: 10px; background: var(--card-bg); cursor: pointer; }
+  .search-item:active { background: var(--input-bg); }
+  .search-item .s-title { font-weight: bold; font-size: 0.95rem; color: var(--text-main); margin-bottom: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .search-item .s-type { font-size: 0.75rem; color: var(--text-sub); }
 
-  /* ====== 满分烟花 ====== */
+  .feedback-badge { position: absolute; top: -30px; right: -35px; width: 90px; height: 90px; pointer-events: none; z-index: 40; opacity: 0; transform: rotate(-10deg) scale(0); animation: stampIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; display: flex; align-items: center; justify-content: center; }
+  .feedback-badge::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 42 8 C 15 12, 2 35, 8 60 C 12 85, 35 96, 60 92 C 82 88, 94 70, 90 45 C 88 28, 78 15, 62 10 C 50 6, 40 12, 35 25' fill='none' stroke='%23d32f2f' stroke-width='7' stroke-linecap='round' stroke-linejoin='round' opacity='0.9' /%3E%3C/svg%3E"); background-size: contain; background-repeat: no-repeat; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+  .feedback-text { font-family: 'MaoTi', 'STXingkai', 'KaiTi', cursive; font-size: 3rem; font-weight: bold; color: #d32f2f; transform: rotate(-10deg); margin-top: -6px; margin-left: -4px; }
+  @keyframes stampIn { 0% { transform: rotate(-30deg) scale(0); opacity: 0; } 80% { transform: rotate(-8deg) scale(1.1); opacity: 1; } 100% { transform: rotate(-10deg) scale(1); opacity: 1; } }
+  
   #fireworks-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9998; }
+
+  /* ========== 新增：折叠面板 ========== */
+  .fold-panel { margin-bottom: 12px; background: var(--card-bg); border-radius: 8px; overflow: hidden; }
+  .fold-header {
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    background: var(--input-bg);
+  }
+  .fold-header .fold-icon {
+    transition: transform 0.25s;
+    font-size: 0.8rem;
+    color: var(--text-sub);
+  }
+  .fold-header.collapsed .fold-icon {
+    transform: rotate(-90deg);
+  }
+  .panel-content {
+    overflow: hidden;
+    max-height: 600px;
+    transition: max-height 0.32s cubic-bezier(0.4, 0, 0.2, 1), padding 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 10px 12px;
+  }
+  .panel-content.collapsed {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  .rename-btn {
+    padding: 3px 8px;
+    font-size: 0.75rem;
+    margin-right: 10px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    color: var(--text-main);
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .bank-fold-content {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .bank-fold-content .btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+
+  /* ========== 新增：字号调节 ========== */
+  .font-ctrl {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .font-ctrl button {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    font-size: 0.85rem;
+    line-height: 1;
+  }
+  .q-text, .opt, .analysis, .subjective-answer {
+    font-size: var(--q-font-size, 1rem);
+  }
+  .opt .opt-prefix {
+    font-size: calc(var(--q-font-size, 1rem) * 0.8);
+  }
+  .fav-star { float:right; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-sub); border-radius:6px; padding:3px 8px; font-size:0.75rem; cursor:pointer; white-space:nowrap; }
+  .fav-star.on { background:#fff7e6; color:#b45309; border-color:#fcd34d; }
+  .fav-star:active { opacity:0.8; }
+  body.dark-mode .fav-star.on { background:#3a2f0e; color:#fbbf24; border-color:#78350f; }
+  body.dark-mode .tip-warn { background:#3a3413 !important; color:#fde68a !important; }
+  body.dark-mode .tip-ok { background:#0f2f22 !important; color:#6ee7b7 !important; }
+  body.dark-mode .tip-danger { background:#2a1416 !important; color:#fca5a5 !important; border-color:#7f1d1d !important; }
+  body.dark-mode .stat-wrong { background:#2a1416 !important; }
+  body.dark-mode .banner { background:#0c2a3a !important; color:#7dd3fc !important; }
 </style>
 </head>
 <body>
@@ -193,9 +261,12 @@
       <div class="calligraphy-col col-1">铁道征途</div>
       <div class="calligraphy-col col-2">勤学练兵</div>
     </div>
-    <div class="holiday-group" id="group-holiday">
-      <div class="holiday-col h-col-1" id="holiday-text-1"></div>
-      <div class="holiday-col h-col-2" id="holiday-text-2"></div>
+    <div class="second-splash" id="group-second">
+      <div class="main-text-group">
+        <div class="second-col s-col-1" id="second-text-1"></div>
+        <div class="second-col s-col-2" id="second-text-2"></div>
+        <div class="signature" id="second-sign"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -204,355 +275,309 @@
   <div class="nav-logo">
     <img src="logo.png" onerror="this.style.display='none'"> 铁途学练
   </div>
-  <div class="nav-right">在线学习考核平台</div>
+  <div class="nav-right" onclick="toggleDarkMode()" id="themeToggle">🌙 夜间</div>
 </div>
 
 <div id="app"></div>
 <div id="toast" class="toast"></div>
 
 <script>
-// ================= 节假日识别及开屏动画 =================
-(function setHoliday() {
-  var d = new Date();
-  var m = d.getMonth() + 1;
-  var day = d.getDate();
-  var text = "";
-  
-  if (m === 1 && day === 1) text = "元旦快乐万象更新";
-  else if (m === 2 && day >= 10 && day <= 17) text = "新春大吉万事胜意";
-  else if (m === 3 && day === 8) text = "致敬巾帼节日快乐";
-  else if (m === 5 && day === 1) text = "劳动光荣节日快乐";
-  else if (m === 5 && day === 4) text = "青春不息奋斗不止";
-  else if (m === 6 && day === 1) text = "童心未泯快乐常在";
-  else if (m === 7 && day === 1) text = "红心向党砥砺前行";
-  else if (m === 8 && day === 1) text = "铁血军魂保家卫国";
-  else if (m === 9 && day === 10) text = "尊师重教桃李芬芳";
-  else if (m === 10 && day === 1) text = "盛世华诞举国同庆";
-  else if (m === 12 && day === 13) text = "铭记历史珍爱和平";
+// ================= 夜间模式（支持系统自动跟随） =================
+var manualThemeSet = false;
 
-  if (text) {
-    document.getElementById('holiday-text-1').innerText = text.substring(0, 4);
-    document.getElementById('holiday-text-2').innerText = text.substring(4, 8);
-    
-    setTimeout(function() {
-      document.getElementById('group-normal').classList.add('fade-out');
-      setTimeout(function() {
-        document.getElementById('group-holiday').classList.add('show');
-      }, 500);
-    }, 2200);
+function toggleDarkMode() {
+  manualThemeSet = true;
+  var isDark = document.body.classList.contains('dark-mode');
+  if (isDark) { 
+    document.body.classList.remove('dark-mode'); 
+    localStorage.setItem('xjt_dark_mode', 'false'); 
+    document.getElementById('themeToggle').innerHTML = '🌙 夜间'; 
+  } else { 
+    document.body.classList.add('dark-mode'); 
+    localStorage.setItem('xjt_dark_mode', 'true'); 
+    document.getElementById('themeToggle').innerHTML = '☀️ 白天'; 
   }
-})();
+}
 
-var hasHolidayText = document.getElementById('holiday-text-1').innerText !== "";
-var splashDelay = hasHolidayText ? 4500 : 2800;
+function initDarkMode() {
+  var savedMode = localStorage.getItem('xjt_dark_mode');
+  if (savedMode) {
+    manualThemeSet = true;
+    if (savedMode === 'true') {
+      document.body.classList.add('dark-mode');
+      document.getElementById('themeToggle').innerHTML = '☀️ 白天';
+    }
+  } else {
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.body.classList.add('dark-mode');
+      document.getElementById('themeToggle').innerHTML = '☀️ 白天';
+    }
+    if (window.matchMedia) {
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+        if (!manualThemeSet) {
+          if (e.matches) {
+            document.body.classList.add('dark-mode');
+            document.getElementById('themeToggle').innerHTML = '☀️ 白天';
+          } else {
+            document.body.classList.remove('dark-mode');
+            document.getElementById('themeToggle').innerHTML = '🌙 夜间';
+          }
+        }
+      });
+    }
+  }
+}
+initDarkMode();
+
+// ================= 全局设置：答案开关功能已下线，作答后始终显示答案 =================
+var autoShowAnswer = true;
+
+// ================= 已做题库存储（用于未做题优先组卷） =================
+function getDoneQuestions() {
+  try { return JSON.parse(localStorage.getItem('xjt_done_questions') || '[]'); }
+  catch(e) { return []; }
+}
+function addDoneQuestion(qid) {
+  var done = getDoneQuestions();
+  if (done.indexOf(qid) === -1) {
+    done.push(qid);
+    localStorage.setItem('xjt_done_questions', JSON.stringify(done));
+  }
+}
+
+// ================= 新增：折叠状态、字号全局变量 =================
+var foldState = JSON.parse(localStorage.getItem('xjt_fold_state') || '{}');
+var qFontSize = parseFloat(localStorage.getItem('xjt_font_size')) || 1.05;
+document.documentElement.style.setProperty('--q-font-size', qFontSize + 'rem');
+
+function toggleFold(key) {
+  foldState[key] = !foldState[key];
+  localStorage.setItem('xjt_fold_state', JSON.stringify(foldState));
+  var el = document.getElementById('fold_' + key);
+  var header = el.previousElementSibling;
+  if (foldState[key]) {
+    el.classList.add('collapsed');
+    header.classList.add('collapsed');
+  } else {
+    el.classList.remove('collapsed');
+    header.classList.remove('collapsed');
+  }
+}
+
+function renameBank(id) {
+  var oldName = allBanks[id].name;
+  var safeVal = String(oldName).replace(/"/g, '&quot;');
+  var mask = document.createElement('div'); mask.className = 'app-mask';
+  mask.innerHTML = `<div class="app-box">
+    <h3>重命名题库</h3>
+    <input type="text" id="renameInput" value="${safeVal}" maxlength="30"
+      style="width:100%;box-sizing:border-box;padding:12px;border:2px solid var(--border-color);border-radius:8px;font-size:1rem;outline:none;background:var(--input-bg);color:var(--text-main);text-align:center;margin-top:4px;">
+    <div class="actions" style="margin-top:20px;">
+      <button class="btn btn-outline" id="renameCancel">取消</button>
+      <button class="btn btn-primary" id="renameOk">确定</button>
+    </div>
+  </div>`;
+  document.body.appendChild(mask);
+  var input = document.getElementById('renameInput');
+  setTimeout(function() { input.focus(); input.select(); }, 60);
+  function close() { if (mask.parentNode) document.body.removeChild(mask); }
+  function ok() {
+    var v = input.value.trim();
+    if (v === '') { showToast('名称不能为空'); return; }
+    allBanks[id].name = v; saveData(); close(); render(); showToast('重命名成功');
+  }
+  document.getElementById('renameCancel').onclick = close;
+  document.getElementById('renameOk').onclick = ok;
+  input.onkeydown = function(e) { if (e.key === 'Enter') ok(); };
+  mask.onclick = function(e) { if (e.target === mask) close(); };
+}
+
+function changeFontSize(delta) {
+  qFontSize = Math.max(0.8, Math.min(1.6, qFontSize + delta * 0.1));
+  localStorage.setItem('xjt_font_size', qFontSize.toFixed(2));
+  document.documentElement.style.setProperty('--q-font-size', qFontSize + 'rem');
+}
+
+// ================= 节假日及开屏 =================
+(function setHoliday() {
+  var d = new Date(); var m = d.getMonth() + 1; var day = d.getDate(); var text1 = ""; var text2 = ""; var sign = "";
+  if (m === 1 && day === 1) { text1 = "元旦快乐"; text2 = "万象更新"; }
+  else if (m === 2 && day >= 10 && day <= 17) { text1 = "新春大吉"; text2 = "万事胜意"; }
+  else if (m === 3 && day === 8) { text1 = "致敬巾帼"; text2 = "节日快乐"; }
+  else if (m === 5 && day === 1) { text1 = "劳动光荣"; text2 = "节日快乐"; }
+  else if (m === 5 && day === 4) { text1 = "青春不息"; text2 = "奋斗不止"; }
+  else if (m === 6 && day === 1) { text1 = "童心未泯"; text2 = "快乐常在"; }
+  else if (m === 7 && day === 1) { text1 = "红心向党"; text2 = "砥砺前行"; }
+  else if (m === 8 && day === 1) { text1 = "铁血军魂"; text2 = "保家卫国"; }
+  else if (m === 9 && day === 10) { text1 = "尊师重教"; text2 = "桃李芬芳"; }
+  else if (m === 10 && day === 1) { text1 = "盛世华诞"; text2 = "举国同庆"; }
+  else if (m === 12 && day === 13) { text1 = "铭记历史"; text2 = "珍爱和平"; }
+  if (!text1) { text1 = "好好学习"; text2 = "天天向上"; sign = "毛泽东"; }
+  document.getElementById('second-text-1').innerText = text1; document.getElementById('second-text-2').innerText = text2;
+  if (sign) document.getElementById('second-sign').innerText = sign;
+  setTimeout(function() { document.getElementById('group-normal').classList.add('fade-out'); setTimeout(function() { document.getElementById('group-second').classList.add('show'); }, 500); }, 2200);
+})();
+var splashDelay = 4800;
 setTimeout(function() { document.getElementById('splash-screen').classList.add('hidden'); }, splashDelay);
 
-// ================= 1. 防白嫖极限授权系统 (加入多重备份防丢) =================
-var isAuthorized = false;
+// ================= 授权系统 =================
+var isAuthorized = false; var isTrialMode = false; var trialDays = 2; 
+function setAuthCookie(val) { var d = new Date(); d.setTime(d.getTime() + (36500 * 24 * 60 * 60 * 1000)); document.cookie = "xjt_auth_status=" + val + "; expires=" + d.toUTCString() + "; path=/"; }
+function getAuthCookie() { var name = "xjt_auth_status="; var decodedCookie = decodeURIComponent(document.cookie); var ca = decodedCookie.split(';'); for(var i = 0; i < ca.length; i++) { var c = ca[i].trim(); if (c.indexOf(name) == 0) return c.substring(name.length, c.length); } return ""; }
+function setAuthDB(val) { try { var req = indexedDB.open("XJT_Auth_DB", 1); req.onupgradeneeded = function(e) { var db = e.target.result; if (!db.objectStoreNames.contains("auth")) db.createObjectStore("auth"); }; req.onsuccess = function(e) { var db = e.target.result; var tx = db.transaction("auth", "readwrite"); tx.objectStore("auth").put(val, "status"); }; } catch(e) {} }
+function getAuthDB(callback) { try { var req = indexedDB.open("XJT_Auth_DB", 1); req.onupgradeneeded = function(e) { var db = e.target.result; if (!db.objectStoreNames.contains("auth")) db.createObjectStore("auth"); }; req.onsuccess = function(e) { var db = e.target.result; var tx = db.transaction("auth", "readonly"); var getReq = tx.objectStore("auth").get("status"); getReq.onsuccess = function() { callback(getReq.result); }; getReq.onerror = function() { callback(null); }; }; req.onerror = function() { callback(null); }; } catch(e) { callback(null); } }
+function writeTrialFile(timeStr) { if (typeof plus === 'undefined') return; try { plus.io.resolveLocalFileSystemURL("_doc/", function(entry) { entry.getFile("sys_data.bin", { create: true }, function(fileEntry) { fileEntry.createWriter(function(writer) { writer.write("sys_" + timeStr + "_core"); }); }); }); } catch(e) {} }
+function readTrialFile(callback) { if (typeof plus === 'undefined') { callback(null); return; } try { plus.io.resolveLocalFileSystemURL("_doc/", function(entry) { entry.getFile("sys_data.bin", { create: false }, function(fileEntry) { fileEntry.file(function(file) { var reader = new plus.io.FileReader(); reader.onloadend = function(evt) { var content = evt.target.result; if (content && content.indexOf("sys_") === 0) { callback(content.split("_")[1]); } else { callback(null); } }; reader.readAsText(file, 'utf-8'); }); }, function() { callback(null); }); }, function() { callback(null); }); } catch(e) { callback(null); } }
 
-// IndexedDB 备份机制
-function setAuthDB(val) {
-  var req = indexedDB.open("XJT_DB", 1);
-  req.onupgradeneeded = function(e) {
-    var db = e.target.result;
-    if (!db.objectStoreNames.contains("auth")) db.createObjectStore("auth");
-  };
-  req.onsuccess = function(e) {
-    var db = e.target.result;
-    var tx = db.transaction("auth", "readwrite");
-    tx.objectStore("auth").put(val, "status");
-  };
+function checkAuth() {
+  var expireTime = localStorage.getItem('xjt_expire_time'); var authLS = localStorage.getItem('xjt_offline_auth') === 'true'; var authCK = getAuthCookie() === 'true';
+  if (expireTime && new Date().getTime() > parseInt(expireTime)) { localStorage.removeItem('xjt_offline_auth'); localStorage.removeItem('xjt_expire_time'); isAuthorized = false; isTrialMode = false; render(); return; }
+  if (authLS || authCK) { isAuthorized = true; isTrialMode = false; setAuthCookie('true'); setAuthDB('true'); localStorage.setItem('xjt_offline_auth', 'true'); render(); }
+  else { getAuthDB(function(dbVal) { if (dbVal === 'true') { isAuthorized = true; isTrialMode = false; localStorage.setItem('xjt_offline_auth', 'true'); setAuthCookie('true'); render(); } else { validateTrial(); } }); }
 }
-function getAuthDB(callback) {
-  var req = indexedDB.open("XJT_DB", 1);
-  req.onupgradeneeded = function(e) {
-    var db = e.target.result;
-    if (!db.objectStoreNames.contains("auth")) db.createObjectStore("auth");
-  };
-  req.onsuccess = function(e) {
-    var db = e.target.result;
-    var tx = db.transaction("auth", "readonly");
-    var getReq = tx.objectStore("auth").get("status");
-    getReq.onsuccess = function() { callback(getReq.result); };
-    getReq.onerror = function() { callback(null); };
-  };
-  req.onerror = function() { callback(null); };
-}
-
-// Cookie 机制
-function setAuthCookie(val) {
-  var d = new Date();
-  d.setTime(d.getTime() + (20 * 365 * 24 * 60 * 60 * 1000)); // 20年
-  document.cookie = "xjt_auth_status=" + val + "; expires=" + d.toUTCString() + "; path=/";
-}
-function getAuthCookie() {
-  var name = "xjt_auth_status=";
-  var decodedCookie = decodeURIComponent(document.cookie);
-  var ca = decodedCookie.split(';');
-  for(var i = 0; i < ca.length; i++) {
-    var c = ca[i].trim();
-    if (c.indexOf(name) == 0) return c.substring(name.length, c.length);
-  }
-  return "";
-}
-
-// 初始化校验
-var authLS = localStorage.getItem('xjt_offline_auth') === 'true';
-var authCK = getAuthCookie() === 'true';
-
-if (authLS) {
-  isAuthorized = true;
-  if (!authCK) setAuthCookie('true');
-  setAuthDB('true');
-} else if (authCK) {
-  isAuthorized = true;
-  localStorage.setItem('xjt_offline_auth', 'true');
-  setAuthDB('true');
-} else {
-  getAuthDB(function(dbVal) {
-    if (dbVal === 'true') {
-      isAuthorized = true;
-      localStorage.setItem('xjt_offline_auth', 'true');
-      setAuthCookie('true');
-    } else {
-      checkAuthExpire();
-    }
+function validateTrial() {
+  readTrialFile(function(fileStartTime) {
+    var startTimeStr = fileStartTime || localStorage.getItem('xjt_trial_start') || getAuthCookie().replace('trial_', '');
+    if (!startTimeStr) { isAuthorized = false; isTrialMode = false; render(); return; }
+    var startTime = parseInt(startTimeStr); var now = new Date().getTime(); var lastRun = parseInt(localStorage.getItem('xjt_last_run') || '0');
+    if (lastRun > 0 && now < lastRun - 1000 * 60 * 60 * 24) { isAuthorized = false; isTrialMode = false; showAppConfirm('检测到异常', '检测到系统时间被篡改，试用功能已被永久封禁！', '知道了', '关闭', function(){}, function(){}); render(); return; }
+    localStorage.setItem('xjt_last_run', now);
+    var trialDuration = trialDays * 24 * 60 * 60 * 1000;
+    if (now - startTime <= trialDuration) { isAuthorized = true; isTrialMode = true; } else { isAuthorized = false; isTrialMode = false; }
+    render();
   });
 }
-
-function checkAuthExpire() {
-  var expireTime = localStorage.getItem('xjt_expire_time');
-  if (expireTime) {
-    var exp = parseInt(expireTime);
-    var now = new Date().getTime();
-    if (now > exp) {
-      localStorage.removeItem('xjt_offline_auth');
-      localStorage.removeItem('xjt_expire_time');
-      isAuthorized = false;
-      setAuthCookie('');
-      setAuthDB('false');
-      setTimeout(function() { showAppConfirm('试用期已结束', '您的体验期已结束，请联系客服购买正式版。', '知道了', '关闭', function() {}, function() {}); }, 3000);
-    } else if (now < parseInt(localStorage.getItem('xjt_last_check_time') || 0)) {
-      localStorage.removeItem('xjt_offline_auth');
-      localStorage.removeItem('xjt_expire_time');
-      isAuthorized = false;
-      setAuthCookie('');
-      setAuthDB('false');
-      setTimeout(function() { showAppConfirm('安全警告', '检测到系统时间异常，授权失效，请联系客服！', '知道了', '关闭', function() {}, function() {}); }, 3000);
-    } else {
-      localStorage.setItem('xjt_last_check_time', now);
-    }
-  }
+function startTrial() {
+  var now = new Date().getTime().toString(); localStorage.setItem('xjt_trial_start', now); localStorage.setItem('xjt_last_run', now);
+  setAuthCookie('trial_' + now); setAuthDB('trial_' + now); writeTrialFile(now);
+  showToast('已开启 2 天全功能免费体验！');
+  isAuthorized = true; isTrialMode = true; currentMode = Object.keys(allBanks).length > 0 ? 'home' : 'import'; render();
 }
 
 function getDeviceId() {
-  var devId = localStorage.getItem('xjt_device_id');
-  if (devId) return devId;
-  var nav = window.navigator;
-  var raw = nav.userAgent + nav.language + screen.width + screen.height;
-  var hash = 0;
-  for (var i = 0; i < raw.length; i++) { hash = ((hash << 5) - hash) + raw.charCodeAt(i); hash |= 0; }
+  var devId = localStorage.getItem('xjt_device_id'); if (devId) return devId;
+  var raw = ""; if (typeof plus !== 'undefined') { raw = plus.device.uuid + plus.device.vendor + plus.device.model + plus.os.name; } else { var nav = window.navigator; raw = nav.userAgent + nav.language + screen.width + screen.height; }
+  var hash = 0; for (var i = 0; i < raw.length; i++) { hash = ((hash << 5) - hash) + raw.charCodeAt(i); hash |= 0; }
   var hex = Math.abs(hash).toString(16).toUpperCase().padStart(8, '0');
   devId = 'DEV-' + hex.substring(0,4) + '-' + hex.substring(4,8);
-  localStorage.setItem('xjt_device_id', devId);
-  return devId;
+  localStorage.setItem('xjt_device_id', devId); return devId;
 }
 
 function doLogin() {
   var inputCode = document.getElementById('regCodeInput').value.trim().toUpperCase();
-  var myDevId = getDeviceId();
-  var parts = inputCode.split('-');
-  if (parts.length !== 4 || parts[0] !== 'TT') return showToast('注册码格式错误，请联系客服', true);
-  var durCode = parts[1], devSuffix = parts[2], inputHash = parts[3];
-  var myDevSuffix = myDevId.substring(4, 8);
-  if (devSuffix !== myDevSuffix) return showToast('该注册码不属于当前设备', true);
-  var salt = "TieTuXueLian2024Qin";
-  var raw = myDevSuffix + salt + durCode;
-  var hash = 0;
+  var myDevId = getDeviceId(); var parts = inputCode.split('-');
+  if (parts.length !== 4 || parts[0] !== 'TT') return showToast('注册码格式错误，请核对后重试', true);
+  var durCode = parts[1], devSuffix = parts[2], inputHash = parts[3]; var myDevSuffix = myDevId.substring(4, 8);
+  if (devSuffix !== myDevSuffix) return showToast('该注册码非本机专属，已被绑定至其他设备！', true);
+  var salt = "TieTuXueLian2024Qin"; var raw = myDevSuffix + salt + durCode; var hash = 0;
   for (var i = 0; i < raw.length; i++) { hash = ((hash << 5) - hash) + raw.charCodeAt(i); hash |= 0; }
   var correctHash = Math.abs(hash).toString(16).toUpperCase().padStart(8, '0').substring(0, 6);
-  if (inputHash !== correctHash) return showToast('注册码无效或已损坏', true);
-  
-  isAuthorized = true;
-  localStorage.setItem('xjt_offline_auth', 'true');
-  setAuthCookie('true');
-  setAuthDB('true');
-  
-  if (durCode === "4") {
-    localStorage.removeItem('xjt_expire_time');
-    showToast('永久授权激活成功，欢迎使用！');
-  } else {
-    var TIME_MAP = { "0": 8, "1": 24, "2": 48, "3": 168 };
-    var durationMs = TIME_MAP[durCode] * 60 * 60 * 1000;
-    var now = new Date().getTime();
-    localStorage.setItem('xjt_expire_time', now + durationMs);
-    localStorage.setItem('xjt_last_check_time', now);
-    var textDur = durCode === '0' ? '8小时' : durCode === '1' ? '24小时' : durCode === '2' ? '48小时' : '7天';
-    showToast('体验激活成功，有效期 ' + textDur);
-  }
-  currentMode = Object.keys(allBanks).length > 0 ? 'home' : 'import';
-  render();
+  if (inputHash !== correctHash) return showToast('注册码无效或已损坏，请联系客服', true);
+  if (durCode === "9999") { localStorage.removeItem('xjt_expire_time'); showToast('永久授权激活成功！'); }
+  else { var days = parseInt(durCode); if (isNaN(days) || days <= 0) return showToast('授权时长无效', true); var durationMs = days * 24 * 60 * 60 * 1000; localStorage.setItem('xjt_expire_time', new Date().getTime() + durationMs); showToast('授权成功，有效期 ' + days + ' 天'); }
+  isAuthorized = true; isTrialMode = false; localStorage.setItem('xjt_offline_auth', 'true'); setAuthCookie('true'); setAuthDB('true');
+  currentMode = Object.keys(allBanks).length > 0 ? 'home' : 'import'; render();
 }
 
-// ================= 2. 业务逻辑区 =================
+// ================= 业务逻辑区 =================
 var allBanks = {}; var activeBankId = null; var wrongBook = []; var currentMode = 'login';
 var practiceQuestions = [], practiceIndex = 0, practiceSelections = [], isWrongPracticeMode = false;
 var examQuestions = [], examIndex = 0, examSelections = [];
-var examConfig = { scoreSingle: 2, scoreMultiple: 4, scoreJudge: 2, timeLimit: 60, passScore: 0 };
+var examConfig = { scoreSingle: 2, scoreMultiple: 4, scoreJudge: 2, scoreFill: 5, scoreShort: 10, scoreEssay: 20, timeLimit: 60, passScore: 0 };
 var examScore = { got: 0, total: 0, usedTime: '0分0秒' };
 var examTimer = null, examStartTime = 0, examRemainingSeconds = 0;
-var examAborted = false;
+var examAborted = false; var reciteJudgeFilter = 'all'; var searchKeyword = ''; var searchType = 'all';
+var examPaperMode = 'random';
+var favorites = []; var examWrongList = [];
 
-// 背题模式判断过滤
-var reciteJudgeFilter = 'all'; // all, true, false
+var appContainer = document.getElementById('app'); var toastEl = document.getElementById('toast');
 
-var appContainer = document.getElementById('app');
-var toastEl = document.getElementById('toast');
-
-function showToast(msg, isErr) {
-  toastEl.innerText = msg;
-  toastEl.style.background = isErr ? '#ef4444' : 'rgba(0,0,0,0.8)';
-  toastEl.style.display = 'block';
-  setTimeout(function() { toastEl.style.display = 'none'; }, 2500);
+var TYPE_NAMES = {
+  single: '单选题', multiple: '多选题', judge: '判断题',
+  fill: '填空题', short: '简答题', essay: '论述题'
+};
+function isSubjective(type) {
+  return type === 'fill' || type === 'short' || type === 'essay';
 }
 
+function showToast(msg, isErr) { toastEl.innerText = msg; toastEl.style.background = isErr ? '#ef4444' : 'rgba(0,0,0,0.8)'; toastEl.style.display = 'block'; setTimeout(function() { toastEl.style.display = 'none'; }, 2500); }
 function showAppConfirm(title, msg, okText, cancelText, onOk, onCancel) {
-  var mask = document.createElement('div');
-  mask.className = 'app-mask';
-  mask.innerHTML = `
-    <div class="app-box">
-      <h3>${title}</h3>
-      <div>${msg}</div>
-      <div class="actions" style="margin-top:20px;">
-        <button class="btn btn-outline" id="btnCancel">${cancelText}</button>
-        <button class="btn btn-primary" id="btnOk">${okText}</button>
-      </div>
-    </div>
-  `;
+  var mask = document.createElement('div'); mask.className = 'app-mask';
+  mask.innerHTML = `<div class="app-box"><h3>${title}</h3><div>${msg}</div><div class="actions" style="margin-top:20px;"><button class="btn btn-outline" id="btnCancel">${cancelText}</button><button class="btn btn-primary" id="btnOk">${okText}</button></div></div>`;
   document.body.appendChild(mask);
   document.getElementById('btnCancel').onclick = function() { document.body.removeChild(mask); if(onCancel) onCancel(); };
   document.getElementById('btnOk').onclick = function() { document.body.removeChild(mask); if(onOk) onOk(); };
 }
 
-function confirmExitPractice() {
-  showAppConfirm('铁途学练', '确定要退出当前学习吗？(进度将不再保留)', '退出', '取消', function() {
-    localStorage.removeItem('xjt_practice_progress'); currentMode = 'home'; render();
-  });
-}
-function confirmExitExam() {
-  showAppConfirm('铁途学练', '确定退出考试？成绩不保存。', '退出', '取消', function() {
-    if(examTimer) clearInterval(examTimer); examTimer = null; currentMode = 'home'; render();
-  });
-}
-function confirmSubmitExam() { showAppConfirm('铁途学练', '确定要交卷吗？', '交卷', '取消', function() { submitExam(false); }); }
-function confirmDeleteBank(id) {
-  showAppConfirm('铁途学练', '确定删除该题库？', '删除', '取消', function() {
-    delete allBanks[id];
-    if (activeBankId === id) { var keys = Object.keys(allBanks); activeBankId = keys.length > 0 ? keys[0] : null; }
-    saveData(); render();
-  });
-}
+function confirmExitPractice() { showAppConfirm('铁途学练', '确定要退出当前学习吗？(进度将不再保留)', '退出', '取消', function() { localStorage.removeItem('xjt_practice_progress'); currentMode = 'home'; render(); }); }
+function confirmExitExam() { showAppConfirm('铁途学练', '确定退出考试？成绩不保存。', '退出', '取消', function() { if(examTimer) clearInterval(examTimer); examTimer = null; currentMode = 'home'; render(); }); }
+function confirmSubmitExam() { showAppConfirm('铁途学练', '确定要交卷吗？（主观题需自行评分）', '交卷', '取消', function() { submitExam(false); }); }
+function confirmDeleteBank(id) { showAppConfirm('铁途学练', '确定删除该题库？', '删除', '取消', function() { delete allBanks[id]; if (activeBankId === id) { var keys = Object.keys(allBanks); activeBankId = keys.length > 0 ? keys[0] : null; } saveData(); render(); }); }
 
-function saveData() {
-  localStorage.setItem('xjt_banks', JSON.stringify(allBanks));
-  localStorage.setItem('xjt_active', activeBankId || '');
-  localStorage.setItem('xjt_wrong', JSON.stringify(wrongBook));
-}
-
-function savePracticeProgress() {
-  if (currentMode === 'practice' || currentMode === 'recite') {
-    localStorage.setItem('xjt_practice_progress', JSON.stringify({ mode: currentMode, questions: practiceQuestions, index: practiceIndex, selections: practiceSelections, isWrong: isWrongPracticeMode }));
-  }
-}
-
+function saveData() { localStorage.setItem('xjt_banks', JSON.stringify(allBanks)); localStorage.setItem('xjt_active', activeBankId || ''); localStorage.setItem('xjt_wrong', JSON.stringify(wrongBook)); localStorage.setItem('xjt_fav', JSON.stringify(favorites)); }
+function savePracticeProgress() { if (currentMode === 'practice' || currentMode === 'recite') { localStorage.setItem('xjt_practice_progress', JSON.stringify({ mode: currentMode, questions: practiceQuestions, index: practiceIndex, selections: practiceSelections, isWrong: isWrongPracticeMode })); } }
 function restorePracticeProgress() {
   var pStr = localStorage.getItem('xjt_practice_progress');
-  if (pStr) {
-    try {
-      var p = JSON.parse(pStr);
-      if (p.questions && p.questions.length > 0) {
-        var modeName = p.mode === 'recite' ? '背题' : '练习';
-        showAppConfirm('铁途学练', '检测到上次未完成的' + modeName + '，是否继续？', '继续', '放弃', function() {
-          practiceQuestions = p.questions; practiceIndex = p.index; practiceSelections = p.selections; isWrongPracticeMode = p.isWrong;
-          currentMode = p.mode || 'practice'; render();
-        }, function() { localStorage.removeItem('xjt_practice_progress'); });
-      }
-    } catch(e) {}
-  }
+  if (pStr) { try { var p = JSON.parse(pStr); if (p.questions && p.questions.length > 0) { var modeName = p.mode === 'recite' ? '背题' : '练习'; showAppConfirm('铁途学练', '检测到上次未完成的' + modeName + '，是否继续？', '继续', '放弃', function() { practiceQuestions = p.questions; practiceIndex = p.index; practiceSelections = p.selections; isWrongPracticeMode = p.isWrong; currentMode = p.mode || 'practice'; render(); }, function() { localStorage.removeItem('xjt_practice_progress'); }); } } catch(e) {} }
 }
-
-function loadData() {
-  try {
-    var b = localStorage.getItem('xjt_banks'); var a = localStorage.getItem('xjt_active'); var w = localStorage.getItem('xjt_wrong');
-    if (b) allBanks = JSON.parse(b); if (a) activeBankId = a;
-    if (w) { wrongBook = JSON.parse(w); for (var i=0; i<wrongBook.length; i++) { if (wrongBook[i].streak === undefined) wrongBook[i].streak = 0; } }
-    if (activeBankId && !allBanks[activeBankId]) activeBankId = null;
-  } catch(e) {}
-}
-
-function checkNewImport() {
-  var newBankStr = localStorage.getItem('xjt_new_import');
-  if (newBankStr) {
-    try {
-      var newBank = JSON.parse(newBankStr);
-      allBanks[newBank.id] = { name: newBank.name, questions: newBank.questions };
-      activeBankId = newBank.id; localStorage.removeItem('xjt_new_import'); saveData();
-      showToast('导入成功，共 ' + newBank.questions.length + ' 题');
-    } catch(e) {}
-  }
-}
+function loadData() { try { var b = localStorage.getItem('xjt_banks'); var a = localStorage.getItem('xjt_active'); var w = localStorage.getItem('xjt_wrong'); if (b) allBanks = JSON.parse(b); if (a) activeBankId = a; if (w) { wrongBook = JSON.parse(w); for (var i=0; i<wrongBook.length; i++) { if (wrongBook[i].streak === undefined) wrongBook[i].streak = 0; } } var favStr = localStorage.getItem('xjt_fav'); if (favStr) { try { favorites = JSON.parse(favStr); } catch(e2) { favorites = []; } } if (activeBankId && !allBanks[activeBankId]) activeBankId = null; } catch(e) {} }
+function checkNewImport() { var newBankStr = localStorage.getItem('xjt_new_import'); if (newBankStr) { try { var newBank = JSON.parse(newBankStr); allBanks[newBank.id] = { name: newBank.name, questions: newBank.questions }; activeBankId = newBank.id; localStorage.removeItem('xjt_new_import'); saveData(); showToast('导入成功，共 ' + newBank.questions.length + ' 题'); } catch(e) {} } }
 
 function render() {
   if (!isAuthorized) { currentMode = 'login'; }
   else if (Object.keys(allBanks).length === 0) { currentMode = 'import'; }
   else if (currentMode === 'login' || currentMode === 'import') { currentMode = 'home'; }
-
-  if (currentMode === 'login') renderLogin();
-  else if (currentMode === 'import') renderImport();
-  else if (currentMode === 'home') renderHome();
-  else if (currentMode === 'practice') renderPractice();
-  else if (currentMode === 'recite') renderRecite();
-  else if (currentMode === 'examSetup') renderExamSetup();
-  else if (currentMode === 'exam') renderExam();
-  else if (currentMode === 'result') renderResult();
-  else if (currentMode === 'examReview') renderExamReview();
-  else if (currentMode === 'review') renderReview();
+  if (currentMode === 'login') renderLogin(); else if (currentMode === 'import') renderImport(); else if (currentMode === 'home') renderHome(); else if (currentMode === 'practice') renderPractice(); else if (currentMode === 'recite') renderRecite(); else if (currentMode === 'examSetup') renderExamSetup(); else if (currentMode === 'exam') renderExam(); else if (currentMode === 'result') renderResult(); else if (currentMode === 'examReview') renderExamReview(); else if (currentMode === 'review') renderReview(); else if (currentMode === 'favReview') renderFavReview(); else if (currentMode === 'stats') renderStudyStats();
 }
 
-// ================= 3. 页面渲染区 =================
 function renderLogin() {
-  var myDevId = getDeviceId();
+  var myDevId = getDeviceId(); var hasTrialed = localStorage.getItem('xjt_trial_start') !== null || getAuthCookie().indexOf('trial_') === 0;
+  var trialHtml = ''; if (!hasTrialed) { trialHtml = `<button class="btn btn-green btn-block" style="margin-bottom:20px; border-radius:8px; font-size:1.1rem; padding:15px; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);" onclick="startTrial()">🎁 免费体验 2 天全功能</button>`; } else { trialHtml = `<div class="tip-danger" style="color:#ef4444; font-size:0.9rem; font-weight:bold; margin-bottom:20px; padding:10px; background:#fef2f2; border:1px solid #fecaca; border-radius:6px;">您的免费体验已结束，请购买正式版继续使用。</div>`; }
   appContainer.innerHTML = `
-    <div class="card" style="text-align:center; margin-top:10%; padding: 30px 20px;">
-      <h2 style="color:#b71c1c;margin-bottom:10px;">🔐 单机离线授权</h2>
-      <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;">请将下方【设备码】发给客服购买</p>
-      <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin-bottom:20px; border: 1px dashed #cbd5e1;">
-        <div style="font-size:0.8rem; color:#64748b; margin-bottom:5px;">您的设备码</div>
-        <div style="font-size:1.3rem; font-weight:bold; color:#0d47a1; letter-spacing:2px;">${myDevId}</div>
-        <button class="btn btn-outline" style="margin-top:10px; padding:6px 12px; font-size:0.85rem; display:inline-block;" onclick="copyDeviceId('${myDevId}')">📋 一键复制设备码</button>
+    <div class="card" style="text-align:center; margin-top:10px; padding: 20px 15px;">
+      <h2 style="color:#b71c1c;margin-bottom:10px;">🔐 专属授权登录</h2>
+      <div class="tip-danger" style="background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; padding:12px; border-radius:8px; font-size:0.85rem; text-align:left; line-height:1.6; margin-bottom:15px;"><b>⚠️ 重要提示（必读）：</b><br>1. 本软件采用 <b>一机一码</b> 授权机制。<br>2. <b>请勿卸载本软件！</b> 一旦卸载，设备码将发生变化，需重新购买。<br>3. 软件纯离线，绝对保护隐私安全。</div>
+      ${trialHtml}
+      <div style="display:flex; gap:5px; margin-bottom:15px; text-align:center; flex-wrap:wrap;">
+        <div style="flex:1; min-width:18%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#64748b; margin-bottom:5px;">7 天</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥2</div></div>
+        <div style="flex:1; min-width:18%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#64748b; margin-bottom:5px;">15 天</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥4</div></div>
+        <div style="flex:1; min-width:18%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#64748b; margin-bottom:5px;">30 天</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥5</div></div>
+        <div style="flex:1; min-width:18%; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:10px 2px; position:relative;"><div style="position:absolute; top:-8px; left:50%; transform:translateX(-50%); background:#ef4444; color:#fff; font-size:0.6rem; padding:2px 5px; border-radius:10px; white-space:nowrap; font-weight:bold;">🔥 热卖</div><div style="font-size:0.75rem; color:#d97706; margin-bottom:5px; margin-top:3px;">半年</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥15</div></div>
+        <div style="flex:1; min-width:18%; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#1d4ed8; margin-bottom:5px;">永久</div><div style="font-size:1.1rem; color:#0d47a1; font-weight:bold;">￥49.9</div></div>
       </div>
-      <input type="text" id="regCodeInput" placeholder="请输入客服发给您的注册码" style="width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:8px;text-align:center;font-size:1.1rem;margin-bottom:20px; text-transform:uppercase;">
-      <button class="btn btn-primary btn-block" onclick="doLogin()">激活软件</button>
+      <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin-bottom:15px; border: 1px dashed #cbd5e1;">
+        <div style="font-size:0.8rem; color:#64748b; margin-bottom:5px;">您的专属设备码</div>
+        <div style="font-size:1.3rem; font-weight:bold; color:#0d47a1; letter-spacing:2px;">${myDevId}</div>
+        <button class="btn btn-outline" style="margin-top:10px; padding:6px 12px; font-size:0.85rem; display:inline-block;" onclick="copyDeviceId('${myDevId}')">📋 一键复制并发送给客服</button>
+      </div>
+      <div style="text-align:left; font-size:0.85rem; font-weight:bold; color:#475569; margin-bottom:5px;">请输入专属注册码：</div>
+      <input type="text" id="regCodeInput" placeholder="请联系客服购买后获取" style="width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:8px;text-align:center;font-size:1.1rem;margin-bottom:20px; text-transform:uppercase;">
+      <button class="btn btn-primary btn-block" onclick="doLogin()" style="padding:14px; font-size:1.1rem; box-shadow: 0 4px 10px rgba(13, 71, 161, 0.3);">立即激活正式版</button>
+      
+      <div style="margin-top:20px; padding:15px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; text-align:left;">
+        <div style="font-size:0.85rem; color:#475569; font-weight:bold; margin-bottom:8px;">购买注册码或遇到问题，请联系客服：</div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; font-size:0.9rem;">
+          <span style="color:#166534;"><b>QQ号：</b>981730010</span>
+          <button style="background:#e2e8f0; border:none; padding:4px 10px; border-radius:4px; font-size:0.75rem; color:#475569; cursor:pointer;" onclick="copyText('981730010')">复制</button>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; font-size:0.9rem;">
+          <span style="color:#065f46;"><b>微信号：</b>LB981730010</span>
+          <button style="background:#e2e8f0; border:none; padding:4px 10px; border-radius:4px; font-size:0.75rem; color:#475569; cursor:pointer;" onclick="copyText('LB981730010')">复制</button>
+        </div>
+        <div style="font-size:0.75rem; color:#ef4444; margin-top:5px; font-weight:bold;">💡 添加客服时请备注：铁途学练</div>
+      </div>
     </div>
     <div class="footer">技术支持：秦十三郎</div>
   `;
 }
-
-function copyDeviceId(id) {
-  var input = document.createElement("input");
-  input.value = id;
-  document.body.appendChild(input);
-  input.select();
-  document.execCommand("copy");
-  document.body.removeChild(input);
-  showToast('设备码已复制，请发给客服');
-}
+function copyDeviceId(id) { var input = document.createElement("input"); input.value = id; document.body.appendChild(input); input.select(); document.execCommand("copy"); document.body.removeChild(input); showToast('设备码已复制，请发给客服'); }
+function copyText(text) { var input = document.createElement("input"); input.value = text; document.body.appendChild(input); input.select(); document.execCommand("copy"); document.body.removeChild(input); showToast('复制成功！请前往微信或QQ添加'); }
 
 function renderImport() {
   appContainer.innerHTML = `
     <div class="card" style="text-align:center; padding:40px 15px;">
       <h2 style="color:#b71c1c;margin-bottom:15px;">📥 导入新题库</h2>
-      <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;line-height:1.6;">系统将跳转至独立导入页面。</p>
+      <p style="color:var(--text-sub);font-size:0.9rem;margin-bottom:20px;line-height:1.6;">系统将跳转至独立导入页面。</p>
       <button class="btn btn-primary btn-block" style="padding:15px;" onclick="window.location.href='import.html'">📂 前往导入页面</button>
       ${Object.keys(allBanks).length > 0 ? `<button class="btn btn-outline btn-block" onclick="currentMode='home';render()" style="margin-top:20px;">返回首页</button>` : ''}
     </div>
@@ -561,85 +586,253 @@ function renderImport() {
 }
 
 function renderHome() {
-  var bankEntries = Object.keys(allBanks);
-  var hasActive = activeBankId && allBanks[activeBankId];
-  var qs = hasActive ? allBanks[activeBankId].questions : [];
-  var html = '';
+  var trialTip = '';
+  if (isTrialMode) {
+    var startTime = parseInt(localStorage.getItem('xjt_trial_start') || '0'); var now = new Date().getTime();
+    var endTime = startTime + (trialDays * 24 * 60 * 60 * 1000); var leftHours = Math.max(0, Math.floor((endTime - now) / (1000 * 60 * 60)));
+    trialTip = `<div class="tip-warn" style="background:#fef08a; color:#854d0e; padding:10px; border-radius:8px; font-size:0.85rem; font-weight:bold; margin-bottom:10px; text-align:center;">⏳ 免费体验中，剩余约 ${leftHours} 小时。请联系客服获取永久版！</div>`;
+  } else if (localStorage.getItem('xjt_expire_time')) {
+    var exp = parseInt(localStorage.getItem('xjt_expire_time')); var leftDays = Math.ceil((exp - new Date().getTime()) / (1000 * 60 * 60 * 24));
+    if (leftDays > 0) { trialTip = `<div class="tip-ok" style="background:#ecfdf5; color:#065f46; padding:10px; border-radius:8px; font-size:0.85rem; font-weight:bold; margin-bottom:10px; text-align:center;">✅ 限时授权中，剩余 ${leftDays} 天。如需永久版请联系客服。</div>`; }
+  }
+
+  var bankEntries = Object.keys(allBanks); var hasActive = activeBankId && allBanks[activeBankId]; var qs = hasActive ? allBanks[activeBankId].questions : []; var html = trialTip;
 
   if (hasActive) {
-    var cS = 0, cM = 0, cJ = 0;
-    for (var j = 0; j < qs.length; j++) {
-      if (qs[j].type === 'single') cS++; else if (qs[j].type === 'multiple') cM++; else if (qs[j].type === 'judge') cJ++;
-    }
+    var count = { single:0, multiple:0, judge:0, fill:0, short:0, essay:0 };
+    for (var j = 0; j < qs.length; j++) { if (count[qs[j].type] !== undefined) count[qs[j].type]++; }
+    
+    var todayStr = new Date().toLocaleDateString(); var stats = JSON.parse(localStorage.getItem('xjt_stats_'+todayStr) || '{"done":0,"correct":0}');
+    var accuracy = stats.done > 0 ? Math.round((stats.correct / stats.done) * 100) : 0;
+
+    var foldPractice = foldState['practice_sub'] ? 'collapsed' : '';
+    var foldRecite = foldState['recite_sub'] ? 'collapsed' : '';
+
     html += `
       <div class="card">
         <div class="title">当前训练：${allBanks[activeBankId].name}</div>
         <div class="stats">
           <div class="stat-item"><div class="stat-num" style="color:#b71c1c;">${qs.length}</div><div class="stat-label">总题量</div></div>
-          <div class="stat-item"><div class="stat-num">${cS}</div><div class="stat-label">单选</div></div>
-          <div class="stat-item"><div class="stat-num">${cM}</div><div class="stat-label">多选</div></div>
-          <div class="stat-item"><div class="stat-num">${cJ}</div><div class="stat-label">判断</div></div>
-          <div class="stat-item" style="background:#fef2f2;"><div class="stat-num" style="color:#ef4444;">${wrongBook.length}</div><div class="stat-label" style="color:#b91c1c;">错题数</div></div>
+          <div class="stat-item"><div class="stat-num">${count.single}</div><div class="stat-label">单选</div></div>
+          <div class="stat-item"><div class="stat-num">${count.multiple}</div><div class="stat-label">多选</div></div>
+          <div class="stat-item"><div class="stat-num">${count.judge}</div><div class="stat-label">判断</div></div>
+          <div class="stat-item"><div class="stat-num">${count.fill}</div><div class="stat-label">填空</div></div>
+          <div class="stat-item"><div class="stat-num">${count.short}</div><div class="stat-label">简答</div></div>
+          <div class="stat-item"><div class="stat-num">${count.essay}</div><div class="stat-label">论述</div></div>
+          <div class="stat-item stat-wrong" style="background:#fef2f2;"><div class="stat-num" style="color:#ef4444;">${wrongBook.length}</div><div class="stat-label" style="color:#b91c1c;">错题数</div></div>
         </div>
+        
+        <div class="pie-chart-container">
+          <div class="pie-chart" style="--percentage: ${accuracy}%;">
+            <div class="pie-chart-text">${accuracy}%</div>
+          </div>
+          <div class="pie-info">
+            <div>今日已做：<span>${stats.done}</span> 题</div>
+            <div>今日正确：<span>${stats.correct}</span> 题</div>
+            <div style="font-size:0.75rem; color:#94a3b8; margin-top:5px;">*数据每天0点重置</div>
+          </div>
+        </div>
+
         <div class="menu">
           <div class="menu-btn" onclick="startPractice('all')">📖 顺序练习</div>
+          <div class="menu-btn" onclick="startPractice('random')">🎲 随机练习</div>
           <div class="menu-btn" onclick="startRecite('all')">👁️ 背题模式</div>
           <div class="menu-btn" onclick="startExamSetup()">📝 模拟考试</div>
           <div class="menu-btn" onclick="startPractice('wrong')">🔥 错题集训</div>
           <div class="menu-btn" onclick="openReview()">📑 错题查看</div>
+          <div class="menu-btn" onclick="startPractice('fav')">⭐ 收藏集训</div>
+          <div class="menu-btn" onclick="openFavReview()">🔖 收藏查看</div>
+          <div class="menu-btn" onclick="openStudyStats()">📈 学习数据</div>
         </div>
-        <div class="title" style="margin-top:15px;font-size:0.95rem;margin-bottom:8px;">专项练习</div>
-        <div class="sub-menu">
-          <button class="btn btn-outline" onclick="startPractice('single')">单选</button>
-          <button class="btn btn-outline" onclick="startPractice('multiple')">多选</button>
-          <button class="btn btn-outline" onclick="startPractice('judge')">判断</button>
+        <div class="search-tip">搜题入口位于「背题模式」：进入背题后点右上角的搜题按钮，即可按关键字查找题目</div>
+
+        <!-- 专项练习：折叠面板 -->
+        <div class="fold-header ${foldPractice}" onclick="toggleFold('practice_sub')">
+          <span>专项练习</span>
+          <span class="fold-icon">▼</span>
         </div>
-        <div class="title" style="margin-top:15px;font-size:0.95rem;margin-bottom:8px;">专项背题</div>
-        <div class="sub-menu">
-          <button class="btn btn-outline" onclick="startRecite('single')">单选</button>
-          <button class="btn btn-outline" onclick="startRecite('multiple')">多选</button>
-          <button class="btn btn-outline" onclick="startRecite('judge')">判断</button>
+        <div class="panel-content ${foldPractice}" id="fold_practice_sub">
+          <div class="sub-menu">
+            <button class="btn btn-outline" onclick="startPractice('single')">单选</button>
+            <button class="btn btn-outline" onclick="startPractice('multiple')">多选</button>
+            <button class="btn btn-outline" onclick="startPractice('judge')">判断</button>
+            <button class="btn btn-outline" onclick="startPractice('fill')">填空</button>
+            <button class="btn btn-outline" onclick="startPractice('short')">简答</button>
+            <button class="btn btn-outline" onclick="startPractice('essay')">论述</button>
+          </div>
+        </div>
+
+        <!-- 专项背题：折叠面板 -->
+        <div class="fold-header ${foldRecite}" onclick="toggleFold('recite_sub')">
+          <span>专项背题</span>
+          <span class="fold-icon">▼</span>
+        </div>
+        <div class="panel-content ${foldRecite}" id="fold_recite_sub">
+          <div class="sub-menu">
+            <button class="btn btn-outline" onclick="startRecite('single')">单选</button>
+            <button class="btn btn-outline" onclick="startRecite('multiple')">多选</button>
+            <button class="btn btn-outline" onclick="startRecite('judge')">判断</button>
+            <button class="btn btn-outline" onclick="startRecite('fill')">填空</button>
+            <button class="btn btn-outline" onclick="startRecite('short')">简答</button>
+            <button class="btn btn-outline" onclick="startRecite('essay')">论述</button>
+          </div>
         </div>
       </div>
     `;
   }
 
-  html += `<div class="card"><div class="title">我的题库</div>`;
-  if (bankEntries.length === 0) {
-    html += `<div style="text-align:center;color:#94a3b8;font-size:0.9rem;">暂无题库</div>`;
-  } else {
+  var foldMyBanks = foldState['mybanks'] ? 'collapsed' : '';
+  html += `<div class="card"><div class="fold-header ${foldMyBanks}" onclick="toggleFold('mybanks')" style="border-radius:8px;margin-bottom:6px;"><span>📚 我的题库</span><span class="fold-icon">▼</span></div>`;
+  html += `<div class="panel-content ${foldMyBanks}" id="fold_mybanks" style="padding-left:0;padding-right:0;">`;
+  if (bankEntries.length === 0) { html += `<div style="text-align:center;color:#94a3b8;font-size:0.9rem;">暂无题库</div>`; }
+  else {
     for (var i = 0; i < bankEntries.length; i++) {
       var id = bankEntries[i]; var b = allBanks[id]; var isAct = id === activeBankId;
       html += `
-        <div class="bank-item ${isAct ? 'active' : ''}" onclick="switchBank('${id}')">
-          <div>
-            <div class="bank-title">${isAct ? '✅ ' : '📁 '}${b.name}</div>
-            <div class="bank-meta">共 ${b.questions.length} 题</div>
+        <div class="bank-item ${isAct ? 'active' : ''}" onclick="switchBank('${id}')" style="margin:0 12px 10px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${isAct ? '✅ ' : '📁 '}${b.name}</div>
+            <div style="font-size:0.75rem;color:var(--text-sub);">共 ${b.questions.length} 题</div>
           </div>
-          <button class="btn btn-danger" style="padding:5px 10px;font-size:0.8rem;" onclick="event.stopPropagation();confirmDeleteBank('${id}')">删除</button>
+          <button class="rename-btn" onclick="event.stopPropagation();renameBank('${id}')">重命名</button>
+          <button class="btn btn-danger btn-small" style="margin-left:8px;" onclick="event.stopPropagation();confirmDeleteBank('${id}')">删除</button>
         </div>
       `;
     }
   }
-  html += `<button class="btn btn-primary btn-block" onclick="goToImport()">➕ 导入新题库</button></div>`;
-  
-  html += `
-    <div class="banner">
-      <b>🔒 隐私安全提示：</b>本系统采用本地缓存形式，不涉及上传云端，绝对安全。导入后请勿清理浏览器缓存，以免数据丢失。
-    </div>
-    <div class="footer">技术支持：秦十三郎</div>
-  `;
+  html += `<button class="btn btn-primary btn-block" style="margin:4px 12px 0;" onclick="goToImport()">➕ 导入新题库</button>`;
+  html += `</div></div>`;
+  html += `<div class="banner"><b>🔒 隐私安全提示：</b>本系统采用本地离线存储，不涉及上传云端，绝对安全。请放心使用，妥善保管好您的注册码。</div><div class="footer">技术支持：秦十三郎</div>`;
   appContainer.innerHTML = html;
 }
 
 function goToImport() { window.location.href='import.html'; }
 function switchBank(id) { activeBankId = id; saveData(); render(); }
 
+// ================= 新增：收藏 / 学习数据 / 题号跳转 =================
+function toggleFavorite(qid) {
+  var pos = favorites.indexOf(qid);
+  if (pos > -1) favorites.splice(pos, 1); else favorites.push(qid);
+  saveData(); render();
+}
+function openFavReview() { currentMode = 'favReview'; render(); }
+function renderFavReview() {
+  var qs = activeBankId ? allBanks[activeBankId].questions : [];
+  var favQs = qs.filter(function(q){ return favorites.indexOf(q.id) > -1; });
+  if (favQs.length === 0) {
+    appContainer.innerHTML = `<div style="margin-bottom:10px;"><button class="btn btn-outline" onclick="currentMode='home';render()">⬅ 返回</button></div><div class="card" style="text-align:center;padding:30px;">🔖 暂无收藏题目，去练习页点 ☆ 收藏吧</div>`;
+    return;
+  }
+  var html = `<div style="display:flex;justify-content:space-between;margin-bottom:12px;align-items:center;"><h3>🔖 收藏夹 (${favQs.length})</h3><button class="btn btn-outline" onclick="currentMode='home';render()">返回</button></div>`;
+  html += `<div style="margin-bottom:12px;"><button class="btn btn-primary btn-block" onclick="startPractice('fav')">🔥 收藏集训</button></div>`;
+  for (var i = 0; i < favQs.length; i++) {
+    var q = favQs[i]; var tName = TYPE_NAMES[q.type] || '未知'; var isSubj = isSubjective(q.type);
+    var ansDisplay = isSubj ? (typeof q.answer === 'string' ? q.answer : q.answer.join('；')) : q.answer.map(function(x){ return String.fromCharCode(65+x); }).join(', ');
+    var optsDisplay = isSubj ? '' : q.options.map(function(o,x){ return String.fromCharCode(65+x)+'. '+o; }).join('<br>');
+    html += `<div class="card" style="border-left:4px solid #f59e0b;">
+      <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:8px;align-items:center;">
+        <span class="tag" style="background:#f59e0b;">${tName}</span>
+        <button class="fav-star on" onclick="toggleFavorite('${q.id}')">⭐ 取消收藏</button>
+      </div>
+      <div style="font-weight:bold;font-size:0.95rem;margin-bottom:10px;">${q.question}</div>
+      <div style="font-size:0.85rem;color:#10b981;margin-bottom:5px;font-weight:bold;">正确答案：${ansDisplay}</div>
+      ${optsDisplay ? `<div style="font-size:0.85rem;color:var(--text-sub);line-height:1.5;margin-bottom:8px;">${optsDisplay}</div>` : ''}
+      ${q.analysis ? `<div class="analysis show" style="margin-top:0;"><strong>解析：</strong>${q.analysis}</div>` : ''}
+    </div>`;
+  }
+  appContainer.innerHTML = html + `<div class="footer">技术支持：秦十三郎</div>`;
+}
+
+function openStudyStats() { currentMode = 'stats'; render(); }
+function renderStudyStats() {
+  var totalDone = 0, totalCorrect = 0;
+  for (var i = 0; i < localStorage.length; i++) {
+    var key = localStorage.key(i);
+    if (key && key.indexOf('xjt_stats_') === 0) {
+      var s = JSON.parse(localStorage.getItem(key) || '{"done":0,"correct":0}');
+      totalDone += (s.done || 0); totalCorrect += (s.correct || 0);
+    }
+  }
+  var totalAcc = totalDone > 0 ? Math.round(totalCorrect / totalDone * 100) : 0;
+  var days = [];
+  for (var d = 6; d >= 0; d--) {
+    var dt = new Date(); dt.setDate(dt.getDate() - d);
+    var label = (dt.getMonth() + 1) + '/' + dt.getDate();
+    var st = JSON.parse(localStorage.getItem('xjt_stats_' + dt.toLocaleDateString()) || '{"done":0,"correct":0}');
+    days.push({ label: label, done: st.done || 0, correct: st.correct || 0 });
+  }
+  var maxDone = 1; for (var m = 0; m < days.length; m++) { if (days[m].done > maxDone) maxDone = days[m].done; }
+  var bars = '';
+  for (var k = 0; k < days.length; k++) {
+    var day = days[k]; var h = Math.round(day.done / maxDone * 70);
+    var acc = day.done > 0 ? Math.round(day.correct / day.done * 100) : 0;
+    bars += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:110px;">
+      <div style="font-size:0.68rem;color:var(--text-main);font-weight:bold;margin-bottom:3px;">${day.done}</div>
+      <div style="width:58%;background:${day.done===0 ? 'var(--border-color)' : 'linear-gradient(180deg,#0d47a1,#1e88e5)'};border-radius:4px 4px 0 0;height:${Math.max(3,h)}px;"></div>
+      <div style="font-size:0.65rem;color:var(--text-sub);margin-top:4px;">${day.label}</div>
+      <div style="font-size:0.62rem;color:#10b981;font-weight:bold;">${acc}%</div>
+    </div>`;
+  }
+  var html = `<div style="margin-bottom:12px;"><button class="btn btn-outline" onclick="currentMode='home';render()">⬅ 返回</button></div>`;
+  html += `<div class="card"><div class="title">📈 学习数据总览</div>
+    <div class="stats">
+      <div class="stat-item"><div class="stat-num">${totalDone}</div><div class="stat-label">累计做题</div></div>
+      <div class="stat-item"><div class="stat-num" style="color:#10b981;">${totalCorrect}</div><div class="stat-label">累计正确</div></div>
+      <div class="stat-item"><div class="stat-num" style="color:#b71c1c;">${totalAcc}%</div><div class="stat-label">累计正确率</div></div>
+    </div></div>`;
+  html += `<div class="card"><div class="title">近 7 天做题趋势</div>
+    <div style="display:flex;gap:6px;align-items:flex-end;">${bars}</div>
+    <div style="font-size:0.75rem;color:var(--text-sub);margin-top:12px;line-height:1.5;">柱高 = 当日做题数；柱顶数字 = 做题量；柱底百分比 = 当日正确率。数据每天 0 点起独立统计。</div></div>`;
+  html += `<div class="card"><div class="title">💡 数据说明</div><div style="font-size:0.82rem;color:var(--text-sub);line-height:1.7;">累计数据来自每日统计的自动汇总，无需手动记录。错题会同步计入「累计正确率」，坚持练习即可看到正确率稳步上升。</div></div>`;
+  appContainer.innerHTML = html + `<div class="footer">技术支持：秦十三郎</div>`;
+}
+
+function jumpToNumber() {
+  var el = document.getElementById('jumpNumInput'); if (!el) return;
+  var n = parseInt(el.value);
+  var list = (currentMode === 'exam' || currentMode === 'examReview') ? examQuestions : practiceQuestions;
+  if (isNaN(n) || n < 1 || n > list.length) { showToast('请输入 1-' + list.length + ' 的题号', true); return; }
+  var idx = n - 1;
+  if (currentMode === 'exam') { examIndex = idx; closeSheet({target:{id:'sheetModal'}}); renderExam(); }
+  else { jumpPractice(idx); }
+}
+
+function startExamWrongPractice() {
+  if (!examWrongList || examWrongList.length === 0) return showToast('本次没有错题', true);
+  practiceQuestions = examWrongList.map(function(q){ var c = JSON.parse(JSON.stringify(q)); c.isAnswered = false; c.streak = 0; return c; });
+  practiceIndex = 0; practiceSelections = []; isWrongPracticeMode = false;
+  currentMode = 'practice'; savePracticeProgress(); render();
+}
+
+// ===== 搜题 =====
+function openSearch() {
+  searchKeyword = ''; searchType = 'all'; var mask = document.createElement('div'); mask.className = 'search-mask'; mask.id = 'searchModal';
+  mask.innerHTML = `<div class="search-box"><div class="search-header"><h3>🔍 题库搜索</h3><button class="btn btn-outline" style="padding:4px 10px; font-size:0.85rem;" onclick="document.body.removeChild(document.getElementById('searchModal'))">关闭</button></div><div class="search-input-group"><input type="text" id="searchInput" placeholder="输入题目关键字..." oninput="doSearch()"><div class="search-filters"><button class="${searchType === 'all' ? 'active' : ''}" onclick="setSearchType('all')">全部</button><button class="${searchType === 'single' ? 'active' : ''}" onclick="setSearchType('single')">单选</button><button class="${searchType === 'multiple' ? 'active' : ''}" onclick="setSearchType('multiple')">多选</button><button class="${searchType === 'judge' ? 'active' : ''}" onclick="setSearchType('judge')">判断</button><button class="${searchType === 'fill' ? 'active' : ''}" onclick="setSearchType('fill')">填空</button><button class="${searchType === 'short' ? 'active' : ''}" onclick="setSearchType('short')">简答</button><button class="${searchType === 'essay' ? 'active' : ''}" onclick="setSearchType('essay')">论述</button></div></div><div class="search-results" id="searchResults"><div style="text-align:center; color:#94a3b8; margin-top:20px;">请输入关键字开始搜索...</div></div></div>`;
+  document.body.appendChild(mask); setTimeout(function(){ document.getElementById('searchInput').focus(); }, 100);
+}
+function setSearchType(type) {
+  searchType = type; var btns = document.querySelectorAll('.search-filters button'); btns.forEach(function(btn) { btn.classList.remove('active'); });
+  var typeMap = { all:0, single:1, multiple:2, judge:3, fill:4, short:5, essay:6 };
+  if (typeMap[type] !== undefined) btns[typeMap[type]].classList.add('active');
+  doSearch();
+}
+function doSearch() {
+  var keyword = document.getElementById('searchInput').value.trim(); var resDiv = document.getElementById('searchResults');
+  if (!keyword) { resDiv.innerHTML = '<div style="text-align:center; color:#94a3b8; margin-top:20px;">请输入关键字开始搜索...</div>'; return; }
+  var results = []; for (var i = 0; i < practiceQuestions.length; i++) { var q = practiceQuestions[i]; if (searchType !== 'all' && q.type !== searchType) continue; if (q.question.indexOf(keyword) > -1) { results.push({ q: q, idx: i }); } }
+  if (results.length === 0) { resDiv.innerHTML = '<div style="text-align:center; color:#ef4444; margin-top:20px;">没有找到相关题目...</div>'; return; }
+  var html = ''; for (var j = 0; j < results.length; j++) { var r = results[j]; var tName = TYPE_NAMES[r.q.type] || '未知'; html += `<div class="search-item" onclick="jumpToSearchResult(${r.idx})"><div class="s-title">${r.q.question}</div><div class="s-type">题型：${tName}</div></div>`; }
+  resDiv.innerHTML = html;
+}
+function jumpToSearchResult(idx) { practiceIndex = idx; savePracticeProgress(); document.body.removeChild(document.getElementById('searchModal')); renderRecite(); }
+
 function buildSheetHtml(questions, currentIdx, selections, type) {
-  var groups = { single: [], multiple: [], judge: [] };
-  for (var k = 0; k < questions.length; k++) groups[questions[k].type].push({ idx: k, q: questions[k] });
-  var html = ''; var types = ['single', 'multiple', 'judge']; var typeNames = { single: '单选题', multiple: '多选题', judge: '判断题' };
-  
+  var groups = { single: [], multiple: [], judge: [], fill: [], short: [], essay: [] };
+  for (var k = 0; k < questions.length; k++) {
+    if (groups[questions[k].type]) groups[questions[k].type].push({ idx: k, q: questions[k] });
+  }
+  var html = '';
+  var types = ['single', 'multiple', 'judge', 'fill', 'short', 'essay'];
   var jumpFn = 'jumpPractice';
   if (type === 'exam') jumpFn = 'jumpExam';
   else if (type === 'examReview') jumpFn = 'jumpExamReview';
@@ -647,24 +840,17 @@ function buildSheetHtml(questions, currentIdx, selections, type) {
 
   for (var t = 0; t < types.length; t++) {
     var tp = types[t]; var items = groups[tp]; if (items.length === 0) continue;
-    html += `<div class="acc-group"><div class="acc-header" onclick="this.nextElementSibling.classList.toggle('hidden')"><span style="font-size:1.1rem;">${typeNames[tp]}</span><span>共 ${items.length} 题</span></div><div class="acc-body">`;
+    html += `<div class="acc-group"><div class="acc-header" onclick="this.nextElementSibling.classList.toggle('hidden')"><span style="font-size:1.1rem;">${TYPE_NAMES[tp]}</span><span>共 ${items.length} 题</span></div><div class="acc-body">`;
     for (var i = 0; i < items.length; i++) {
-      var item = items[i];
-      var isDone = false;
+      var item = items[i]; var isDone = false;
       if (type === 'practice' || type === 'recite') isDone = item.q.isAnswered;
-      else if (type === 'exam') isDone = (selections[item.idx] && selections[item.idx].length > 0);
-      else if (type === 'examReview') isDone = (selections[item.idx] && selections[item.idx].length > 0);
-      
+      else if (type === 'exam' || type === 'examReview') isDone = (selections[item.idx] && selections[item.idx].length > 0) || isSubjective(item.q.type);
       var isWrong = false;
-      if (type === 'examReview') {
-         var s = selections[item.idx] || [];
-         isWrong = s.length > 0 && !(s.length === item.q.answer.length && s.every(function(v){ return item.q.answer.indexOf(v) > -1; }));
+      if (type === 'examReview' && !isSubjective(item.q.type)) {
+        var s = selections[item.idx] || [];
+        isWrong = s.length > 0 && !(s.length === item.q.answer.length && s.every(function(v){ return item.q.answer.indexOf(v) > -1; }));
       }
-      
-      var cls = 'num-btn';
-      if (isWrong) cls += ' wrong';
-      else if (isDone) cls += ' done';
-      
+      var cls = 'num-btn'; if (isWrong) cls += ' wrong'; else if (isDone) cls += ' done';
       html += `<div class="${cls}" onclick="${jumpFn}(${item.idx})">${item.idx+1}</div>`;
     }
     html += `</div></div>`;
@@ -672,78 +858,66 @@ function buildSheetHtml(questions, currentIdx, selections, type) {
   return html;
 }
 
-// ================= 练习模式 =================
 function startPractice(type) {
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
   if (type === 'wrong') {
     if (wrongBook.length === 0) return showToast('错题本为空', true);
     practiceQuestions = wrongBook.slice(); isWrongPracticeMode = true;
+  } else if (type === 'fav') {
+    if (favorites.length === 0) return showToast('收藏夹为空', true);
+    practiceQuestions = qs.filter(function(q){ return favorites.indexOf(q.id) > -1; }); isWrongPracticeMode = false;
   } else {
     if (qs.length === 0) return showToast('题库为空', true);
-    practiceQuestions = type === 'all' ? qs.slice() : qs.filter(function(q){ return q.type === type; });
+    if (type === 'all') practiceQuestions = qs.slice();
+    else if (type === 'random') { practiceQuestions = qs.slice().sort(function(){ return 0.5 - Math.random(); }); showToast('已为您打乱顺序'); }
+    else practiceQuestions = qs.filter(function(q){ return q.type === type; });
     isWrongPracticeMode = false;
   }
   if (practiceQuestions.length === 0) return showToast('该分类下暂无题目', true);
   practiceIndex = 0; practiceSelections = [];
-  for (var i = 0; i < practiceQuestions.length; i++) { practiceQuestions[i].isAnswered = false; if (practiceQuestions[i].streak === undefined) practiceQuestions[i].streak = 0; }
+  for (var i = 0; i < practiceQuestions.length; i++) {
+    practiceQuestions[i].isAnswered = isSubjective(practiceQuestions[i].type);
+    if (practiceQuestions[i].streak === undefined) practiceQuestions[i].streak = 0;
+  }
   currentMode = 'practice'; savePracticeProgress(); render();
 }
 
-// ================= 背题模式 =================
 function startRecite(type) {
-  var qs = activeBankId ? allBanks[activeBankId].questions : [];
-  if (qs.length === 0) return showToast('题库为空', true);
-  
-  reciteJudgeFilter = 'all'; // 重置过滤
+  var qs = activeBankId ? allBanks[activeBankId].questions : []; if (qs.length === 0) return showToast('题库为空', true);
+  reciteJudgeFilter = 'all';
   var allQs = type === 'all' ? qs.slice() : qs.filter(function(q){ return q.type === type; });
   if (allQs.length === 0) return showToast('该分类下暂无题目', true);
-
-  // 如果是判断题，先按所有加载
-  practiceQuestions = allQs;
-  practiceIndex = 0; practiceSelections = [];
+  practiceQuestions = allQs; practiceIndex = 0; practiceSelections = [];
   for (var i = 0; i < practiceQuestions.length; i++) { practiceQuestions[i].isAnswered = true; }
-  isWrongPracticeMode = false;
-  currentMode = 'recite'; savePracticeProgress(); render();
+  isWrongPracticeMode = false; currentMode = 'recite'; savePracticeProgress(); render();
 }
 
 function changeReciteFilter(filterType) {
-  reciteJudgeFilter = filterType;
-  var qs = activeBankId ? allBanks[activeBankId].questions : [];
-  var baseQs = qs.filter(function(q){ return q.type === 'judge'; });
-  
-  if (filterType === 'true') {
-    practiceQuestions = baseQs.filter(function(q){ 
-      // 判断题正确答案通常 0 表示正确，1 表示错误 (或相反，这里以 0 和 A 为准)
-      return q.answer.indexOf(0) > -1 || q.answer.indexOf('A') > -1 || q.answer.indexOf('正确') > -1; 
-    });
-  } else if (filterType === 'false') {
-    practiceQuestions = baseQs.filter(function(q){ 
-      return q.answer.indexOf(1) > -1 || q.answer.indexOf('B') > -1 || q.answer.indexOf('错误') > -1; 
-    });
-  } else {
-    practiceQuestions = baseQs;
-  }
-  
-  if (practiceQuestions.length === 0) {
-    showToast('该过滤条件下暂无题目', true);
-    practiceQuestions = baseQs; // 恢复全部防止白屏
-  } else {
-    practiceIndex = 0; practiceSelections = [];
-    for (var i = 0; i < practiceQuestions.length; i++) { practiceQuestions[i].isAnswered = true; }
-    render();
-  }
+  reciteJudgeFilter = filterType; var qs = activeBankId ? allBanks[activeBankId].questions : []; var baseQs = qs.filter(function(q){ return q.type === 'judge'; });
+  if (filterType === 'true') { practiceQuestions = baseQs.filter(function(q){ return q.answer.indexOf(0) > -1; }); }
+  else if (filterType === 'false') { practiceQuestions = baseQs.filter(function(q){ return q.answer.indexOf(1) > -1; }); }
+  else { practiceQuestions = baseQs; }
+  if (practiceQuestions.length === 0) { showToast('该过滤条件下暂无题目', true); practiceQuestions = baseQs; }
+  else { practiceIndex = 0; practiceSelections = []; for (var i = 0; i < practiceQuestions.length; i++) { practiceQuestions[i].isAnswered = true; } render(); }
 }
 
 function buildQuestionHtml(q, sels, showAns, isReciteJudge) {
+  if (q.type === 'judge' && (!q.options || q.options.length === 0)) {
+    q.options = ['正确', '错误'];
+  }
+
+  if (isSubjective(q.type)) {
+    var ansText = typeof q.answer === 'string' ? q.answer : (Array.isArray(q.answer) ? q.answer.join('；') : '');
+    if (!showAns) return `<div class="subjective-answer" style="border-color:var(--border-color);"><div class="sa-title" style="color:var(--text-sub);">📝 本题为主观题，请自行作答</div></div>`;
+    return `<div class="subjective-answer"><div class="sa-title">📝 参考答案</div><div class="sa-content">${ansText}</div></div>`;
+  }
   var optsHtml = '';
   for (var i = 0; i < q.options.length; i++) {
     var cls = 'opt';
-    if (showAns) { 
-      if (q.answer.indexOf(i) > -1) cls += ' correct'; 
-      else if (sels && sels.indexOf(i) > -1) cls += ' wrong'; 
-    } else if (sels && sels.indexOf(i) > -1) {
-      cls += ' selected';
-    }
+    if (showAns) {
+      if (q.answer.indexOf(i) > -1) cls += ' correct';
+      else if (sels && sels.indexOf(i) > -1) cls += ' wrong';
+    } else if (sels && sels.indexOf(i) > -1) { cls += ' selected'; }
     var clickAction = isReciteJudge ? `onclick="toggleReciteJudge(${i})"` : `onclick="selectPractice(${i})"`;
     optsHtml += `<div class="${cls}" ${clickAction}><div class="opt-prefix">${String.fromCharCode(65+i)}</div><div>${q.options[i]}</div></div>`;
   }
@@ -752,33 +926,37 @@ function buildQuestionHtml(q, sels, showAns, isReciteJudge) {
 
 function buildAnalysisHtml(q, sels, showAns) {
   if (!showAns) return '';
-  var isCorrect = sels.length === q.answer.length && sels.every(function(v){ return q.answer.indexOf(v) > -1; });
-  
-  return `
-    <div class="analysis show ${isCorrect ? 'success' : 'error'}">
-      <div style="font-weight:bold;margin-bottom:5px;">正确答案：<span style="color:#10b981;">${q.answer.map(function(i){ return String.fromCharCode(65+i); }).join(', ')}</span></div>
-      ${q.analysis ? `<div style="margin-top:8px; font-weight:bold; color:#0d47a1;">解析：</div><div style="color:#475569; margin-top:4px;">${q.analysis}</div>` : ''}
-    </div>
-  `;
+  var isCorrect = true;
+  if (!isSubjective(q.type)) {
+    isCorrect = sels.length === q.answer.length && sels.every(function(v){ return q.answer.indexOf(v) > -1; });
+  }
+  var ansDisplay = isSubjective(q.type)
+    ? (typeof q.answer === 'string' ? q.answer : q.answer.join('；'))
+    : q.answer.map(function(i){ return String.fromCharCode(65+i); }).join(', ');
+  return `<div class="analysis show ${isCorrect ? 'success' : 'error'}"><div style="font-weight:bold;margin-bottom:5px;">正确答案：<span style="color:#10b981;">${ansDisplay}</span></div>${q.analysis ? `<div style="margin-top:8px; font-weight:bold; color:#0d47a1;">解析：</div><div style="color:var(--text-main); margin-top:4px;">${q.analysis}</div>` : ''}</div>`;
 }
 
 function renderPractice() {
   if (practiceIndex >= practiceQuestions.length) {
     localStorage.removeItem('xjt_practice_progress');
-    appContainer.innerHTML = `<div class="card" style="text-align:center;padding:40px;"><h2 style="color:#0d47a1;margin-bottom:15px;">🎉 练习完成</h2><p style="color:#64748b;margin-bottom:20px;">您已完成本轮练习。</p><button class="btn btn-primary btn-block" onclick="currentMode='home';render()">返回首页</button></div>`;
+    appContainer.innerHTML = `<div class="card" style="text-align:center;padding:40px;"><h2 style="color:#0d47a1;margin-bottom:15px;">🎉 练习完成</h2><p style="color:var(--text-sub);margin-bottom:20px;">您已完成本轮练习。</p><button class="btn btn-primary btn-block" onclick="currentMode='home';render()">返回首页</button></div>`;
     return;
   }
-  var q = practiceQuestions[practiceIndex]; var sels = practiceSelections[practiceIndex] || [];
-  var showAns = q.isAnswered; var isCorrect = showAns && sels.length === q.answer.length && sels.every(function(v){ return q.answer.indexOf(v) > -1; });
-  
+  var q = practiceQuestions[practiceIndex];
+  var sels = practiceSelections[practiceIndex] || [];
+  var showAns = q.isAnswered && autoShowAnswer;
+  var isCorrect = showAns && (isSubjective(q.type) || (sels.length === q.answer.length && sels.every(function(v){ return q.answer.indexOf(v) > -1; })));
   var optsHtml = buildQuestionHtml(q, sels, showAns, false);
-  var typeName = q.type === 'single' ? '单选题' : q.type === 'multiple' ? '多选题' : '判断题';
+  var typeName = TYPE_NAMES[q.type] || '未知题型';
   var streakHtml = isWrongPracticeMode ? `<span style="float:right;font-size:0.8rem;color:#ef4444;font-weight:bold;">🔥连对: ${q.streak}/5</span>` : '';
   var sheetHtml = buildSheetHtml(practiceQuestions, practiceIndex, practiceSelections, 'practice');
-  
   var feedbackAnim = '';
-  if (showAns) {
+  if (showAns && !isSubjective(q.type)) {
     feedbackAnim = `<div class="feedback-badge"><div class="feedback-text">${isCorrect ? '对' : '错'}</div></div>`;
+  }
+  var multiConfirmBtn = '';
+  if (!showAns && q.type === 'multiple') {
+    multiConfirmBtn = `<button class="btn btn-primary" onclick="confirmMultiPractice()" ${sels.length===0?'disabled style="opacity:0.5"':''}>确认答案</button>`;
   }
 
   appContainer.innerHTML = `
@@ -787,21 +965,30 @@ function renderPractice() {
         <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="confirmExitPractice()">⬅ 退出</button>
         <div class="q-progress">${practiceIndex+1} / ${practiceQuestions.length}</div>
       </div>
-      <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <div class="font-ctrl">
+          <button class="btn btn-outline btn-small" onclick="changeFontSize(-1)">A-</button>
+          <button class="btn btn-outline btn-small" onclick="changeFontSize(1)">A+</button>
+        </div>
+        <button class="btn btn-outline btn-small" onclick="openSheet()">答题卡</button>
+      </div>
     </div>
     <div class="card">
-      <span class="tag">${typeName}</span>${streakHtml}
-      <div class="q-text">${q.question}${feedbackAnim}</div>${optsHtml}
+      <span class="tag">${typeName}</span>${streakHtml}<button class="fav-star ${favorites.indexOf(q.id)>-1?'on':''}" style="float:right" onclick="toggleFavorite('${q.id}')">${favorites.indexOf(q.id)>-1?'⭐ 已收藏':'☆ 收藏'}</button>
+      <div class="q-text">${q.question}${feedbackAnim}</div>
+      ${optsHtml}
       ${buildAnalysisHtml(q, sels, showAns)}
       <div class="bottom-actions">
         <button class="btn btn-outline" onclick="prevPractice()" ${practiceIndex===0?'disabled style="opacity:0.5"':''}>⬅ 上一题</button>
-        ${(!showAns && q.type === 'multiple') ? `<button class="btn btn-primary" onclick="confirmMultiPractice()" ${sels.length===0?'disabled style="opacity:0.5"':''}>确认答案</button>` : ''}
+        ${multiConfirmBtn}
         <button class="btn btn-primary" onclick="nextPractice()">${practiceIndex === practiceQuestions.length-1 ? '完成' : '下一题 ➡'}</button>
       </div>
     </div>
     <div id="sheetModal" class="sheet-mask" style="display:none;" onclick="closeSheet(event)">
       <div class="sheet-content" onclick="event.stopPropagation()">
-        <div class="sheet-title">答题卡 <span style="font-size:0.85rem;color:#64748b;font-weight:normal;">(点击题号跳转)</span></div>${sheetHtml}
+        <div class="sheet-title">答题卡 <span style="font-size:0.85rem;color:var(--text-sub);font-weight:normal;">(点击题号跳转)</span></div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;"><input type="number" id="jumpNumInput" min="1" placeholder="输入题号直接跳转" style="flex:1;padding:9px;border:2px solid var(--border-color);border-radius:8px;font-size:1rem;background:var(--card-bg);color:var(--text-main);outline:none;"><button class="btn btn-primary" style="padding:9px 18px;" onclick="jumpToNumber()">跳转</button></div>
+        ${sheetHtml}
       </div>
     </div>
   `;
@@ -810,29 +997,18 @@ function renderPractice() {
 function renderRecite() {
   if (practiceIndex >= practiceQuestions.length) {
     localStorage.removeItem('xjt_practice_progress');
-    appContainer.innerHTML = `<div class="card" style="text-align:center;padding:40px;"><h2 style="color:#0d47a1;margin-bottom:15px;">🎉 背题完成</h2><p style="color:#64748b;margin-bottom:20px;">您已完成本轮背题。</p><button class="btn btn-primary btn-block" onclick="currentMode='home';render()">返回首页</button></div>`;
+    appContainer.innerHTML = `<div class="card" style="text-align:center;padding:40px;"><h2 style="color:#0d47a1;margin-bottom:15px;">🎉 背题完成</h2><p style="color:var(--text-sub);margin-bottom:20px;">您已完成本轮背题。</p><button class="btn btn-primary btn-block" onclick="currentMode='home';render()">返回首页</button></div>`;
     return;
   }
   var q = practiceQuestions[practiceIndex];
-  var showAns = true; 
-  var sels = practiceSelections[practiceIndex] || q.answer; 
-  
-  var isReciteJudge = (q.type === 'judge');
-  var optsHtml = buildQuestionHtml(q, sels, true, isReciteJudge);
-  
-  var typeName = q.type === 'single' ? '单选题' : q.type === 'multiple' ? '多选题' : '判断题';
+  var showAns = true;
+  var sels = practiceSelections[practiceIndex] || q.answer;
+  var optsHtml = buildQuestionHtml(q, sels, true, false);
+  var typeName = TYPE_NAMES[q.type] || '未知题型';
   var sheetHtml = buildSheetHtml(practiceQuestions, practiceIndex, practiceSelections, 'recite');
-  
-  // 判断题过滤按钮 UI
   var filterHtml = '';
   if (q.type === 'judge') {
-    filterHtml = `
-      <div style="display:flex; gap:8px; margin-bottom:12px; background:#f1f5f9; padding:8px; border-radius:8px;">
-        <button class="btn ${reciteJudgeFilter==='all'?'btn-primary':'btn-outline'}" style="flex:1;padding:6px;font-size:0.8rem;" onclick="changeReciteFilter('all')">全部</button>
-        <button class="btn ${reciteJudgeFilter==='true'?'btn-green':'btn-outline'}" style="flex:1;padding:6px;font-size:0.8rem;" onclick="changeReciteFilter('true')">只看正确</button>
-        <button class="btn ${reciteJudgeFilter==='false'?'btn-danger':'btn-outline'}" style="flex:1;padding:6px;font-size:0.8rem;" onclick="changeReciteFilter('false')">只看错误</button>
-      </div>
-    `;
+    filterHtml = `<div style="display:flex; gap:8px; margin-bottom:12px; background:var(--input-bg); padding:8px; border-radius:8px;"><button class="btn ${reciteJudgeFilter==='all'?'btn-primary':'btn-outline'}" style="flex:1;padding:6px;font-size:0.8rem;" onclick="changeReciteFilter('all')">全部</button><button class="btn ${reciteJudgeFilter==='true'?'btn-green':'btn-outline'}" style="flex:1;padding:6px;font-size:0.8rem;" onclick="changeReciteFilter('true')">只看正确</button><button class="btn ${reciteJudgeFilter==='false'?'btn-danger':'btn-outline'}" style="flex:1;padding:6px;font-size:0.8rem;" onclick="changeReciteFilter('false')">只看错误</button></div>`;
   }
 
   appContainer.innerHTML = `
@@ -841,13 +1017,20 @@ function renderRecite() {
         <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="confirmExitPractice()">⬅ 退出</button>
         <div class="q-progress">${practiceIndex+1} / ${practiceQuestions.length}</div>
       </div>
-      <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <div class="font-ctrl">
+          <button class="btn btn-outline btn-small" onclick="changeFontSize(-1)">A-</button>
+          <button class="btn btn-outline btn-small" onclick="changeFontSize(1)">A+</button>
+        </div>
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem; background:#f0f9ff; color:#0369a1; border-color:#bae6fd;" onclick="openSearch()">🔍 搜题</button>
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
+      </div>
     </div>
-    
     <div class="card">
-      <span class="tag" style="background:#10b981;">${typeName} · 背题模式</span>
+      <span class="tag" style="background:#10b981;">${typeName} · 背题模式</span><button class="fav-star ${favorites.indexOf(q.id)>-1?'on':''}" style="float:right" onclick="toggleFavorite('${q.id}')">${favorites.indexOf(q.id)>-1?'⭐ 已收藏':'☆ 收藏'}</button>
       ${filterHtml}
-      <div class="q-text">${q.question}</div>${optsHtml}
+      <div class="q-text">${q.question}</div>
+      ${optsHtml}
       ${buildAnalysisHtml(q, sels, true)}
       <div class="bottom-actions">
         <button class="btn btn-outline" onclick="prevPractice()" ${practiceIndex===0?'disabled style="opacity:0.5"':''}>⬅ 上一题</button>
@@ -856,7 +1039,9 @@ function renderRecite() {
     </div>
     <div id="sheetModal" class="sheet-mask" style="display:none;" onclick="closeSheet(event)">
       <div class="sheet-content" onclick="event.stopPropagation()">
-        <div class="sheet-title">答题卡 <span style="font-size:0.85rem;color:#64748b;font-weight:normal;">(点击题号跳转)</span></div>${sheetHtml}
+        <div class="sheet-title">答题卡 <span style="font-size:0.85rem;color:var(--text-sub);font-weight:normal;">(点击题号跳转)</span></div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;"><input type="number" id="jumpNumInput" min="1" placeholder="输入题号直接跳转" style="flex:1;padding:9px;border:2px solid var(--border-color);border-radius:8px;font-size:1rem;background:var(--card-bg);color:var(--text-main);outline:none;"><button class="btn btn-primary" style="padding:9px 18px;" onclick="jumpToNumber()">跳转</button></div>
+        ${sheetHtml}
       </div>
     </div>
   `;
@@ -870,37 +1055,63 @@ function toggleReciteJudge(idx) {
   savePracticeProgress(); renderRecite();
 }
 
-function openSheet() { document.getElementById('sheetModal').style.display='flex'; setTimeout(function(){document.getElementById('sheetModal').classList.add('show');},10); }
-function closeSheet(e) { if(e.target.id==='sheetModal'){ document.getElementById('sheetModal').classList.remove('show'); setTimeout(function(){document.getElementById('sheetModal').style.display='none';},300); } }
+function openSheet() {
+  document.getElementById('sheetModal').style.display='flex';
+  setTimeout(function(){document.getElementById('sheetModal').classList.add('show');},10);
+}
+function closeSheet(e) {
+  if(e.target.id==='sheetModal'){
+    document.getElementById('sheetModal').classList.remove('show');
+    setTimeout(function(){document.getElementById('sheetModal').style.display='none';},300);
+  }
+}
 function jumpPractice(idx) { practiceIndex = idx; closeSheet({target:{id:'sheetModal'}}); savePracticeProgress(); render(); }
 function jumpRecite(idx) { practiceIndex = idx; closeSheet({target:{id:'sheetModal'}}); savePracticeProgress(); render(); }
 function prevPractice() { if(practiceIndex > 0) { practiceIndex--; savePracticeProgress(); render(); } }
 
 function selectPractice(idx) {
-  if (currentMode === 'recite') return; 
-  var q = practiceQuestions[practiceIndex]; if (q.isAnswered) return;
+  if (currentMode === 'recite') return;
+  var q = practiceQuestions[practiceIndex];
+  if (q.isAnswered || isSubjective(q.type)) return;
   var sels = practiceSelections[practiceIndex] || [];
+
   if (q.type === 'multiple') {
-    var pos = sels.indexOf(idx); if (pos > -1) sels.splice(pos, 1); else sels.push(idx);
-    practiceSelections[practiceIndex] = sels; savePracticeProgress(); renderPractice();
+    var pos = sels.indexOf(idx);
+    if (pos > -1) sels.splice(pos, 1); else sels.push(idx);
+    practiceSelections[practiceIndex] = sels;
+    savePracticeProgress(); renderPractice();
   } else {
-    practiceSelections[practiceIndex] = [idx]; q.isAnswered = true;
+    practiceSelections[practiceIndex] = [idx];
+    q.isAnswered = true;
+    addDoneQuestion(q.id);
     var isCorrect = q.answer.length === 1 && q.answer[0] === idx;
-    handlePracticeResult(q, isCorrect); savePracticeProgress(); renderPractice();
-    if (isCorrect && !isWrongPracticeMode && practiceIndex < practiceQuestions.length - 1) {
+    handlePracticeResult(q, isCorrect);
+    savePracticeProgress();
+    renderPractice();
+    if (autoShowAnswer && isCorrect && !isWrongPracticeMode && practiceIndex < practiceQuestions.length - 1) {
       setTimeout(function() { nextPractice(); }, 1000);
     }
   }
 }
 
 function confirmMultiPractice() {
-  var q = practiceQuestions[practiceIndex]; q.isAnswered = true;
+  var q = practiceQuestions[practiceIndex];
+  q.isAnswered = true;
+  addDoneQuestion(q.id);
   var sels = practiceSelections[practiceIndex] || [];
   var isCorrect = sels.length === q.answer.length && sels.every(function(v){ return q.answer.indexOf(v) > -1; });
-  handlePracticeResult(q, isCorrect); savePracticeProgress(); renderPractice();
+  handlePracticeResult(q, isCorrect);
+  savePracticeProgress();
+  renderPractice();
 }
 
 function handlePracticeResult(q, isCorrect) {
+  var todayStr = new Date().toLocaleDateString();
+  var stats = JSON.parse(localStorage.getItem('xjt_stats_'+todayStr) || '{"done":0,"correct":0}');
+  stats.done++;
+  if (isCorrect) stats.correct++;
+  localStorage.setItem('xjt_stats_'+todayStr, JSON.stringify(stats));
+
   if (isWrongPracticeMode) {
     if (isCorrect) {
       q.streak = (q.streak || 0) + 1;
@@ -913,13 +1124,19 @@ function handlePracticeResult(q, isCorrect) {
     saveData();
   } else {
     if (!isCorrect) {
-      var exist = false; for (var i=0; i<wrongBook.length; i++) { if (wrongBook[i].id === q.id) exist = true; }
-      if (!exist) { wrongBook.push({ id: q.id, question: q.question, type: q.type, options: q.options, answer: q.answer, analysis: q.analysis, streak: 0 }); saveData(); }
+      var exist = false;
+      for (var i=0; i<wrongBook.length; i++) { if (wrongBook[i].id === q.id) exist = true; }
+      if (!exist) {
+        wrongBook.push({ id: q.id, question: q.question, type: q.type, options: q.options, answer: q.answer, analysis: q.analysis, streak: 0 });
+        saveData();
+      }
     }
   }
 }
 
-function nextPractice() { if(practiceIndex < practiceQuestions.length) { practiceIndex++; savePracticeProgress(); render(); } }
+function nextPractice() {
+  if(practiceIndex < practiceQuestions.length) { practiceIndex++; savePracticeProgress(); render(); }
+}
 
 function openReview() { currentMode = 'review'; render(); }
 function renderReview() {
@@ -927,43 +1144,81 @@ function renderReview() {
     appContainer.innerHTML = `<div style="margin-bottom:10px;"><button class="btn btn-outline" onclick="currentMode='home';render()">⬅ 返回</button></div><div class="card" style="text-align:center;padding:30px;">🎉 暂无错题</div>`;
     return;
   }
-  var html = `<div style="display:flex;justify-content:space-between;margin-bottom:15px;"><h3>错题本 (${wrongBook.length})</h3><button class="btn btn-outline" onclick="currentMode='home';render()">返回</button></div>`;
+  var html = `<div style="display:flex;justify-content:space-between;margin-bottom:15px; align-items:center;"><h3>错题本 (${wrongBook.length})</h3><button class="btn btn-outline" onclick="currentMode='home';render()">返回</button></div>`;
   for (var i = 0; i < wrongBook.length; i++) {
     var q = wrongBook[i];
-    html += `
-      <div class="card" style="border-left:4px solid #ef4444;">
-        <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:8px;">
-          <span class="tag">${q.type==='single'?'单选':q.type==='multiple'?'多选':'判断'}</span><span style="color:#ef4444;font-weight:bold;">连对: ${q.streak||0}/5</span>
-        </div>
-        <div style="font-weight:bold;font-size:0.95rem;margin-bottom:10px;">${q.question}</div>
-        <div style="font-size:0.85rem;color:#10b981;margin-bottom:5px;font-weight:bold;">正确答案：${q.answer.map(function(idx){ return String.fromCharCode(65+idx); }).join(', ')}</div>
-        <div style="font-size:0.85rem;color:#64748b;line-height:1.5; margin-bottom:8px;">${q.options.map(function(o,idx){ return String.fromCharCode(65+idx) + '. ' + o; }).join('<br>')}</div>
-        ${q.analysis ? `<div class="analysis show" style="margin-top:0;"><strong>解析：</strong>${q.analysis}</div>` : ''}
+    var tName = TYPE_NAMES[q.type] || '未知';
+    var isSubj = isSubjective(q.type);
+    var ansDisplay = isSubj
+      ? (typeof q.answer === 'string' ? q.answer : q.answer.join('；'))
+      : q.answer.map(function(idx){ return String.fromCharCode(65+idx); }).join(', ');
+    var optsDisplay = isSubj ? '' : q.options.map(function(o,idx){ return String.fromCharCode(65+idx) + '. ' + o; }).join('<br>');
+
+    html += `<div class="card" style="border-left:4px solid #ef4444;">
+      <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:8px;">
+        <span class="tag">${tName}</span>
+        <span style="color:#ef4444;font-weight:bold;">连对: ${q.streak||0}/5</span>
       </div>
-    `;
+      <div style="font-weight:bold;font-size:0.95rem;margin-bottom:10px;">${q.question}</div>
+      <div style="font-size:0.85rem;color:#10b981;margin-bottom:5px;font-weight:bold;">正确答案：${ansDisplay}</div>
+      ${optsDisplay ? `<div style="font-size:0.85rem;color:var(--text-sub);line-height:1.5; margin-bottom:8px;">${optsDisplay}</div>` : ''}
+      ${q.analysis ? `<div class="analysis show" style="margin-top:0;"><strong>解析：</strong>${q.analysis}</div>` : ''}
+    </div>`;
   }
   appContainer.innerHTML = html + `<div class="footer">技术支持：秦十三郎</div>`;
 }
 
-// ================= 考试模式 =================
 function startExamSetup() { currentMode = 'examSetup'; render(); }
 function renderExamSetup() {
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
-  var cS = 0, cM = 0, cJ = 0;
-  for (var i=0; i<qs.length; i++) { if (qs[i].type === 'single') cS++; else if (qs[i].type === 'multiple') cM++; else if (qs[i].type === 'judge') cJ++; }
+  var count = { single:0, multiple:0, judge:0, fill:0, short:0, essay:0 };
+  for (var i=0; i<qs.length; i++) { if (count[qs[i].type] !== undefined) count[qs[i].type]++; }
+
   appContainer.innerHTML = `
     <div class="card">
       <div style="display:flex;justify-content:space-between;margin-bottom:15px;"><h3>📝 考试组卷</h3><button class="btn btn-outline" onclick="currentMode='home';render()">退出</button></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;"><span>单选题 (共${cS}题)</span><div>抽 <input type="number" id="cS" value="${Math.min(5,cS)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pS" value="2" style="width:40px;text-align:center;"> 分</div></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;"><span>多选题 (共${cM}题)</span><div>抽 <input type="number" id="cM" value="${Math.min(2,cM)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pM" value="4" style="width:40px;text-align:center;"> 分</div></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;"><span>判断题 (共${cJ}题)</span><div>抽 <input type="number" id="cJ" value="${Math.min(3,cJ)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pJ" value="2" style="width:40px;text-align:center;"> 分</div></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;">
+      
+      <div style="font-weight:bold; font-size:0.9rem; margin-top:10px;">组卷模式</div>
+      <div class="radio-group">
+        <div class="radio-item ${examPaperMode==='random'?'active':''}" onclick="setExamMode('random')">正常随机</div>
+        <div class="radio-item ${examPaperMode==='wrong_first'?'active':''}" onclick="setExamMode('wrong_first')">错题优先</div>
+        <div class="radio-item ${examPaperMode==='new_first'?'active':''}" onclick="setExamMode('new_first')">未做题优先</div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);">
+        <span>单选题 (共${count.single}题)</span>
+        <div>抽 <input type="number" id="cS" value="${Math.min(5,count.single)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pS" value="2" style="width:40px;text-align:center;"> 分</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);">
+        <span>多选题 (共${count.multiple}题)</span>
+        <div>抽 <input type="number" id="cM" value="${Math.min(2,count.multiple)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pM" value="4" style="width:40px;text-align:center;"> 分</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);">
+        <span>判断题 (共${count.judge}题)</span>
+        <div>抽 <input type="number" id="cJ" value="${Math.min(3,count.judge)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pJ" value="2" style="width:40px;text-align:center;"> 分</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);">
+        <span>填空题 (共${count.fill}题)</span>
+        <div>抽 <input type="number" id="cF" value="${Math.min(2,count.fill)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pF" value="5" style="width:40px;text-align:center;"> 分</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);">
+        <span>简答题 (共${count.short}题)</span>
+        <div>抽 <input type="number" id="cT" value="${Math.min(1,count.short)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pT" value="10" style="width:40px;text-align:center;"> 分</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);">
+        <span>论述题 (共${count.essay}题)</span>
+        <div>抽 <input type="number" id="cE" value="${Math.min(1,count.essay)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pE" value="20" style="width:40px;text-align:center;"> 分</div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);">
         <span>合格分数线（可选）</span>
-        <div><input type="number" id="passScore" value="" placeholder="不设置" style="width:70px;text-align:center; border:1px solid #cbd5e1; border-radius:6px; padding:6px;"> 分</div>
+        <div><input type="number" id="passScore" value="" placeholder="不设置" style="width:70px;text-align:center; border:1px solid var(--border-color); border-radius:6px; padding:6px;"> 分</div>
       </div>
-      <div class="banner" style="margin-top:10px;margin-bottom:0;background:#fff7ed;color:#9a3412;">
-        ⚠️ <b>铁途学练提示：</b>当设置合格分数线后，答题过程中如果低于合格分会自动结束当前考试。
+
+      <div class="banner" style="margin-top:10px;margin-bottom:0;background:rgba(255,247,237,0.5);color:#9a3412;border:1px solid #fdba74;">
+        ⚠️ <b>提示：</b>主观题无自动判分，交卷后可对照答案自行评分；合格线仅按客观题分数计算。
       </div>
+
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;">
         <span>考试时长</span>
         <div><input type="number" id="tLimit" value="60" style="width:50px;text-align:center;"> 分钟</div>
@@ -973,46 +1228,128 @@ function renderExamSetup() {
   `;
 }
 
+function setExamMode(mode) {
+  examPaperMode = mode;
+  renderExamSetup();
+}
+
 function startExam() {
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
-  var cS = parseInt(document.getElementById('cS').value) || 0; var cM = parseInt(document.getElementById('cM').value) || 0;
-  var cJ = parseInt(document.getElementById('cJ').value) || 0; var tLimit = parseInt(document.getElementById('tLimit').value) || 60;
+  var cS = parseInt(document.getElementById('cS').value) || 0;
+  var cM = parseInt(document.getElementById('cM').value) || 0;
+  var cJ = parseInt(document.getElementById('cJ').value) || 0;
+  var cF = parseInt(document.getElementById('cF').value) || 0;
+  var cT = parseInt(document.getElementById('cT').value) || 0;
+  var cE = parseInt(document.getElementById('cE').value) || 0;
+  var tLimit = parseInt(document.getElementById('tLimit').value) || 60;
   var pScoreRaw = document.getElementById('passScore').value;
   var pScore = parseInt(pScoreRaw);
   if (isNaN(pScore) || pScore <= 0) pScore = 0;
-  if (cS + cM + cJ === 0) return showToast('请至少选择一题', true);
-  var sQS = qs.filter(function(q){ return q.type === 'single'; }).sort(function(){ return 0.5 - Math.random(); });
-  var mQS = qs.filter(function(q){ return q.type === 'multiple'; }).sort(function(){ return 0.5 - Math.random(); });
-  var jQS = qs.filter(function(q){ return q.type === 'judge'; }).sort(function(){ return 0.5 - Math.random(); });
-  examQuestions = sQS.slice(0, cS).concat(mQS.slice(0, cM)).concat(jQS.slice(0, cJ));
-  examConfig = { scoreSingle: parseInt(document.getElementById('pS').value) || 1, scoreMultiple: parseInt(document.getElementById('pM').value) || 1, scoreJudge: parseInt(document.getElementById('pJ').value) || 1, timeLimit: tLimit, passScore: pScore };
-  examIndex = 0; examSelections = []; for (var i=0; i<examQuestions.length; i++) examSelections.push([]);
-  examStartTime = Date.now(); examRemainingSeconds = tLimit * 60;
+
+  if (cS + cM + cJ + cF + cT + cE === 0) return showToast('请至少选择一题', true);
+
+  var doneIds = getDoneQuestions();
+  var wrongIds = wrongBook.map(function(w){ return w.id; });
+
+  function pickQuestions(type, count) {
+    var allOfType = qs.filter(function(q){ return q.type === type; });
+    if (allOfType.length <= count) return allOfType.slice();
+
+    var pool = [];
+    if (examPaperMode === 'wrong_first') {
+      var wrongOfType = allOfType.filter(function(q){ return wrongIds.indexOf(q.id) > -1; });
+      pool = wrongOfType.sort(function(){ return 0.5 - Math.random(); }).slice(0, count);
+      if (pool.length < count) {
+        var rest = allOfType.filter(function(q){ return wrongIds.indexOf(q.id) === -1; })
+          .sort(function(){ return 0.5 - Math.random(); });
+        pool = pool.concat(rest.slice(0, count - pool.length));
+      }
+    } else if (examPaperMode === 'new_first') {
+      var newOfType = allOfType.filter(function(q){ return doneIds.indexOf(q.id) === -1; });
+      pool = newOfType.sort(function(){ return 0.5 - Math.random(); }).slice(0, count);
+      if (pool.length < count) {
+        var rest = allOfType.filter(function(q){ return doneIds.indexOf(q.id) > -1; })
+          .sort(function(){ return 0.5 - Math.random(); });
+        pool = pool.concat(rest.slice(0, count - pool.length));
+      }
+    } else {
+      pool = allOfType.sort(function(){ return 0.5 - Math.random(); }).slice(0, count);
+    }
+    return pool;
+  }
+
+  examQuestions = [].concat(
+    pickQuestions('single', cS),
+    pickQuestions('multiple', cM),
+    pickQuestions('judge', cJ),
+    pickQuestions('fill', cF),
+    pickQuestions('short', cT),
+    pickQuestions('essay', cE)
+  );
+
+  examConfig = {
+    scoreSingle: parseInt(document.getElementById('pS').value) || 1,
+    scoreMultiple: parseInt(document.getElementById('pM').value) || 1,
+    scoreJudge: parseInt(document.getElementById('pJ').value) || 1,
+    scoreFill: parseInt(document.getElementById('pF').value) || 1,
+    scoreShort: parseInt(document.getElementById('pT').value) || 1,
+    scoreEssay: parseInt(document.getElementById('pE').value) || 1,
+    timeLimit: tLimit,
+    passScore: pScore
+  };
+
+  examIndex = 0; examSelections = [];
+  for (var i=0; i<examQuestions.length; i++) examSelections.push([]);
+  examStartTime = Date.now();
+  examRemainingSeconds = tLimit * 60;
   examAborted = false;
   window.__examLowScoreWarned = false;
+
   if (examTimer) clearInterval(examTimer);
   examTimer = setInterval(function() {
     examRemainingSeconds--;
-    if (examRemainingSeconds <= 0) { clearInterval(examTimer); examTimer = null; showToast('时间到，自动交卷', true); submitExam(false); }
-    else {
+    if (examRemainingSeconds <= 0) {
+      clearInterval(examTimer); examTimer = null;
+      showToast('时间到，自动交卷', true);
+      submitExam(false);
+    } else {
       var tEl = document.getElementById('timerDisplay');
       if (tEl) {
-        var m = Math.floor(examRemainingSeconds / 60); var s = examRemainingSeconds % 60;
+        var m = Math.floor(examRemainingSeconds / 60);
+        var s = examRemainingSeconds % 60;
         tEl.innerText = (m<10?'0':'') + m + ':' + (s<10?'0':'') + s;
         if (examRemainingSeconds < 60) tEl.style.color = '#ef4444';
       }
     }
   }, 1000);
+
   currentMode = 'exam'; render();
 }
 
 function renderExam() {
   if (examIndex >= examQuestions.length) return submitExam(false);
-  var q = examQuestions[examIndex]; var sels = examSelections[examIndex] || []; var optsHtml = '';
-  for (var i=0; i<q.options.length; i++) { var cls = 'opt' + (sels.indexOf(i) > -1 ? ' selected' : ''); optsHtml += `<div class="${cls}" onclick="selectExam(${i})"><div class="opt-prefix">${String.fromCharCode(65+i)}</div><div>${q.options[i]}</div></div>`; }
-  var typeName = q.type === 'single' ? '单选题' : q.type === 'multiple' ? '多选题' : '判断题';
+  var q = examQuestions[examIndex];
+  var sels = examSelections[examIndex] || [];
+  var isSubj = isSubjective(q.type);
+  var optsHtml = '';
+
+  if (isSubj) {
+    optsHtml = `<div class="subjective-answer" style="border-color:var(--border-color); background:var(--input-bg);"><div class="sa-title" style="color:var(--text-sub);">📝 本题为主观题，请自行作答，交卷后可查看答案</div></div>`;
+  } else {
+    if (q.type === 'judge' && (!q.options || q.options.length === 0)) {
+      q.options = ['正确', '错误'];
+    }
+    for (var i=0; i<q.options.length; i++) {
+      var cls = 'opt' + (sels.indexOf(i) > -1 ? ' selected' : '');
+      optsHtml += `<div class="${cls}" onclick="selectExam(${i})"><div class="opt-prefix">${String.fromCharCode(65+i)}</div><div>${q.options[i]}</div></div>`;
+    }
+  }
+
+  var typeName = TYPE_NAMES[q.type] || '未知题型';
   var sheetHtml = buildSheetHtml(examQuestions, examIndex, examSelections, 'exam');
-  var m = Math.floor(examRemainingSeconds / 60); var s = examRemainingSeconds % 60; var timerStr = (m<10?'0':'') + m + ':' + (s<10?'0':'') + s;
+  var m = Math.floor(examRemainingSeconds / 60);
+  var s = examRemainingSeconds % 60;
+  var timerStr = (m<10?'0':'') + m + ':' + (s<10?'0':'') + s;
 
   appContainer.innerHTML = `
     <div class="toolbar">
@@ -1023,7 +1360,9 @@ function renderExam() {
       <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
     </div>
     <div class="card">
-      <span class="tag">${typeName}</span><div class="q-text">${q.question}</div>${optsHtml}
+      <span class="tag">${typeName}</span>
+      <div class="q-text">${q.question}</div>
+      ${optsHtml}
       <div class="bottom-actions">
         <button class="btn btn-outline" onclick="prevExam()" ${examIndex===0?'disabled style="opacity:0.5"':''}>⬅ 上一题</button>
         <button class="btn btn-primary" onclick="nextExam()">${examIndex===examQuestions.length-1?'交卷':'下一题 ➡'}</button>
@@ -1035,7 +1374,9 @@ function renderExam() {
     </div>
     <div id="sheetModal" class="sheet-mask" style="display:none;" onclick="closeSheet(event)">
       <div class="sheet-content" onclick="event.stopPropagation()">
-        <div class="sheet-title">答题卡 <span style="font-size:0.85rem;color:#64748b;font-weight:normal;">(点击题号跳转)</span></div>${sheetHtml}
+        <div class="sheet-title">答题卡 <span style="font-size:0.85rem;color:var(--text-sub);font-weight:normal;">(点击题号跳转)</span></div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;"><input type="number" id="jumpNumInput" min="1" placeholder="输入题号直接跳转" style="flex:1;padding:9px;border:2px solid var(--border-color);border-radius:8px;font-size:1rem;background:var(--card-bg);color:var(--text-main);outline:none;"><button class="btn btn-primary" style="padding:9px 18px;" onclick="jumpToNumber()">跳转</button></div>
+        ${sheetHtml}
       </div>
     </div>
   `;
@@ -1043,9 +1384,13 @@ function renderExam() {
 
 function jumpExam(idx) { examIndex = idx; closeSheet({target:{id:'sheetModal'}}); renderExam(); }
 function selectExam(idx) {
-  var q = examQuestions[examIndex]; var sels = examSelections[examIndex] || [];
-  if (q.type === 'multiple') { var pos = sels.indexOf(idx); if (pos > -1) sels.splice(pos, 1); else sels.push(idx); }
-  else { sels = [idx]; }
+  var q = examQuestions[examIndex];
+  if (isSubjective(q.type)) return;
+  var sels = examSelections[examIndex] || [];
+  if (q.type === 'multiple') {
+    var pos = sels.indexOf(idx);
+    if (pos > -1) sels.splice(pos, 1); else sels.push(idx);
+  } else { sels = [idx]; }
   examSelections[examIndex] = sels;
   renderExam();
   checkExamScoreWarning();
@@ -1053,79 +1398,87 @@ function selectExam(idx) {
 function nextExam() { if (examIndex === examQuestions.length - 1) { confirmSubmitExam(); } else { examIndex++; renderExam(); } }
 function prevExam() { if (examIndex > 0) { examIndex--; renderExam(); } }
 
-/* 核心逻辑：已得分 + 剩余未答满分 < 合格线 时终止 */
 function checkExamScoreWarning() {
   if (currentMode !== 'exam') return;
   if (examRemainingSeconds <= 0) return;
-  if (!examConfig.passScore || examConfig.passScore <= 0) return; // 未设置合格线
+  if (!examConfig.passScore || examConfig.passScore <= 0) return;
   if (window.__examLowScoreWarned) return;
 
-  var got = 0;
-  var remainingMax = 0;
-  
+  var got = 0; var remainingMax = 0;
   for (var i = 0; i < examQuestions.length; i++) {
     var q = examQuestions[i];
-    var pts = q.type==='single' ? examConfig.scoreSingle : q.type==='multiple' ? examConfig.scoreMultiple : examConfig.scoreJudge;
-    var sel = examSelections[i] || [];
-    
-    if (sel.length === 0) {
-      remainingMax += pts; // 没答的题算作剩余满分
-      continue;
+    var pts = 0;
+    switch(q.type) {
+      case 'single': pts = examConfig.scoreSingle; break;
+      case 'multiple': pts = examConfig.scoreMultiple; break;
+      case 'judge': pts = examConfig.scoreJudge; break;
+      default: continue;
     }
-    
+    var sel = examSelections[i] || [];
+    if (sel.length === 0) { remainingMax += pts; continue; }
     var ans = q.answer.slice().sort();
     var s = sel.slice().sort();
     var isCorrect = ans.length === s.length && ans.every(function(v, idx){ return v === s[idx]; });
-    if (isCorrect) got += pts; // 答对的计入得分
+    if (isCorrect) got += pts;
   }
-
-  // 绝对无法及格时，弹出拦截
   if (got + remainingMax < examConfig.passScore) {
     window.__examLowScoreWarned = true;
-    showAppConfirm(
-      '考试终止',
-      '<div class="maoti-fail">考试不合格，不要气馁，继续加油，多去练练吧！</div>',
-      '查看成绩',
-      '查看成绩',
-      function() { submitExam(true); },
-      function() { submitExam(true); }
-    );
+    showAppConfirm('考试终止', '<div class="maoti-fail">考试不合格，不要气馁，继续加油，多去练练吧！</div>', '查看成绩', '查看成绩', function() { submitExam(true); }, function() { submitExam(true); });
   }
 }
 
 function submitExam(aborted) {
   if (examTimer) { clearInterval(examTimer); examTimer = null; }
   examAborted = !!aborted;
-  var usedSec = Math.floor((Date.now() - examStartTime) / 1000); var usedTimeStr = Math.floor(usedSec/60) + '分' + (usedSec%60) + '秒';
+  var usedSec = Math.floor((Date.now() - examStartTime) / 1000);
+  var usedTimeStr = Math.floor(usedSec/60) + '分' + (usedSec%60) + '秒';
+  examWrongList = [];
   var got = 0, total = 0;
-  for (var i=0; i<examQuestions.length; i++) {
-    var q = examQuestions[i]; var pts = q.type==='single' ? examConfig.scoreSingle : q.type==='multiple' ? examConfig.scoreMultiple : examConfig.scoreJudge; total += pts;
-    var ans = q.answer.slice().sort(); var sel = (examSelections[i] || []).slice().sort();
-    var isCorrect = ans.length === sel.length && ans.every(function(v,idx){ return v === sel[idx]; });
-    if (isCorrect) got += pts;
-    else { var exist = false; for (var j=0; j<wrongBook.length; j++) { if (wrongBook[j].id === q.id) exist = true; } if (!exist) { wrongBook.push({ id: q.id, question: q.question, type: q.type, options: q.options, answer: q.answer, analysis: q.analysis, streak: 0 }); } }
-  }
-  saveData(); examScore = { got: got, total: total, usedTime: usedTimeStr };
 
-  var isFull = examScore.got >= examScore.total;
+  for (var i=0; i<examQuestions.length; i++) {
+    var q = examQuestions[i];
+    var pts = 0;
+    switch(q.type) {
+      case 'single': pts = examConfig.scoreSingle; break;
+      case 'multiple': pts = examConfig.scoreMultiple; break;
+      case 'judge': pts = examConfig.scoreJudge; break;
+      case 'fill': pts = examConfig.scoreFill; break;
+      case 'short': pts = examConfig.scoreShort; break;
+      case 'essay': pts = examConfig.scoreEssay; break;
+    }
+    total += pts;
+
+    if (!isSubjective(q.type)) {
+      addDoneQuestion(q.id);
+      var ans = q.answer.slice().sort();
+      var sel = (examSelections[i] || []).slice().sort();
+      var isCorrect = ans.length === sel.length && ans.every(function(v,idx){ return v === sel[idx]; });
+      if (isCorrect) got += pts;
+      else {
+        examWrongList.push({ id: q.id, question: q.question, type: q.type, options: q.options, answer: q.answer, analysis: q.analysis, streak: 0 });
+        var exist = false;
+        for (var j=0; j<wrongBook.length; j++) { if (wrongBook[j].id === q.id) exist = true; }
+        if (!exist) {
+          wrongBook.push({ id: q.id, question: q.question, type: q.type, options: q.options, answer: q.answer, analysis: q.analysis, streak: 0 });
+        }
+      }
+    }
+  }
+  saveData();
+  examScore = { got: got, total: total, usedTime: usedTimeStr };
+  var isFull = examScore.got >= examScore.total && examScore.total > 0;
   if (isFull) launchFireworks(3500);
 
   var tipHtml;
-  if (examAborted) {
-    tipHtml = '<div class="maoti-fail">考试不合格，不要气馁，继续加油，多去练练吧！</div>';
-  } else if (isFull) {
-    tipHtml = '<div class="maoti-result full">你真棒，继续加油哦！</div>';
-  } else {
-    tipHtml = '<div class="maoti-fail">别气馁，多去刷刷题，满分等着你！</div>';
-  }
-  showAppConfirm(
-    examAborted ? '考试已结束' : (isFull ? '恭喜满分' : '考试完成'),
-    tipHtml,
-    '查看结果',
-    '返回首页',
+  if (examAborted) { tipHtml = '<div class="maoti-fail">考试不合格，不要气馁，继续加油，多去练练吧！</div>'; }
+  else if (isFull) { tipHtml = '<div class="maoti-result full">你真棒，继续加油哦！</div>'; }
+  else { tipHtml = '<div class="maoti-fail">别气馁，多去刷刷题，满分等着你！</div>'; }
+
+  showAppConfirm(examAborted ? '考试已结束' : (isFull ? '恭喜满分' : '考试完成'),
+    tipHtml + '<div style="font-size:0.8rem;color:var(--text-sub);margin-top:10px;">* 分数仅统计客观题，主观题请自行对照答案评分</div>',
+    '查看结果', '返回首页',
     function() { currentMode = 'result'; render(); },
-    function() { currentMode = 'home'; render(); }
-  );
+    function() { currentMode = 'home'; render(); });
 }
 
 function renderResult() {
@@ -1134,29 +1487,21 @@ function renderResult() {
   var isPass = hasPass ? (examScore.got >= examConfig.passScore) : true;
   if (isFull) launchFireworks(3500);
 
-  var msg = '';
-  var msgClass = 'maoti-result';
-
-  if (isFull) {
-    msg = '你真棒，继续加油哦！';
-    msgClass += ' full';
-  } else if (hasPass && !isPass) {
-    msg = '考试不合格，不要气馁，继续加油，多去练练吧！';
-    msgClass = 'maoti-fail';
-  } else {
-    msg = '考试合格，再接再厉！';
-  }
+  var msg = ''; var msgClass = 'maoti-result';
+  if (isFull) { msg = '你真棒，继续加油哦！'; msgClass += ' full'; }
+  else if (hasPass && !isPass) { msg = '考试不合格，不要气馁，继续加油，多去练练吧！'; msgClass = 'maoti-fail'; }
+  else { msg = '考试合格，再接再厉！'; }
 
   appContainer.innerHTML = `
     <div class="card score-box">
       <h2 style="color:#0d47a1;margin-bottom:20px;">📊 考试成绩</h2>
       <div class="score-num">${examScore.got}</div>
-      <div style="font-size:1.1rem;color:#64748b;font-weight:bold;margin-bottom:20px;">
-        总分：${examScore.total} 分
-        ${hasPass ? '｜ 合格线：' + examConfig.passScore + ' 分' : '｜ 未设合格线'}
+      <div style="font-size:1.1rem;color:var(--text-sub);font-weight:bold;margin-bottom:20px;">
+        总分：${examScore.total} 分 ${hasPass ? '｜ 合格线：' + examConfig.passScore + ' 分' : '｜ 未设合格线'}
       </div>
       <div class="${msgClass}">${msg}</div>
-      <div style="color:#64748b;font-size:0.9rem;margin-bottom:30px;">本次用时：${examScore.usedTime}</div>
+      <div style="color:var(--text-sub);font-size:0.9rem;margin-bottom:30px;">本次用时：${examScore.usedTime}</div>
+      <div style="font-size:0.8rem;color:#94a3b8;margin-bottom:20px;">* 以上分数仅含客观题，主观题需自行评分</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button class="btn btn-primary" style="flex:1;min-width:30%;" onclick="currentMode='home';render()">返回首页</button>
         <button class="btn btn-green" style="flex:1;min-width:30%;" onclick="currentMode='examReview';render();">查看试卷</button>
@@ -1166,73 +1511,91 @@ function renderResult() {
   `;
 }
 
-/* 考试试卷上下滑动查看 */
 function renderExamReview() {
-  var html = `<div style="display:flex;justify-content:space-between;margin-bottom:15px;">
-                <h3>📄 考试试卷回顾</h3>
-                <button class="btn btn-outline" onclick="currentMode='result';render()">返回</button>
-              </div>`;
-              
+  var html = `<div style="display:flex;justify-content:space-between;margin-bottom:15px; align-items:center;"><h3>📄 考试试卷回顾</h3><button class="btn btn-outline" onclick="currentMode='result';render()">返回</button></div>`;
+  if (examWrongList && examWrongList.length > 0) {
+    html += `<div class="card" style="border-left:4px solid #ef4444;">
+      <div style="font-weight:bold;margin-bottom:8px;">🔥 本次错题 ${examWrongList.length} 题（已自动收录错题本）</div>
+      <button class="btn btn-danger btn-block" style="margin-top:0;" onclick="startExamWrongPractice()">立即重练本次错题</button>
+    </div>`;
+  }
   for (var i=0; i<examQuestions.length; i++) {
     var q = examQuestions[i];
     var sels = examSelections[i] || [];
-    var isCorrect = sels.length === q.answer.length && sels.every(function(v){ return q.answer.indexOf(v) > -1; });
-    
-    var typeName = q.type === 'single' ? '单选题' : q.type === 'multiple' ? '多选题' : '判断题';
-    
+    var isSubj = isSubjective(q.type);
+    var isCorrect = isSubj ? null : (sels.length === q.answer.length && sels.every(function(v){ return q.answer.indexOf(v) > -1; }));
+    var typeName = TYPE_NAMES[q.type] || '未知';
+
     var optsHtml = '';
-    for (var k=0; k<q.options.length; k++) {
-      var cls = 'opt disabled';
-      if (q.answer.indexOf(k) > -1) cls += ' correct'; 
-      else if (sels.indexOf(k) > -1) cls += ' wrong'; 
-      optsHtml += `<div class="${cls}"><div class="opt-prefix">${String.fromCharCode(65+k)}</div><div>${q.options[k]}</div></div>`;
+    if (isSubj) {
+      var ansText = typeof q.answer === 'string' ? q.answer : (Array.isArray(q.answer) ? q.answer.join('；') : '');
+      optsHtml = `<div class="subjective-answer"><div class="sa-title">📝 参考答案</div><div class="sa-content">${ansText}</div></div>`;
+    } else {
+      if (q.type === 'judge' && (!q.options || q.options.length === 0)) {
+        q.options = ['正确', '错误'];
+      }
+      for (var k=0; k<q.options.length; k++) {
+        var cls = 'opt disabled';
+        if (q.answer.indexOf(k) > -1) cls += ' correct';
+        else if (sels.indexOf(k) > -1) cls += ' wrong';
+        optsHtml += `<div class="${cls}"><div class="opt-prefix">${String.fromCharCode(65+k)}</div><div>${q.options[k]}</div></div>`;
+      }
     }
-    
-    var myAnsStr = sels.length > 0 ? sels.map(function(idx){ return String.fromCharCode(65+idx); }).join(', ') : '未作答';
-    var trueAnsStr = q.answer.map(function(idx){ return String.fromCharCode(65+idx); }).join(', ');
-    
-    html += `
-      <div class="card" style="border-left:4px solid ${isCorrect ? '#10b981' : '#ef4444'}; margin-bottom:15px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-          <span class="tag" style="background:${isCorrect ? '#10b981' : '#ef4444'};">第 ${i+1} 题 · ${typeName}</span>
-          <span style="font-weight:bold; color:${isCorrect ? '#10b981' : '#ef4444'};">${isCorrect ? '✅ 答对' : '❌ 答错'}</span>
-        </div>
-        <div class="q-text" style="padding-right:0;">${q.question}</div>
-        ${optsHtml}
-        
-        <div class="exam-review-box ${isCorrect ? 'ok' : 'err'}">
-          <div style="font-weight:bold; margin-bottom:5px;">标准答案：<span style="color:#10b981;">${trueAnsStr}</span></div>
-          <div style="font-weight:bold; margin-bottom:5px;">你的答案：<span style="color:${isCorrect ? '#10b981' : '#ef4444'};">${myAnsStr}</span></div>
-          ${q.analysis ? `<div style="margin-top:8px; font-weight:bold; color:#0d47a1;">解析：</div><div style="color:#475569; margin-top:4px;">${q.analysis}</div>` : ''}
-        </div>
+
+    var myAnsStr = isSubj ? '自行作答' : (sels.length > 0 ? sels.map(function(idx){ return String.fromCharCode(65+idx); }).join(', ') : '未作答');
+    var trueAnsStr = isSubj
+      ? (typeof q.answer === 'string' ? q.answer : q.answer.join('；'))
+      : q.answer.map(function(idx){ return String.fromCharCode(65+idx); }).join(', ');
+
+    var borderColor = isSubj ? '#0d47a1' : (isCorrect ? '#10b981' : '#ef4444');
+    var statusText = isSubj ? '主观题' : (isCorrect ? '✅ 答对' : '❌ 答错');
+    var statusColor = isSubj ? '#0d47a1' : (isCorrect ? '#10b981' : '#ef4444');
+    var reviewClass = isSubj ? 'ok' : (isCorrect ? 'ok' : 'err');
+
+    html += `<div class="card" style="border-left:4px solid ${borderColor}; margin-bottom:15px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span class="tag" style="background:${borderColor};">第 ${i+1} 题 · ${typeName}</span>
+        <span style="font-weight:bold; color:${statusColor};">${statusText}</span>
       </div>
-    `;
+      <div class="q-text" style="padding-right:0;">${q.question}</div>
+      ${optsHtml}
+      <div class="exam-review-box ${reviewClass}">
+        <div style="font-weight:bold; margin-bottom:5px;">标准答案：<span style="color:#10b981;">${trueAnsStr}</span></div>
+        ${!isSubj ? `<div style="font-weight:bold; margin-bottom:5px;">你的答案：<span style="color:${isCorrect ? '#10b981' : '#ef4444'};">${myAnsStr}</span></div>` : ''}
+        ${q.analysis ? `<div style="margin-top:8px; font-weight:bold; color:#0d47a1;">解析：</div><div style="color:var(--text-main); margin-top:4px;">${q.analysis}</div>` : ''}
+      </div>
+      ${!isCorrect && !isSubj ? `<button class="btn btn-outline" style="width:100%; margin-top:10px; color:#0d47a1; border-color:#0d47a1;" onclick="addToWrongBook('${q.id}')">➕ 加入错题本</button>` : ''}
+    </div>`;
   }
-  
-  html += `<div style="display:flex;gap:10px;margin-bottom:20px;">
-             <button class="btn btn-primary btn-block" onclick="currentMode='result';render()">返回成绩单</button>
-           </div>`;
-           
+  html += `<div style="display:flex;gap:10px;margin-bottom:20px;"><button class="btn btn-primary btn-block" onclick="currentMode='result';render()">返回成绩单</button></div>`;
   appContainer.innerHTML = html + `<div class="footer">技术支持：秦十三郎</div>`;
 }
 
-// ===== 满分烟花 =====
-function launchFireworks(duration) {
-  var old = document.getElementById('fireworks-canvas');
-  if (old) old.remove();
+function addToWrongBook(qId) {
+  var exist = false;
+  for (var i=0; i<wrongBook.length; i++) { if (wrongBook[i].id === qId) exist = true; }
+  if (exist) return showToast('该题目已在错题本中', true);
+  for (var j=0; j<examQuestions.length; j++) {
+    if (examQuestions[j].id === qId) {
+      var q = examQuestions[j];
+      wrongBook.push({ id: q.id, question: q.question, type: q.type, options: q.options, answer: q.answer, analysis: q.analysis, streak: 0 });
+      saveData();
+      showToast('已加入错题本');
+      return;
+    }
+  }
+}
 
-  var canvas = document.createElement('canvas');
-  canvas.id = 'fireworks-canvas';
-  document.body.appendChild(canvas);
+function launchFireworks(duration) {
+  var old = document.getElementById('fireworks-canvas'); if (old) old.remove();
+  var canvas = document.createElement('canvas'); canvas.id = 'fireworks-canvas'; document.body.appendChild(canvas);
   var ctx = canvas.getContext('2d');
   var W = canvas.width = window.innerWidth;
   var H = canvas.height = window.innerHeight;
-
   var particles = [];
   var colors = ['#ff4757','#ffa502','#2ed573','#1e90ff','#e056fd','#ff6b81','#f9ca24'];
 
   function rand(min, max) { return Math.random() * (max - min) + min; }
-
   function createBurst(x, y) {
     var color = colors[Math.floor(Math.random() * colors.length)];
     var count = 60 + Math.floor(Math.random() * 40);
@@ -1243,9 +1606,7 @@ function launchFireworks(duration) {
     }
   }
 
-  var startTime = Date.now();
-  var lastBurst = 0;
-
+  var startTime = Date.now(); var lastBurst = 0;
   function animate() {
     var elapsed = Date.now() - startTime;
     if (elapsed > duration) { canvas.remove(); return; }
@@ -1254,12 +1615,19 @@ function launchFireworks(duration) {
     ctx.fillRect(0, 0, W, H);
     ctx.globalCompositeOperation = 'lighter';
     if (elapsed - lastBurst > 350) { lastBurst = elapsed; createBurst(rand(W * 0.2, W * 0.8), rand(H * 0.15, H * 0.55)); }
+
     for (var i = particles.length - 1; i >= 0; i--) {
       var p = particles[i];
-      p.x += p.vx; p.y += p.vy; p.vy += 0.06; p.vx *= 0.99; p.vy *= 0.99; p.life -= p.decay;
+      p.x += p.vx; p.y += p.vy;
+      p.vy += 0.06; p.vx *= 0.99; p.vy *= 0.99;
+      p.life -= p.decay;
       if (p.life <= 0) { particles.splice(i, 1); continue; }
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fillStyle = p.color; ctx.globalAlpha = p.life; ctx.fill(); ctx.globalAlpha = 1;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.life;
+      ctx.fill();
+      ctx.globalAlpha = 1;
     }
     requestAnimationFrame(animate);
   }
@@ -1268,7 +1636,7 @@ function launchFireworks(duration) {
 
 loadData();
 checkNewImport();
-render();
+checkAuth(); 
 setTimeout(function() { if (currentMode === 'home') restorePracticeProgress(); }, splashDelay + 500);
 </script>
 </body>
