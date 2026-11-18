@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -21,9 +22,9 @@ body{background:var(--bg);color:var(--text);font-size:14px;padding:10px}
 .input-name{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none;background:var(--input-bg);margin-bottom:14px}
 .input-name:focus{border-color:var(--primary)}
 .import-tabs{display:flex;gap:12px;margin-bottom:14px}
-.import-tabs button{flex:1;padding:12px 0;border:1.5px solid var(--primary);border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s}
-.import-tabs button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
-.import-tabs button.inactive{background:#fff;color:var(--primary);border-color:var(--primary)}
+.import-tabs button{flex:1;padding:12px 0;border:1.5px solid var(--primary);border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;background:#fff;color:var(--primary)}
+.import-tabs button.active{background:var(--primary) !important;color:#fff !important;border-color:var(--primary) !important}
+.import-tabs button.inactive{background:#fff !important;color:var(--primary) !important;border-color:var(--primary) !important}
 .file-zone{border:2px dashed #fcdada;border-radius:12px;background:#fff;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
 .file-zone:hover{background:#fffafb;border-color:var(--primary)}
 .file-zone .icon{font-size:34px;margin-bottom:10px;opacity:.6}
@@ -109,6 +110,8 @@ window.switchMode = function(mode){
 window.onFileChange = function(file){
   if(!file) return;
   document.getElementById('fileNameDisplay').textContent = '✅ 已选：'+file.name;
+  var _ln = document.getElementById('libName');
+  if(!_ln.value.trim()){ _ln.value = file.name.replace(/\.[^/.]+$/, ''); }
   var reader = new FileReader();
   reader.onload = function(e){
     try{
