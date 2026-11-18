@@ -4,12 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>铁途学练 · 题库导入</title>
-<style>
-    /* 🎯 唯一修改：页面最顶层强行规定“选择文件”按钮的初始颜色，彻底杜绝加载时的白框闪现 */
-    #btnModeFile { background-color: #d03f3f !important; color: #fff !important; }
-</style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
+/* 🎯 强行把按钮初始颜色焊死，彻底解决白框闪现问题 */
+#btnModeFile { background-color: #d03f3f !important; color: #fff !important; }
+
 :root { --primary: #d03f3f; --text: #303133; --gray: #999; --bg: #f2f3f5; }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);font-size:14px;overflow-x:hidden;}
@@ -176,6 +175,7 @@ const CoreParser = {
       const row = grid[i].map(cleanCell);
       if (!row.some(Boolean)) continue;
 
+      // 恢复原始列索引定位逻辑，不做任何偏移
       let typeCol = 2, stemCol = 3, ansCol = 10, anaCol = 11;
       if (startIndex > 0) {
         const headerRow = grid[startIndex - 1].map(cleanCell);
@@ -186,18 +186,19 @@ const CoreParser = {
           if (c === '解析') anaCol = idx;
         });
       }
-      
-      const type = hasTypeCol ? (row[typeCol] || '') : '';
-      const stem = hasTypeCol ? (row[stemCol] || '') : (row[typeCol] || '');
+
+      const type = typeCol !== -1 ? (row[typeCol] || '') : '';
+      const stem = row[stemCol] || '';
       if (!stem) continue;
 
       let optionsStr = [];
-      const optStart = hasTypeCol ? 4 : 3; 
+      // 选项永远从索引 4 开始提取
+      const optStart = (typeCol !== -1 || hasTypeCol) ? 4 : 3; 
       
       for (let j = optStart; j <= optStart + 5 && j < row.length; j++) {
         const val = row[j];
         if (val && val !== '-' && val !== '--' && val !== '无') {
-          optionsStr.push(val); 
+          optionsStr.push(val);
         }
       }
 
@@ -228,7 +229,7 @@ const CoreParser = {
       
       if (hasOpts) {
         let rawOpts = String(raw.options || '').split(/[;；|]/).filter(Boolean);
-        options = rawOpts.map((txt, i) => ({ k: LETTERS[i], t: txt.trim() })); 
+        options = rawOpts.map((txt, i) => ({ k: LETTERS[i], t: txt.trim() }));
         
         let matches = extractLetters(raw.answer);
         
@@ -297,7 +298,7 @@ window.onFileChange = function(file) {
   if (!file) return;
   document.getElementById('fileNameDisplay').textContent = `✅ 已选：${file.name}`;
   
-  // 🎯 导入文件自动填写题库名字
+  // 自动填入题库名（仅在输入框为空时填充）
   const libNameInput = document.getElementById('libName');
   if (libNameInput.value === '') {
     libNameInput.value = file.name.replace(/\.[^/.]+$/, '');
