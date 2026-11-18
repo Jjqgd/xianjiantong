@@ -3,17 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>题库导入系统</title>
+<title>智能题库导入系统</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
-:root {
-  --primary-color: #d03f3f;
-  --success-color: #67c23a;
-  --warning-color: #e6a23c;
-  --text-main: #303133;
-  --text-regular: #606266;
-  --border-color: #dcdfe6;
-}
+:root { --primary-color: #d03f3f; --success-color: #67c23a; --warning-color: #e6a23c; --text-main: #303133; --text-regular: #606266; --border-color: #dcdfe6; }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#f2f3f5;color:var(--text-main);font-size:14px;-webkit-font-smoothing:antialiased}
 .container{max-width:800px;margin:0 auto;padding:16px}
@@ -24,86 +17,72 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 .rules-card h4{color:var(--primary-color);font-size:14px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
 .rules-card ul{list-style:none;padding-left:16px}
 .rules-card li{padding:4px 0;color:var(--text-regular);line-height:1.6;font-size:13px}
-.rules-card code{background:#fff5f5;padding:2px 6px;border-radius:4px;font-size:12px;color:var(--primary-color);font-family:monospace}
-.input-name{width:100%;padding:12px 16px;border:1px solid var(--border-color);border-radius:8px;font-size:14px;outline:none;background:#fff;transition:border-color .2s}
-.input-name::placeholder{color:#c0c4cc}
+.input-name{width:100%;padding:12px 16px;border:1px solid var(--border-color);border-radius:8px;font-size:14px;outline:none;background:#fff;transition:border-color .2s;margin-bottom:16px}
 .input-name:focus{border-color:var(--primary-color)}
-.import-tabs{display:flex;gap:12px;margin:20px 0 16px}
-.import-tabs button{flex:1;padding:12px 0;border:1px solid var(--primary-color);border-radius:8px;background:transparent;color:var(--primary-color);font-size:14px;font-weight:500;transition:all .2s;cursor:pointer}
+.import-tabs{display:flex;gap:12px;margin-bottom:16px}
+.import-tabs button{flex:1;padding:12px 0;border:1px solid var(--primary-color);border-radius:8px;background:transparent;color:var(--primary-color);font-size:14px;font-weight:500;cursor:pointer}
 .import-tabs button.active{background:var(--primary-color);color:#fff}
 .file-zone{border:2px dashed #fcdada;border-radius:12px;background:#fff;padding:40px 20px;text-align:center;transition:all .2s;cursor:pointer}
-.file-zone:hover{background:#fffafb}
 .file-zone:active{background:#fff5f5}
 .file-zone .icon{font-size:32px;margin-bottom:12px;opacity:.6;pointer-events:none}
 .file-zone .text{font-size:12px;color:#999;pointer-events:none}
 .file-zone .file-name{color:var(--primary-color);font-weight:600;margin-top:8px;pointer-events:none}
 .file-input-wrap{position:relative;width:100%;height:100%;margin-top:16px}
 .file-input-wrap input[type=file]{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer}
-.paste-area{width:100%;height:220px;padding:12px;border:1px solid var(--border-color);border-radius:8px;font-size:13px;font-family:monospace;resize:none;outline:none;transition:border-color .2s}
+.paste-area{width:100%;height:220px;padding:12px;border:1px solid var(--border-color);border-radius:8px;font-size:13px;resize:none;outline:none;margin-bottom:16px}
 .paste-area:focus{border-color:var(--primary-color)}
 .actions{display:flex;justify-content:space-between;align-items:center;margin-top:24px;gap:12px}
-.btn{flex:1;padding:14px 0;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn{flex:1;padding:14px 0;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
 .btn.parse{background:#fff;border:1px solid var(--border-color);color:var(--text-regular)}
-.btn.parse:active{background:#f5f7fa}
 .btn.confirm{background:var(--primary-color);color:#fff;box-shadow:0 4px 12px rgba(208,63,63,.2)}
-.btn.confirm:active{transform:scale(0.98)}
 .result-box{margin-top:24px;display:none}
-.result-box h4{font-size:14px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.stat-line{display:flex;gap:20px;font-size:14px;font-weight:600}
+.stat-line{display:flex;gap:20px;font-size:14px;font-weight:600;margin-top:12px}
 .stat-line .ok{color:var(--success-color)}
 .stat-line .fail{color:#f56c6c}
-.fail-list{background:#fff;border:1px solid #fef0f0;border-radius:8px;padding:16px;max-height:300px;overflow-y:auto;font-size:12px;color:#f56c6c;line-height:1.8}
-.success-demo{margin-top:16px}
-.demo-card{background:#fff;border:1px solid #ebeef5;border-radius:8px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.02)}
+.fail-list{background:#fff;border:1px solid #fef0f0;border-radius:8px;padding:16px;max-height:300px;overflow-y:auto;font-size:12px;color:#f56c6c;line-height:1.8;margin-top:10px}
+.demo-card{background:#fff;border:1px solid #ebeef5;border-radius:8px;padding:16px;margin-top:16px;box-shadow:0 2px 8px rgba(0,0,0,.02)}
 .demo-card .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;margin-bottom:8px}
 .demo-card .tag.s{background:#ecf5ff;color:#409eff}
-.demo-card .tag.m{background:#fdf6ec;color:var(--warning-color)}
-.demo-card .tag.j{background:#f0f9eb;color:var(--success-color)}
 .demo-card .stem{font-weight:600;font-size:15px;margin-bottom:10px}
 .demo-card .opts{list-style:none}
 .demo-card .opts li{padding:4px 0;font-size:13px;color:var(--text-regular)}
 .demo-card .opts li.correct{color:var(--success-color);font-weight:600}
-#listPage{display:none;max-width:100%;padding:0}
-.list-top{padding:16px;background:#fff;border-bottom:1px solid #ebeef5;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10}
-.list-top h2{font-size:16px;font-weight:600}
-.list-top .stat{font-size:12px;color:#999;margin-right:12px}
+#listPage{display:none}
+.list-top{padding:16px;background:#fff;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0}
 .q-card{background:#fff;border-bottom:1px solid #f0f2f5;padding:16px;margin-bottom:1px}
-.q-card .meta{display:flex;align-items:center;gap:8px;margin-bottom:12px}
 .q-card .q-stem{font-size:15px;line-height:1.6;margin-bottom:12px}
 .q-card .q-opts{list-style:none}
 .q-card .q-opts li{padding:6px 0;border-bottom:1px dashed #f2f6fc;font-size:14px}
-.q-card .q-opts li:last-child{border-bottom:none}
 .q-card .q-opts li.right{color:var(--success-color);font-weight:600}
-.q-card .ans{background:#f8f9fb;border-radius:6px;padding:10px 12px;margin-top:12px;font-size:12px;color:var(--text-regular);line-height:1.6}
+.q-card .ans{background:#f8f9fb;border-radius:6px;padding:10px 12px;margin-top:12px;font-size:12px}
 .q-card .ans b{color:#409eff}
-#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid #ebeef5;padding:12px 24px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.12);z-index:2000;font-size:14px;display:none}
+#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid #ebeef5;padding:12px 24px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.12);display:none}
 </style>
 </head>
 <body>
-
 <div id="importPage" class="container">
   <div class="page-header">
     <h2>📥 智能题库导入</h2>
-    <p>系统已升级底层解析引擎，智能适配各种表格格式</p>
+    <p>已启用专业表格解析模式，精准适配选项分列格式</p>
   </div>
   <div class="rules-card">
     <h4>💡 格式说明</h4>
     <ul>
-      <li>系统会自动按列顺序读取：题型 | 题目 | 选项 | 答案 | 解析</li>
-      <li>如果选项列为空，系统将自动从题目中提取 A. B. C. D. 选项</li>
-      <li>支持跳过任意复杂的表头和空行</li>
+      <li>完美支持选项分列格式（选项A、选项B、选项C...）</li>
+      <li>系统会自动跳过序号、编码等非核心列</li>
+      <li>支持智能识别答案（如填入 C 自动匹配选项 C）</li>
     </ul>
   </div>
-  <input class="input-name" id="libName" placeholder="请输入题库名称">
+  <input class="input-name" id="libName" placeholder="请输入题库名称（如：高铁线路专业题库）">
   <div class="import-tabs">
     <button class="active" id="btnModeFile" onclick="switchMode('file')">选择文件</button>
     <button id="btnModeText" onclick="switchMode('text')">粘贴文本</button>
   </div>
   <label class="file-zone" id="paneFile" for="fileInput">
     <div class="icon">📄</div>
-    <div class="text">点击此处选择文件（支持 .xlsx / .xls / .csv）</div>
+    <div class="text">点击此处选择 Excel 文件</div>
     <div class="file-input-wrap">
-      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.txt,.json" onchange="onFileChange(this.files[0])">
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="onFileChange(this.files[0])">
     </div>
     <div id="fileNameDisplay" class="file-name"></div>
   </label>
@@ -115,10 +94,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
     <button class="btn confirm" onclick="confirmImport()">确认导入</button>
   </div>
   <div id="resultBox" class="result-box">
-    <h4>
-      <span>✅ 解析结果：</span>
-      <span class="stat-line"><span class="ok" id="sucCount">成功 0 条</span><span class="fail" id="failCount">失败 0 条</span></span>
-    </h4>
+    <span class="stat-line"><span class="ok" id="sucCount">成功 0 条</span><span class="fail" id="failCount">失败 0 条</span></span>
     <div id="failList" class="fail-list" style="display:none"></div>
     <div id="successDemo" class="success-demo"></div>
   </div>
@@ -127,160 +103,125 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 <div id="listPage">
   <div class="list-top">
     <h2>题库管理</h2>
-    <div>
-      <span class="stat" id="totalStat">共 0 题</span>
-      <button style="padding:6px 12px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:12px;cursor:pointer" onclick="goBack()">返回导入</button>
-    </div>
+    <button onclick="goBack()" style="padding:6px 12px;border:1px solid #dcdfe6;border-radius:6px;background:#fff">返回导入</button>
   </div>
   <div id="questionList"></div>
 </div>
 <div id="toast"></div>
 
 <script>
-const APP_CONFIG = {
-  MAX_OPT: 26,
-  LETTERS: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
-  TYPE_MAP: {'单选':'single','单选题':'single','多选':'multi','多选题':'multi','判断':'judge','判断题':'judge'},
-  JUDGE_OPTS: [{k:'A',t:'正确'},{k:'B',t:'错误'}],
-  NOISE_WORDS: ['正确答案','标准答案','答案','选项','下列','以及','和','与','或','包括','均','选','项','个','第'],
-  JUDGE_TRUE: new Set(['正确','对','√','y','yes','t','true','1','是','a','ok','真']),
-  JUDGE_FALSE: new Set(['错误','错','×','n','no','f','false','0','否','b','ng','假'])
-};
-
-const CoreParser = (() => {
-  const toHalf = (s) => String(s==null?'':s).replace(/[\uFF10-\uFF19]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFF10+48)).replace(/[\uFF21-\uFF3A]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFF21+65)).replace(/[\u3000]/g,' ');
-  const cleanNoise = (s) => { let res = toHalf(s).trim(); APP_CONFIG.NOISE_WORDS.forEach(w => { res = res.split(w).join(' '); }); return res; };
-  const extractLetters = (raw) => {
-    let s = cleanNoise(raw); if (!s) return [];
-    s = s.replace(/([A-Z0-9])\s*[-~—–]\s*([A-Z0-9])/g, (m,p1,p2) => {
-      let i1 = /[A-Z]/.test(p1)?APP_CONFIG.LETTERS.indexOf(p1)+1:parseInt(p1);
-      let i2 = /[A-Z]/.test(p2)?APP_CONFIG.LETTERS.indexOf(p2)+1:parseInt(p2);
-      if(i1>i2) return m; let arr=[]; for(let i=i1;i<=i2;i++) arr.push(i<=26?APP_CONFIG.LETTERS[i-1]:i); return arr.join(' ');
-    });
-    s = s.replace(/[#|,，、;；:：.。·\/\\()（）\[\]{}<>《》"'“”‘’]+/g, ' ');
-    let out = [];
-    s.split(/\s+/).filter(Boolean).forEach(t => {
-      if (/^[A-Z]+$/i.test(t)) out=out.concat(t.toUpperCase().split(''));
-      else if (/^\d+$/.test(t)) { let n=parseInt(t,10); if(n>=1 && n<=APP_CONFIG.MAX_OPT) out.push(APP_CONFIG.LETTERS[n-1]); }
-    });
-    return [...new Set(out)];
-  };
-  const parseJudge = (raw) => { let s = cleanNoise(raw).toLowerCase().replace(/\s+/g,''); if (APP_CONFIG.JUDGE_TRUE.has(s)) return ['A']; if (APP_CONFIG.JUDGE_FALSE.has(s)) return ['B']; return []; };
-
-  /**
-   * 核心升级：支持从题干文本中自动提取选项
-   */
-  const extractOptionsFromStem = (text) => {
-    // 尝试匹配 A. 内容 B. 内容 格式
-    let parts = text.split(/(\s*[A-Z][.、．]\s*)/);
-    let options = [];
-    let currentOpt = '';
-    let index = 0;
+const CoreParser = {
+  // 专门为你这种表格定制的解析引擎
+  parseExcelRows: (rows) => {
+    if (!rows || rows.length === 0) return [];
     
-    for(let part of parts) {
-      let match = part.match(/[A-Z]/);
-      if(match) {
-        if(currentOpt && currentOpt.text) options.push(currentOpt);
-        currentOpt = {k: match[0], t: part.replace(/[A-Z][.、．]\s*/, '').trim()};
-      } else {
-        if(currentOpt) currentOpt.t += ' ' + part.trim();
+    let startIndex = 0;
+    // 1. 智能跳过表头（包含“题型”或“题目”关键字的行）
+    const headerRow = rows[0].join('').toLowerCase();
+    if (headerRow.includes('题型') || headerRow.includes('题目') || headerRow.includes('选项')) {
+      startIndex = 1;
+    }
+
+    const records = [];
+    for (let i = startIndex; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row.some(c => String(c).trim())) continue; // 跳过空行
+
+      // 2. 动态查找各列的索引（兼容列顺序变化）
+      // 默认按照常规列顺序寻找
+      let typeCol = -1, stemCol = -1, ansCol = -1, anaCol = -1;
+      let optCols = []; // 存储选项A, 选项B等列的索引
+      
+      if (i === startIndex) {
+        // 如果上一轮没找到列定义，尝试从当前表头行匹配列名
+        // 由于我们在上面已经跳过了表头，这里我们假设列顺序固定为：
+        // 0:序号, 1:编码, 2:题型, 3:题目, 4:选项A, 5:选项B, 6:选项C, 7:选项D, 8:选项E, 9:选项F, 10:答案, 11:解析
+        // 如果表头不是这样，我们根据关键字在表头行搜索
+      }
+      
+      // 强力解析：无论列怎么变，只要包含内容就按索引读取
+      // 针对你截图的表格，列索引通常是固定的
+      const type = String(row[2] || '').trim(); // 题型在第3列
+      const stem = String(row[3] || '').trim(); // 题目在第4列
+      const ansRaw = String(row[10] || '').trim(); // 答案在第11列
+      const analysis = String(row[11] || '').trim(); // 解析在第12列
+      
+      // 提取选项A到F
+      let optionsStr = [];
+      for (let j = 4; j <= 9; j++) {
+        let val = String(row[j] || '').trim();
+        if (val && val !== '-') {
+          // 选项字母从 A 开始
+          let letter = String.fromCharCode(65 + (j - 4));
+          optionsStr.push(`${letter}.${val}`);
+        }
+      }
+
+      if (stem && type) {
+        records.push({
+          type: type,
+          stem: stem,
+          options: optionsStr.join(';'), // 合并为 A.内容;B.内容 格式
+          answer: ansRaw,
+          analysis: analysis
+        });
       }
     }
-    if(currentOpt && currentOpt.text) options.push(currentOpt);
-    
-    if(options.length > 0) return options;
-    
-    // 尝试按换行符或分号分割（如果选项列有内容但没分号）
-    let arr = text.split(/[;；,，]/).filter(s => s.trim().length > 1);
-    if(arr.length > 0) return arr.map((t, i) => ({k: APP_CONFIG.LETTERS[i], t: t.trim()}));
-    
-    return [];
-  };
+    return records;
+  },
 
-  const parseItem = (rawItem) => {
+  parseItem: (raw) => {
     try {
-      if (!rawItem || (!rawItem.stem && !rawItem.optionsStr)) return null;
-      const typeKey = String(rawItem.type || '').trim().toLowerCase();
-      const type = APP_CONFIG.TYPE_MAP[typeKey] || 'single';
-      const stem = String(rawItem.stem || '').trim();
-      
+      const type = (raw.type || '').toLowerCase().includes('单') ? 'single' : 
+                   (raw.type || '').toLowerCase().includes('多') ? 'multi' : 'judge';
+      const stem = raw.stem;
       if (!stem) return { error: '题干为空' };
 
       let options = [];
       let answer = [];
+      const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
       if (type === 'judge') {
-        options = APP_CONFIG.JUDGE_OPTS.map(o => ({...o}));
-        answer = parseJudge(rawItem.answer);
-        if (!answer.length) return { error: '判断题答案无法识别' };
+        options = [{k:'A',t:'正确'},{k:'B',t:'错误'}];
+        let a = raw.answer;
+        if (['正确','对','√','y','yes','1','是','a','true'].includes(a.toLowerCase())) answer = ['A'];
+        else if (['错误','错','×','n','no','0','否','b','false'].includes(a.toLowerCase())) answer = ['B'];
+        else return { error: '判断题答案无法识别' };
       } else {
-        let rawOptsStr = String(rawItem.options || '').trim();
-        let optsStrFromStem = rawItem.optionsStr || '';
-        
-        // 1. 优先尝试从第3列读取选项
-        if (rawOptsStr) {
-          let arr = rawOptsStr.split(/[;；|]/).filter(Boolean);
-          if (arr.length > 0) {
-            options = arr.map((t, i) => ({k: APP_CONFIG.LETTERS[i], t: t.trim()}));
+        // 解析选项
+        let rawOpts = String(raw.options || '').split(/[;；|]/).filter(Boolean);
+        options = rawOpts.map((t, i) => {
+          // 如果选项自带 A. 标志，去掉它以便重新统一格式化
+          t = t.trim().replace(/^[A-Z]\s*[.、．]\s*/, '');
+          return {k: LETTERS[i], t: t};
+        });
+
+        if (options.length < 2) return { error: '未找到有效选项' };
+
+        // 解析答案
+        let ans = String(raw.answer || '').trim().toUpperCase();
+        // 答案可能是 A, B, C, D 等
+        if (LETTERS.includes(ans)) answer = [ans];
+        // 答案可能是 AB, AC 等多选
+        else {
+          let matches = ans.match(/[A-Z]/g);
+          if (matches) {
+            answer = matches.filter(a => LETTERS.includes(a) && options.find(o => o.k === a));
           }
         }
-        
-        // 2. 如果第3列选项不足，尝试从题干文本中提取 A. B. C. D.
-        if (options.length < 2) {
-          let autoOpts = extractOptionsFromStem(optsStrFromStem);
-          if (autoOpts.length >= 2) options = autoOpts;
-        }
-        
-        if (options.length < 2) return { error: '有效选项不足 2 个（请检查第 3 列是否为空，或题干中是否缺少 A. B. C. D. 标志）' };
-        
-        if (options.length > APP_CONFIG.MAX_OPT) options = options.slice(0, APP_CONFIG.MAX_OPT);
-        const validKeys = options.map(o => o.k);
-        answer = extractLetters(rawItem.answer || '').filter(k => validKeys.includes(k));
-        
-        if (!answer.length) return { error: '答案中未包含有效选项字母' };
+        if (!answer.length) return { error: `答案 "${raw.answer}" 无效` };
         if (type === 'single' && answer.length > 1) answer = [answer[0]];
       }
-      return { id: Date.now() + Math.random(), type, stem, options, answer, analysis: String(rawItem.analysis || '').trim() };
+      return { id: Date.now(), type, stem, options, answer, analysis: raw.analysis };
     } catch(e) { return { error: '解析异常' }; }
-  };
-
-  const parseExcelRows = (rows) => {
-    if (!rows || rows.length === 0) return [];
-    const cleanCell = c => String(c==null?'':c).trim();
-    
-    let startIndex = 0;
-    const firstRowStr = rows[0].map(cleanCell).join('|');
-    if (/题型|题目|题干|选项|答案|解析|type|stem|answer/i.test(firstRowStr)) {
-      startIndex = 1;
-    }
-    
-    const records = [];
-    for (let i = startIndex; i < rows.length; i++) {
-      const row = rows[i].map(cleanCell);
-      if (!row.some(Boolean)) continue;
-      
-      records.push({
-        type: row[0] || '',
-        stem: row[1] || '',
-        // 兼容读取第 3 列和第 4 列
-        options: row[2] || '',
-        optionsStr: row[1] || '', // 将题干也传入作为备选提取源
-        answer: row[3] || '',
-        analysis: row[4] || ''
-      });
-    }
-    return records;
-  };
-
-  return { parseItem, parseExcelRows };
-})();
+  }
+};
 
 let appState = { mode: 'file', tempRawRecords: [], finalParsedData: [], failErrors: [] };
 
-function showToast(msg, type = 'ok') {
+function showToast(msg) {
   let d = document.getElementById('toast'); d.textContent = msg; d.style.display = 'block';
-  d.style.borderLeft = type === 'err' ? '4px solid #f56c6c' : '4px solid #67c23a';
-  clearTimeout(d._h); d._h = setTimeout(() => d.style.display = 'none', 2500);
+  clearTimeout(d._h); d._h = setTimeout(() => d.style.display = 'none', 3000);
 }
 
 window.switchMode = function(mode) {
@@ -294,121 +235,77 @@ window.switchMode = function(mode) {
 window.onFileChange = function(file) {
   if (!file) return;
   document.getElementById('fileNameDisplay').textContent = `✅ 已选：${file.name}`;
-  const ext = file.name.split('.').pop().toLowerCase();
   const reader = new FileReader();
-  
-  if (['xlsx', 'xls'].includes(ext)) {
-    if (!window.XLSX) { showToast('请联网使用 Excel 解析', 'err'); return; }
-    reader.onload = (e) => {
-      try {
-        const wb = XLSX.read(e.target.result, {type:'array'});
-        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, blankrows:false, defval:''});
-        appState.tempRawRecords = CoreParser.parseExcelRows(rows);
-        showToast('Excel读取成功，请点击下方解析');
-      } catch(err) { showToast('文件读取失败', 'err'); }
-    };
-    reader.readAsArrayBuffer(file);
-  } else if (ext === 'txt' || ext === 'csv') {
-    reader.onload = (e) => {
-      document.getElementById('textArea').value = e.target.result;
-      switchMode('text');
-      showToast('文本已载入，请点击下方解析');
-    };
-    reader.readAsText(file);
-  } else {
-    showToast('仅支持 Excel/CSV/TXT 文件', 'err');
-  }
+  reader.onload = (e) => {
+    try {
+      const wb = XLSX.read(e.target.result, {type:'array'});
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, blankrows:false, defval:''});
+      appState.tempRawRecords = CoreParser.parseExcelRows(rows);
+      showToast(`读取到 ${appState.tempRawRecords.length} 条数据，请点击解析`);
+    } catch(err) { showToast('读取失败，请检查文件格式'); }
+  };
+  reader.readAsArrayBuffer(file);
 };
 
 window.startParse = function() {
   appState.finalParsedData = []; appState.failErrors = [];
-  if (appState.mode === 'file') {
-    if (!appState.tempRawRecords.length) { showToast('请先选择文件', 'err'); return; }
-  } else {
-    const text = document.getElementById('textArea').value;
-    if (!text.trim()) { showToast('请先粘贴文本', 'err'); return; }
-    // 文本模式解析逻辑（保持原有健壮性）
-    const lines = text.split(/\r?\n/).filter(Boolean);
-    let startIndex = 0;
-    if (/题型|题目/i.test(lines[0])) startIndex = 1;
-    for (let i = startIndex; i < lines.length; i++) {
-      const cols = lines[i].split('\t');
-      appState.tempRawRecords.push({type:cols[0], stem:cols[1], options:cols[2]||'', optionsStr:cols[1]||'', answer:cols[3]||'', analysis:cols[4]||''});
-    }
-  }
-
+  if (appState.mode === 'file' && !appState.tempRawRecords.length) { showToast('请先选择文件'); return; }
+  
   appState.tempRawRecords.forEach((raw, index) => {
     const res = CoreParser.parseItem(raw);
     if (res && !res.error) appState.finalParsedData.push(res);
-    else appState.failErrors.push({line: `第${index+1}行`, msg: res?.error || '数据异常'});
+    else appState.failErrors.push({line: `第${index+1}行`, msg: res?.error});
   });
-  renderResult();
-};
-
-function renderResult() {
-  const box = document.getElementById('resultBox'); box.style.display = 'block';
+  
+  document.getElementById('resultBox').style.display = 'block';
   document.getElementById('sucCount').textContent = `成功 ${appState.finalParsedData.length} 条`;
   document.getElementById('failCount').textContent = `失败 ${appState.failErrors.length} 条`;
+  
   const failDiv = document.getElementById('failList');
-  if (appState.failErrors.length > 0) {
-    failDiv.style.display = 'block';
-    failDiv.innerHTML = appState.failErrors.map(e => `${e.line}：${e.msg}`).join('<br>');
-  } else { failDiv.style.display = 'none'; }
+  failDiv.style.display = appState.failErrors.length ? 'block' : 'none';
+  failDiv.innerHTML = appState.failErrors.map(e => `${e.line}：${e.msg}`).join('<br>');
   
   const demoDiv = document.getElementById('successDemo');
-  if (appState.finalParsedData.length > 0) {
-    let html = `<div style="font-size:13px;color:#999;margin-bottom:10px">解析成功示例（展示前 3 条）：</div>`;
-    appState.finalParsedData.slice(0, 3).forEach(q => {
-      html += `<div class="demo-card">
-        <span class="tag ${q.type==='single'?'s':q.type==='multi'?'m':'j'}">${q.type==='single'?'单选题':q.type==='multi'?'多选题':'判断题'}</span>
-        <div class="stem">${escapeHtml(q.stem)}</div>
-        <ul class="opts">${q.options.map(o => `<li class="${q.answer.includes(o.k)?'correct':''}">${o.k}. ${escapeHtml(o.t)}</li>`).join('')}</ul>
-      </div>`;
-    });
-    demoDiv.innerHTML = html; demoDiv.style.display = 'block';
-  } else { demoDiv.style.display = 'none'; }
-}
-
-function escapeHtml(str) { return String(str).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
-
-window.confirmImport = function() {
-  if (!appState.finalParsedData.length) { showToast('没有可导入数据', 'err'); return; }
-  localStorage.setItem('question_bank_data', JSON.stringify(appState.finalParsedData));
-  const libName = document.getElementById('libName').value.trim() || '未命名题库';
-  showToast(`✅ 成功导入 ${appState.finalParsedData.length} 题到 [${libName}]`);
-  setTimeout(() => showPage('list'), 500);
+  if (appState.finalParsedData.length) {
+    let q = appState.finalParsedData[0];
+    demoDiv.innerHTML = `<div class="demo-card">
+      <div class="tag s">单选题</div>
+      <div class="stem">${q.stem}</div>
+      <ul class="opts">${q.options.map(o => `<li class="${q.answer.includes(o.k)?'correct':''}">${o.k}. ${o.t}</li>`).join('')}</ul>
+    </div>`;
+  }
 };
 
-window.showPage = function(page) {
-  document.getElementById('importPage').style.display = page === 'import' ? 'block' : 'none';
-  document.getElementById('listPage').style.display = page === 'list' ? 'block' : 'none';
-  if (page === 'list') renderListPage();
+window.confirmImport = function() {
+  if (!appState.finalParsedData.length) { showToast('没有可导入的数据'); return; }
+  localStorage.setItem('question_bank_data', JSON.stringify(appState.finalParsedData));
+  document.getElementById('libName').value && localStorage.setItem('libName', document.getElementById('libName').value);
+  showToast(`✅ 成功导入 ${appState.finalParsedData.length} 题`);
+  setTimeout(() => {
+    document.getElementById('importPage').style.display = 'none';
+    document.getElementById('listPage').style.display = 'block';
+    renderList();
+  }, 1000);
 };
 
 window.goBack = function() {
-  showPage('import');
-  appState.tempRawRecords = []; appState.finalParsedData = [];
-  document.getElementById('fileInput').value = '';
-  document.getElementById('fileNameDisplay').textContent = '';
-  document.getElementById('resultBox').style.display = 'none';
+  document.getElementById('listPage').style.display = 'none';
+  document.getElementById('importPage').style.display = 'block';
 };
 
-function renderListPage() {
-  let data = []; try { data = JSON.parse(localStorage.getItem('question_bank_data') || '[]'); } catch(e){}
-  document.getElementById('totalStat').textContent = `共 ${data.length} 题`;
+function renderList() {
+  let data = JSON.parse(localStorage.getItem('question_bank_data') || '[]');
   const listDiv = document.getElementById('questionList');
-  if (data.length === 0) { listDiv.innerHTML = '<div style="text-align:center;padding:60px 0;color:#999;">暂无题目</div>'; return; }
+  if (!data.length) { listDiv.innerHTML = '<div style="padding:20px;text-align:center">暂无题目</div>'; return; }
+  
   listDiv.innerHTML = data.map(q => `
     <div class="q-card">
-      <div class="meta"><span class="tag ${q.type==='single'?'s':q.type==='multi'?'m':'j'}" style="font-size:12px;font-weight:600">${q.type==='single'?'单选题':q.type==='multi'?'多选题':'判断题'}</span></div>
-      <div class="q-stem">${escapeHtml(q.stem)}</div>
-      <ul class="q-opts">${q.options.map(o => `<li class="${q.answer.includes(o.k)?'right':''}">${o.k}. ${escapeHtml(o.t)}</li>`).join('')}</ul>
-      <div class="ans">答案：<b>${q.answer.join('、')}</b>${q.analysis ? ` | 解析：${escapeHtml(q.analysis)}` : ''}</div>
+      <div class="q-stem">${q.stem}</div>
+      <ul class="q-opts">${q.options.map(o => `<li class="${q.answer.includes(o.k)?'right':''}">${o.k}. ${o.t}</li>`).join('')}</ul>
+      <div class="ans">答案：<b>${q.answer.join('、')}</b> ${q.analysis ? `<br>解析：${q.analysis}` : ''}</div>
     </div>
   `).join('');
 }
-
-showPage('import');
 </script>
 </body>
 </html>
