@@ -1,13 +1,10 @@
-
-
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>铁途学练 - 题库导入</title>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
 :root { --primary: #b71c1c; --blue: #0d47a1; --success: #10b981; --fail: #ef4444; --text: #1e293b; --sub: #64748b; --border: #e2e8f0; --bg: #f0f4f8; --input-bg: #f8fafc; }
 *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
@@ -25,15 +22,14 @@ body{background:var(--bg);color:var(--text);font-size:14px;padding:10px}
 .import-tabs{display:flex;gap:12px;margin-bottom:14px}
 .import-tabs button{flex:1;padding:12px 0;border:1.5px solid var(--primary);border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;background:#fff;color:var(--primary)}
 .import-tabs button.active{background:var(--primary) !important;color:#fff !important;border-color:var(--primary) !important}
-.import-tabs button.inactive{background:#fff !important;color:var(--primary) !important;border-color:var(--primary) !important}
+.import-tabs button.inactive{background:#fff !important;color:#b71c1c !important;border-color:var(--primary) !important}
 .file-zone{border:2px dashed #fcdada;border-radius:12px;background:#fff;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
 .file-zone:hover{background:#fffafb;border-color:var(--primary)}
 .file-zone .icon{font-size:34px;margin-bottom:10px;opacity:.6}
 .file-zone .text{font-size:13px;color:var(--sub)}
 .file-zone .file-name{color:var(--primary);font-weight:600;margin-top:10px}
-.file-input-wrap{position:absolute;top:0;left:0;width:100%;height:100%}
-.file-input-wrap input[type=file]{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;-webkit-appearance:none;appearance:none;border:none;background:transparent}
-.file-input-wrap input[type=file]::-webkit-file-upload-button{display:none;width:0;height:0;padding:0;margin:0;border:none;background:transparent}
+.file-input-wrap{position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;opacity:0;}
+.file-input-wrap input[type=file]{width:100%;height:100%;cursor:pointer;}
 .paste-area{width:100%;height:200px;padding:12px;border:1px solid var(--border);border-radius:8px;font-size:13px;resize:vertical;outline:none;background:var(--input-bg);font-family:monospace}
 .paste-area:focus{border-color:var(--primary)}
 .actions{display:flex;gap:14px;margin-top:18px}
@@ -44,13 +40,7 @@ body{background:var(--bg);color:var(--text);font-size:14px;padding:10px}
 .stat-line{display:flex;gap:20px;font-size:15px;font-weight:600}
 .stat-line .ok{color:var(--success)} .stat-line .fail{color:var(--fail)}
 .fail-list{background:#fff;border:1px solid #fecaca;border-radius:8px;padding:12px;max-height:260px;overflow-y:auto;font-size:12px;color:var(--fail);line-height:1.8;margin-top:10px}
-.demo-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px;margin-top:12px}
-.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;margin-bottom:8px;color:#fff;background:var(--blue)}
-.stem{font-weight:600;font-size:15px;margin-bottom:8px;line-height:1.5}
-.opts{list-style:none}.opts li{padding:4px 0;font-size:13px;color:var(--sub);border-bottom:1px dashed #f1f5f9}
-.opts li.correct{color:var(--success);font-weight:600}
-.ans-line{font-size:13px;color:var(--success);font-weight:bold;margin-top:6px}
-.tip{font-size:12px;color:var(--sub);margin:8px 0 0;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;line-height:1.5}
+.debug-box{display:none !important;}
 #toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:2000;display:none}
 </style>
 </head>
@@ -67,19 +57,22 @@ body{background:var(--bg);color:var(--text);font-size:14px;padding:10px}
       <li>🔤 题型可不填：缺列时按「选项+答案」自动判断单选/多选/判断/填空/简答</li>
       <li>✅ 答案支持：ABCD / A,B / A#B / A+B / 正确·错 / √·× / Y·N 等全部写法</li>
     </ul>
-    <div class="tip">💡 列结构自动识别：序号 / 编码 / 题型 / 题目 / 选项A~F / 答案 / 解析；编码列若存在将作为题目唯一 ID。</div>
   </div>
   <input class="input-name" id="libName" placeholder="请输入题库名称（如：高铁线路专业题库）">
   <div class="import-tabs">
-    <button id="btnModeFile" class="active" style="background:#b71c1c !important;color:#fff !important;border-color:#b71c1c !important;" onclick="switchMode('file')">📁 选择文件</button>
-    <button id="btnModeText" class="inactive" style="background:#fff !important;color:#b71c1c !important;border-color:#b71c1c !important;" onclick="switchMode('text')">📋 粘贴文本</button>
+    <button id="btnModeFile" class="active" onclick="switchMode('file')">📁 选择文件</button>
+    <button id="btnModeText" class="inactive" onclick="switchMode('text')">📋 粘贴文本</button>
   </div>
-  <label class="file-zone" id="paneFile" for="fileInput">
+  
+  <div class="file-zone" id="paneFile">
     <div class="icon">📄</div>
     <div class="text">点击此处选择 Excel 文件</div>
-    <div class="file-input-wrap"><input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="onFileChange(this.files[0])"></div>
+    <div class="file-input-wrap">
+        <input type="file" id="fileInput" accept="*/*" onchange="onFileChange(this.files[0])">
+    </div>
     <div id="fileNameDisplay" class="file-name"></div>
-  </label>
+  </div>
+  
   <div id="paneText" style="display:none">
     <textarea class="paste-area" id="textArea" placeholder="从 Excel 框选数据（含表头行）→ Ctrl+C 复制 → Ctrl+V 粘贴到这里..."></textarea>
   </div>
@@ -89,6 +82,7 @@ body{background:var(--bg);color:var(--text);font-size:14px;padding:10px}
   </div>
   <div id="resultBox" class="result-box">
     <span class="stat-line"><span class="ok" id="sucCount">成功 0 条</span><span class="fail" id="failCount">失败 0 条</span></span>
+    <div id="debugArea" class="debug-box"></div>
     <div id="failList" class="fail-list" style="display:none"></div>
     <div id="successDemo"></div>
   </div>
@@ -96,224 +90,385 @@ body{background:var(--bg);color:var(--text);font-size:14px;padding:10px}
 <div id="toast"></div>
 
 <script>
-var appState = { mode:'file', tempRaw:[], finalParsed:[], failErrors:[] };
+/* ================= 全局状态 ================= */
+var appState = { mode:'file', tempRaw:[], finalParsed:[], failErrors:[], debugLogs:[] };
 
-function showToast(msg){ var d=document.getElementById('toast'); d.innerText=msg; d.style.display='block'; clearTimeout(d._h); d._h=setTimeout(function(){d.style.display='none';},3000); }
-function escapeHtml(s){ return String(s).replace(/[&<>'"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c];}); }
+function showToast(msg){
+    var d=document.getElementById('toast');
+    d.innerText=msg; 
+    d.style.display='block';
+    clearTimeout(d._h);
+    d._h=setTimeout(function(){d.style.display='none';},3000);
+}
+function log(msg){ 
+    appState.debugLogs.push('[' + new Date().toLocaleTimeString() + '] ' + msg);
+    var db = document.getElementById('debugArea');
+    if(db) { db.innerText = appState.debugLogs.join('\n'); db.scrollTop = db.scrollHeight; }
+    console.log(msg);
+}
 
 window.switchMode = function(mode){
-  appState.mode = mode;
-  document.getElementById('btnModeFile').className = mode==='file' ? 'active':'inactive';
-  document.getElementById('btnModeText').className = mode==='text' ? 'active':'inactive';
-  var _fileOn = mode==='file';
-  document.getElementById('btnModeFile').style.setProperty('background', _fileOn ? '#b71c1c':'#fff', 'important');
-  document.getElementById('btnModeFile').style.setProperty('color', _fileOn ? '#fff':'#b71c1c', 'important');
-  document.getElementById('btnModeText').style.setProperty('background', _fileOn ? '#fff':'#b71c1c', 'important');
-  document.getElementById('btnModeText').style.setProperty('color', _fileOn ? '#b71c1c':'#fff', 'important');
-  document.getElementById('paneFile').style.display = mode==='file' ? 'block':'none';
-  document.getElementById('paneText').style.display = mode==='text' ? 'block':'none';
+    appState.mode = mode;
+    document.getElementById('btnModeFile').className = mode==='file' ? 'active':'inactive';
+    document.getElementById('btnModeText').className = mode==='text' ? 'active':'inactive';
+    var _fileOn = mode==='file';
+    document.getElementById('paneFile').style.display = mode==='file' ? 'block':'none';
+    document.getElementById('paneText').style.display = mode==='text' ? 'block':'none';
 };
+
+function parseExcelContent(arrayBuffer, fileName) {
+    log("开始解析 Excel...");
+    try {
+        var wb = XLSX.read(new Uint8Array(arrayBuffer), {type:'array'});
+        if(!wb.SheetNames || wb.SheetNames.length === 0){
+            return showToast('文件内没有工作表');
+        }
+
+        var sheet = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(sheet, {header:1, blankrows:false, defval:''});
+        log("工作表转换为二维数组，总行数: " + rows.length);
+        
+        if(rows.length === 0){
+            return showToast('解析失败：数据为空');
+        }
+
+        appState.tempRaw = parseGrid(rows);
+        document.getElementById('fileNameDisplay').textContent = '✅ 文件已就绪，共识别出 ' + appState.tempRaw.length + ' 条原始数据';
+        showToast('文件读取成功！请点击「解析并校验」');
+        
+        var _ln = document.getElementById('libName');
+        if(!_ln.value.trim()){ 
+            if(fileName){
+                var pureName = fileName.replace(/\.[^/.]+$/, "");
+                _ln.value = pureName.length > 20 ? pureName.substring(0, 20) : pureName;
+            } else {
+                _ln.value = '铁途学练题库'; 
+            }
+        }
+        
+        log("最终识别出 " + appState.tempRaw.length + " 条有效题目数据。");
+    } catch(e) {
+        log("ERROR: 解析 Excel 失败: " + e.message + "\n" + e.stack);
+        showToast('文件损坏或格式不支持');
+    }
+}
+
+function bindFileZone() {
+    var fileInput = document.getElementById('fileInput');
+    var paneFile = document.getElementById('paneFile');
+    if(!fileInput || !paneFile) return;
+
+    paneFile.addEventListener('click', function(e) {
+        if (e.target && e.target.id === 'fileInput') return;
+        appState.debugLogs = [];
+        log("准备打开系统文件选择器...");
+    });
+}
 
 window.onFileChange = function(file){
-  if(!file) return;
-  document.getElementById('fileNameDisplay').textContent = '✅ 已选：'+file.name;
-  var _ln = document.getElementById('libName');
-  if(!_ln.value.trim()){ _ln.value = file.name.replace(/\.[^/.]+$/, ''); }
-  var reader = new FileReader();
-  reader.onload = function(e){
-    try{
-      var wb = XLSX.read(e.target.result,{type:'array'});
-      var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,blankrows:false,defval:''});
-      appState.tempRaw = parseGrid(rows);
-      showToast('成功读取 '+appState.tempRaw.length+' 条，请点击「解析并校验」');
-    }catch(err){ showToast('文件读取失败'); }
-  };
-  reader.readAsArrayBuffer(file);
+    if(!file) return;
+    log("用户选中文件: " + file.name + " (" + file.size + " bytes)");
+    if(file.size === 0) return showToast('文件大小为空');
+    
+    var reader = new FileReader();
+    reader.onload = function(e){ 
+        log("FileReader 读取完成，开始解析...");
+        parseExcelContent(e.target.result, file.name); 
+    };
+    reader.onerror = function(e){ 
+        log("FileReader 读取错误: " + (e.target.error ? e.target.error.message : e)); 
+        showToast('文件读取失败');
+    };
+    reader.readAsArrayBuffer(file);
 };
 
-// ===== 把二维表解析成「主程序题目对象」列表 =====
-function parseGrid(grid){
-  if(!grid || !grid.length) return [];
-  var cc = function(c){ return String(c==null?'':c).trim(); };
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindFileZone);
+} else { bindFileZone(); }
 
-  // 1. 定位表头行
-  var headIdx = -1;
-  for(var i=0;i<Math.min(6,grid.length);i++){
-    var s = grid[i].map(cc).join('').toLowerCase();
-    if(s.indexOf('题目')>-1 || s.indexOf('题干')>-1 || s.indexOf('选项')>-1 || s.indexOf('题型')>-1){ headIdx=i; break; }
-  }
-
-  // 2. 列定位：优先表头关键字，缺省用默认列序
-  var cols = { type:-1, stem:-1, ans:-1, ana:-1, code:-1, opt:[] };
-  if(headIdx>-1){
-    grid[headIdx].map(cc).forEach(function(cell,idx){
-      var c = cell.toLowerCase();
-      if(cols.type<0 && c.indexOf('题型')>-1) cols.type=idx;
-      if(cols.stem<0 && (c.indexOf('题目')>-1 || c.indexOf('题干')>-1 || c==='内容')) cols.stem=idx;
-      if(cols.ans<0 && (c.indexOf('答案')>-1 || c==='answer')) cols.ans=idx;
-      if(cols.ana<0 && (c.indexOf('解析')>-1 || c.indexOf('answer analysis')>-1 || c==='analysis')) cols.ana=idx;
-      if(cols.code<0 && (c.indexOf('编码')>-1 || c.indexOf('编号')>-1 || c.indexOf('id')>-1)) cols.code=idx;
-      var m = c.match(/选项\s*([a-h])/);
-      if(m) cols.opt.push(idx);
-      else if(/^[a-h][\.、．]/.test(cell)) cols.opt.push(idx);
+document.addEventListener('plusready', function() {
+    var webview = plus.webview.currentWebview();
+    var first = null;
+    plus.key.addEventListener('backbutton', function() {
+        webview.canBack(function(e) {
+            if (e.canBack) { webview.back(); }
+            else {
+                if (!first) {
+                    first = new Date().getTime();
+                    plus.nativeUI.toast('再按一次退出应用', { duration: 'short' });
+                    setTimeout(function(){ first = null; }, 2000);
+                } else if (new Date().getTime() - first < 2000) {
+                    plus.runtime.quit();
+                }
+            }
+        });
     });
-  }
-  // 兜底默认列：仅在「完全没识别到表头」时才整列兜底（默认列序：序号0 编码1 题型2 题目3 选项A4-9 答案10 解析11）。
-  // 若已靠表头识别到题目/选项列却没找到题型列 -> 说明本表无题型列，保持 type=-1，强制走「选项+答案」自动推断。
-  var headerLocated = headIdx>-1 && (cols.stem>-1 || cols.opt.length>0);
-  if(!headerLocated){
-    if(cols.type<0) cols.type=2;
-    if(cols.stem<0) cols.stem=3;
-    if(cols.ans<0) cols.ans=10;
-    if(cols.ana<0) cols.ana=11;
-    if(cols.code<0) cols.code=1;
-    if(!cols.opt.length){ for(var k=4;k<=9;k++) cols.opt.push(k); }
-  }
-  // 选项列按出现顺序去重排序
-  cols.opt = cols.opt.filter(function(v,i,a){return a.indexOf(v)===i;}).sort(function(a,b){return a-b;});
+});
 
-  var startRow = headIdx>-1 ? headIdx+1 : 0;
-  var out = [];
-  for(var r=startRow;r<grid.length;r++){
-    var row = grid[r].map(cc);
-    if(!row.some(function(x){return x;})) continue;
-    var code = cols.code>-1 ? (row[cols.code]||'') : '';
-    var typeText = row[cols.type]||'';
-    var stem = row[cols.stem]||'';
-    if(!stem) continue;
-    var ansRaw = (cols.ans>-1 ? row[cols.ans] : '')||'';
-    var ana = (cols.ana>-1 ? row[cols.ana] : '')||'';
-    var optTexts = [];
-    for(var j=0;j<cols.opt.length;j++){ var v=row[cols.opt[j]]||''; if(v && v!=='-' && v!=='--' && v!=='无') optTexts.push(v); }
-    var id = code ? String(code) : ('q_'+r+'_'+stem.substring(0,6));
-    out.push(buildQuestion(id, typeText, stem, optTexts, ansRaw, ana));
-  }
-  return out;
-}
+function parseGrid(grid){
+    if(!grid || !grid.length) return [];
+    var cc = function(c){ return String(c==null?'':c).trim(); };
 
-// ===== 规范化题型 =====
-function normType(t){
-  var s=(t||'').toLowerCase();
-  if(s.indexOf('单')>-1) return 'single';
-  if(s.indexOf('多')>-1) return 'multiple';
-  if(s.indexOf('判')>-1) return 'judge';
-  if(s.indexOf('填')>-1) return 'fill';
-  if(s.indexOf('简')>-1) return 'short';
-  if(s.indexOf('论')>-1) return 'essay';
-  return '';
-}
-
-var TRUE_SET = ['正确','对','√','✔','✓','y','yes','1','是','true','t','a','√'];
-var FALSE_SET = ['错误','错','×','✗','✘','n','no','0','否','false','f','b','x'];
-
-function buildQuestion(id, typeText, stem, optTexts, ansRaw, ana){
-  var type = normType(typeText);
-  var hasOpts = optTexts && optTexts.length>0;
-
-  // 题型缺失 -> 推断
-  if(!type){
-    var a = String(ansRaw||'').trim().toLowerCase();
-    var optAllJudge = hasOpts && optTexts.length<=2 && optTexts.every(function(o){return TRUE_SET.indexOf(o.toLowerCase())>-1||FALSE_SET.indexOf(o.toLowerCase())>-1;});
-    if(optAllJudge || (!hasOpts && (TRUE_SET.indexOf(a)>-1||FALSE_SET.indexOf(a)>-1))) type='judge';
-    else if(hasOpts) type='single';            // 有选项默认单选，下面按答案字母数升级多选
-    else type = 'short';                        // 无选项 -> 主观题，默认简答
-  }
-
-  var q = { id:id, type:type, question:stem, options:[], answer:[], analysis:ana||'' };
-
-  if(type==='single' || type==='multiple'){
-    q.options = optTexts.slice();
-    if(q.options.length<2){ return {__err:'选项不足2个：'+stem.substring(0,10)}; }
-    var idx = lettersToIndex(ansRaw, q.options.length);
-    if(!idx.length) return {__err:'答案"'+ansRaw+'"无法识别：'+stem.substring(0,10)};
-    if(idx.length>1) q.type='multiple';
-    q.answer = idx;
-  }
-  else if(type==='judge'){
-    q.options = ['正确','错误'];
-    var v = String(ansRaw||'').trim().toLowerCase().replace(/[.,，。;；:：\s]+$/g,'');
-    if(TRUE_SET.indexOf(v)>-1) q.answer=[0];
-    else if(FALSE_SET.indexOf(v)>-1) q.answer=[1];
-    else return {__err:'判断题答案"'+ansRaw+'"无法识别：'+stem.substring(0,10)};
-  }
-  else { // fill / short / essay 主观题
-    var raw = String(ansRaw||'').trim();
-    if(!raw) return {__err:'主观题答案为空白：'+stem.substring(0,10)};
-    if(type==='fill'){
-      var parts = raw.split(/[；;、\n]/).map(function(x){return x.trim();}).filter(Boolean);
-      q.answer = parts.length?parts:[raw];
-    } else {
-      q.answer = raw;   // 字符串，主程序展示用
+    var headIdx = -1;
+    for(var i=0;i<Math.min(10,grid.length);i++){
+        var s = grid[i].map(cc).join('').toLowerCase();
+        if(s.indexOf('题目')>-1||s.indexOf('题干')>-1||s.indexOf('选项')>-1||s.indexOf('题型')>-1){
+            headIdx=i; break;
+        }
     }
-  }
-  return q;
+    log("表头行索引: " + headIdx);
+
+    var cols = {type:-1,stem:-1,ans:-1,ana:-1,code:-1,opt:[]};
+    if(headIdx>-1){
+        grid[headIdx].map(cc).forEach(function(cell,idx){
+            var c = cell.toLowerCase();
+            if(cols.type<0&&c.indexOf('题型')>-1) cols.type=idx;
+            if(cols.stem<0&&(c.indexOf('题目')>-1||c.indexOf('题干')>-1||c==='内容')) cols.stem=idx;
+            if(cols.ans<0&&(c.indexOf('答案')>-1||c==='answer')) cols.ans=idx;
+            if(cols.ana<0&&(c.indexOf('解析')>-1||c.indexOf('answer analysis')>-1||c==='analysis')) cols.ana=idx;
+            if(cols.code<0&&(c.indexOf('编码')>-1||c.indexOf('编号')>-1||c.indexOf('id')>-1)) cols.code=idx;
+            var m = c.match(/选项\s*([a-h])/);
+            if(m) cols.opt.push(idx); else if(/^[a-h][\.、．]/.test(cell)) cols.opt.push(idx);
+        });
+    }
+    log("解析到的列结构: " + JSON.stringify(cols));
+
+    var headerLocated = headIdx>-1 && (cols.stem>-1 || cols.opt.length>0);
+    if(!headerLocated){
+        log("未找到标准表头，使用默认兜底格式推断...");
+        cols.stem = 1; 
+        cols.ans = (grid[0] || []).length - 2; 
+        headIdx = 0; 
+    }
+    
+    cols.opt = cols.opt.filter(function(v,i,a){return a.indexOf(v)===i;}).sort(function(a,b){return a-b;});
+    var startRow = headIdx > -1 ? headIdx + 1 : 1;
+
+    var out = [];
+    for(var r=startRow;r<grid.length;r++){
+        var row = grid[r].map(cc);
+        if(!row.some(function(x){return x;})) continue;
+        var stem = row[cols.stem]||'';
+        if(!stem) continue; 
+        
+        var code = cols.code>-1?(row[cols.code]||''):'';
+        var typeText = row[cols.type]||'';
+        var ansRaw = (cols.ans>-1?row[cols.ans]:'')||'';
+        var ana = (cols.ana>-1?row[cols.ana]:'')||'';
+        var optTexts = [];
+        for(var j=0;j<cols.opt.length;j++){ var v=row[cols.opt[j]]||''; if(v&&v!=='-'&&v!=='--'&&v!=='无') optTexts.push(v); }
+        var id = code?String(code):('q_'+r+'_'+stem.substring(0,6));
+        out.push(buildQuestion(id,typeText,stem,optTexts,ansRaw,ana));
+    }
+    return out;
 }
 
-// 字母答案 -> 索引数组：支持 ABCD / A,B / A#B / A+B / A-B / A.B / A B / A、B
-function lettersToIndex(ansRaw, optCount){
-  var s = String(ansRaw||'').toUpperCase();
-  var matches = s.match(/[A-Z]/g);
-  if(!matches) return [];
-  var seen = {}; var idx=[];
-  for(var i=0;i<matches.length;i++){
-    var pos = matches[i].charCodeAt(0)-65;
-    if(pos>=0 && pos<optCount && !seen[pos]){ seen[pos]=1; idx.push(pos); }
-  }
-  return idx;
+function buildQuestion(id,typeText,stem,optTexts,ansRaw,ana){
+    var type = normType(typeText);
+    var hasOpts = optTexts && optTexts.length>0;
+    var rawAns = String(ansRaw||'').trim();
+
+    if (hasOpts) {
+        if (!type) {
+            if (optTexts.length === 2) {
+                var optStr = (optTexts[0] + optTexts[1]).toLowerCase();
+                if (/^(正确|对|√|是|t|y|true|yes)[,，\s]*(错误|错|×|否|f|n|false|no)$/i.test(optStr) || 
+                    /^(错误|错|×|否|f|n|false|no)[,，\s]*(正确|对|√|是|t|y|true|yes)$/i.test(optStr)) {
+                    type = 'judge';
+                }
+            }
+            if (!type) type = 'single';
+        } else if (type === 'fill' || type === 'short' || type === 'essay') {
+            type = 'single';
+        }
+
+        var q = {id:id,type:type,question:stem,options:[],answer:[],analysis:ana||''};
+        q.options = optTexts.slice();
+
+        if (type === 'judge') {
+            var v = rawAns.replace(/^[A-Za-z0-9][\.、．:：]\s*/, '');
+            var isTrue = false;
+            var isFalse = false;
+            if (/^(正确|对|√|是|T|Y|True|YES|1|A)$/i.test(v) || v.indexOf('正确')>-1 || v === '√') isTrue = true;
+            else if (/^(错误|错|×|否|F|N|False|NO|0|B)$/i.test(v) || v.indexOf('错')>-1 || v === '×') isFalse = true;
+            
+            if (isTrue) q.answer = [0];
+            else if (isFalse) q.answer = [1];
+            else {
+                var idxJudge = lettersToIndex(rawAns, q.options.length);
+                if(idxJudge.length > 0) q.answer = [idxJudge[0]];
+                else return {__err:'判断题答案无法识别'};
+            }
+        } else {
+            var idx = lettersToIndex(rawAns, q.options.length);
+            if (!idx.length) return {__err:'选择题答案无法识别'};
+            if (idx.length > 1) q.type = 'multiple';
+            q.answer = idx;
+        }
+        return q;
+
+    } else {
+        var q2 = {id:id,type:type,question:stem,options:[],answer:[],analysis:ana||''};
+        
+        if (!type) {
+            if (rawAns && /^(正确|对|√|是|T|Y|True|YES|1|错误|错|×|否|F|N|False|NO|0)$/i.test(rawAns)) {
+                type = 'judge';
+            }
+            else if (/_{2,}|（\s*）|\(\s*\)|\[\s*\]/i.test(stem) || /[；;、\n]/.test(rawAns)) {
+                type = 'fill';
+            }
+            else {
+                type = 'short';
+            }
+        }
+        q2.type = type;
+
+        if (type === 'judge') {
+            q2.options = ['正确','错误'];
+            var v2 = rawAns.replace(/^[A-Za-z0-9][\.、．:：]\s*/, '');
+            if (/^(正确|对|√|是|T|Y|True|YES|1)$/i.test(v2) || v2.indexOf('正确')>-1 || v2 === '√') q2.answer = [0];
+            else if (/^(错误|错|×|否|F|N|False|NO|0)$/i.test(v2) || v2.indexOf('错')>-1 || v2 === '×') q2.answer = [1];
+            else return {__err:'判断题答案无法识别'};
+        } else if (type === 'fill') {
+            var parts = rawAns.split(/[；;、\n]/).map(function(x){return x.trim();}).filter(Boolean);
+            q2.answer = parts.length ? parts : [rawAns];
+        } else {
+            q2.answer = rawAns;
+        }
+        return q2;
+    }
+}
+
+function normType(t){
+    var s=(t||'').toLowerCase();
+    if(s.indexOf('单')>-1 || s.indexOf('选')>-1) return 'single';
+    if(s.indexOf('多')>-1) return 'multiple';
+    if(s.indexOf('判')>-1) return 'judge';
+    if(s.indexOf('填')>-1) return 'fill';
+    if(s.indexOf('简')>-1 || s.indexOf('问')>-1) return 'short';
+    if(s.indexOf('论')>-1 || s.indexOf('述')>-1) return 'essay';
+    return '';
+}
+
+function lettersToIndex(ansRaw,optCount){
+    var s = String(ansRaw||'').toUpperCase().trim();
+    var idx = [];
+    var seen = {};
+
+    if(/^[A-H\s,，#\+、]+$/.test(s)){
+        var matches = s.match(/[A-H]/g);
+        if(matches){
+            for(var i=0;i<matches.length;i++){
+                var pos = matches[i].charCodeAt(0)-65;
+                if(pos>=0 && pos<optCount && !seen[pos]){
+                    seen[pos]=1; idx.push(pos);
+                }
+            }
+            if(idx.length > 0) return idx;
+        }
+    }
+
+    if(/^[1-9\s,，#\+、]+$/.test(s)){
+        var numMatches = s.match(/[1-9]/g);
+        if(numMatches){
+            for(var j=0;j<numMatches.length;j++){
+                var n = parseInt(numMatches[j],10) - 1; 
+                if(n>=0 && n<optCount && !seen[n]){
+                    seen[n]=1; idx.push(n);
+                }
+            }
+            if(idx.length > 0) return idx;
+        }
+    }
+
+    var looseMatches = s.match(/[A-H]/g);
+    if(looseMatches){
+        for(var k=0;k<looseMatches.length;k++){
+            var p = looseMatches[k].charCodeAt(0)-65;
+            if(p>=0 && p<optCount && !seen[p]){
+                seen[p]=1; idx.push(p);
+            }
+        }
+    }
+
+    return idx;
 }
 
 window.startParse = function(){
-  appState.finalParsed = []; appState.failErrors = [];
-  var data = [];
-  if(appState.mode==='file'){
-    if(!appState.tempRaw.length) return showToast('请先选择文件');
-    data = appState.tempRaw;
-  }else{
-    var text = document.getElementById('textArea').value;
-    if(!text.trim()) return showToast('请先粘贴数据');
-    var grid = text.split(/\r?\n/).map(function(l){return l.split('\t');});
-    data = parseGrid(grid);
-  }
-  data.forEach(function(q,i){
-    if(q && q.__err) appState.failErrors.push({line:'第'+(i+1)+'条', msg:q.__err});
-    else if(q) appState.finalParsed.push(q);
-  });
-
-  document.getElementById('resultBox').style.display='block';
-  document.getElementById('sucCount').textContent='成功 '+appState.finalParsed.length+' 条';
-  document.getElementById('failCount').textContent='失败 '+appState.failErrors.length+' 条';
-  var fl = document.getElementById('failList');
-  if(appState.failErrors.length){ fl.style.display='block'; fl.innerHTML = appState.failErrors.map(function(e){return e.line+'：'+e.msg;}).join('<br>'); }
-  else fl.style.display='none';
-
-  var demo = document.getElementById('successDemo');
-  if(appState.finalParsed.length){
-    var names={single:'单选题',multiple:'多选题',judge:'判断题',fill:'填空题',short:'简答题',essay:'论述题'};
-    var html='<div style="font-size:12px;color:var(--sub);margin-top:14px">解析示例（前3条）：</div>';
-    appState.finalParsed.slice(0,3).forEach(function(q){
-      var ansShow = (q.type==='fill'||q.type==='short'||q.type==='essay')
-        ? (Array.isArray(q.answer)?q.answer.join('；'):q.answer)
-        : q.answer.map(function(i){return String.fromCharCode(65+i);}).join('、');
-      var optsHtml = (q.type==='fill'||q.type==='short'||q.type==='essay') ? '' :
-        '<ul class="opts">'+q.options.map(function(o,i){
-          var isAns = q.answer.indexOf(i)>-1;
-          return '<li class="'+(isAns?'correct':'')+'">'+String.fromCharCode(65+i)+'. '+escapeHtml(o)+'</li>';
-        }).join('')+'</ul>';
-      html += '<div class="demo-card"><span class="tag">'+names[q.type]+'</span>'+
-        '<div class="stem">'+escapeHtml(q.question)+'</div>'+optsHtml+
-        '<div class="ans-line">答案：'+escapeHtml(ansShow)+'</div></div>';
+    appState.finalParsed=[];appState.failErrors=[];
+    var data=[];
+    
+    if(appState.mode==='file'){
+        if(!appState.tempRaw.length) {
+            return showToast('请先选择文件');
+        }
+        data=appState.tempRaw;
+    }else{
+        var text=document.getElementById('textArea').value;
+        if(!text.trim()) {
+            return showToast('请先粘贴数据');
+        }
+        data=parseGrid(text.split(/\r?\n/).map(function(l){return l.split('\t');}));
+    }
+    
+    data.forEach(function(q,i){
+        if(q&&q.__err) appState.failErrors.push({line:'第'+(i+1)+'条',msg:q.__err});
+        else if(q) appState.finalParsed.push(q);
     });
-    demo.innerHTML = html;
-  } else demo.innerHTML='';
+    
+    document.getElementById('resultBox').style.display='block';
+    document.getElementById('sucCount').textContent='成功 '+appState.finalParsed.length+' 条';
+    document.getElementById('failCount').textContent='失败 '+appState.failErrors.length+' 条';
+    
+    var fl=document.getElementById('failList');
+    if(appState.failErrors.length){
+        fl.style.display='block';
+        fl.innerHTML=appState.failErrors.map(function(e){return e.line+'：'+e.msg;}).join('<br>');
+    } else {
+        fl.style.display='none';
+    }
+    
+    var demo=document.getElementById('successDemo');
+    if(appState.finalParsed.length){
+        // === 新增：统计各题型数量 ===
+        var typeCount = {single:0, multiple:0, judge:0, fill:0, short:0, essay:0};
+        for(var i=0; i<appState.finalParsed.length; i++){
+            var tp = appState.finalParsed[i].type;
+            if(typeCount[tp] !== undefined) typeCount[tp]++;
+        }
+        var statsHtml = [];
+        if(typeCount.single > 0) statsHtml.push('单选 ' + typeCount.single + ' 题');
+        if(typeCount.multiple > 0) statsHtml.push('多选 ' + typeCount.multiple + ' 题');
+        if(typeCount.judge > 0) statsHtml.push('判断 ' + typeCount.judge + ' 题');
+        if(typeCount.fill > 0) statsHtml.push('填空 ' + typeCount.fill + ' 题');
+        if(typeCount.short > 0) statsHtml.push('简答 ' + typeCount.short + ' 题');
+        if(typeCount.essay > 0) statsHtml.push('论述 ' + typeCount.essay + ' 题');
+        
+        var html='<div style="font-size:14px; color:var(--text-main); margin-top:14px; font-weight:bold; padding:10px; background:#f8fafc; border:1px solid var(--border); border-radius:8px;">✅ 题型统计：' + (statsHtml.length ? statsHtml.join('，') : '无') + '</div>';
+        html+='<div style="font-size:12px;color:var(--sub);margin-top:14px">解析示例（前3条）：</div>';
+        
+        appState.finalParsed.slice(0,3).forEach(function(q){
+            var ansShow;
+            if(q.type==='fill'||q.type==='short'||q.type==='essay'){
+                ansShow = (Array.isArray(q.answer)?q.answer.join('；'):q.answer);
+            } else if (q.type==='judge'){
+                ansShow = q.answer[0] === 0 ? '正确' : '错误';
+            } else {
+                ansShow = q.answer.map(function(i){return String.fromCharCode(65+i);}).join('、');
+            }
+            html+='<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-top:12px"><div style="font-weight:600;font-size:15px;margin-bottom:8px">'+q.question+'</div><div style="font-size:13px;color:#10b981;font-weight:bold">答案：'+ansShow+'</div></div>';
+        });
+        demo.innerHTML=html;
+    } else { demo.innerHTML=''; }
 };
 
 window.confirmImport = function(){
-  if(!appState.finalParsed.length){ showToast('请先解析题库'); return; }
-  var name = document.getElementById('libName').value.trim() || ('题库'+new Date().getTime());
-  var bank = { id:'bank_'+new Date().getTime(), name:name, questions:appState.finalParsed };
-  localStorage.setItem('xjt_new_import', JSON.stringify(bank));
-  showToast('✅ 已导入 '+appState.finalParsed.length+' 题，正在进入刷题...');
-  setTimeout(function(){ window.location.href = 'index.html'; }, 600);
+    if(!appState.finalParsed.length){showToast('请先解析题库');return;}
+    var name=document.getElementById('libName').value.trim()||('题库'+new Date().getTime());
+    var bank={id:'bank_'+new Date().getTime(),name:name,questions:appState.finalParsed};
+    localStorage.setItem('xjt_new_import',JSON.stringify(bank));
+    showToast('✅ 已导入 '+appState.finalParsed.length+' 题，正在进入刷题...');
+    setTimeout(function(){window.location.href='index.html';},600);
 };
 </script>
 </body>
