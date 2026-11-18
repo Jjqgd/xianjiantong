@@ -172,6 +172,7 @@ const CoreParser = {
       const row = grid[i].map(cleanCell);
       if (!row.some(Boolean)) continue;
 
+      // 恢复物理列序读取，不偏移
       let typeCol = 2, stemCol = 3, ansCol = 10, anaCol = 11;
       if (startIndex > 0) {
         const headerRow = grid[startIndex - 1].map(cleanCell);
@@ -182,21 +183,20 @@ const CoreParser = {
           if (c === '解析') anaCol = idx;
         });
       }
-      if (!hasTypeCol) {
-        if (startIndex > 0) typeCol = -1;
-      }
-
-      const type = typeCol !== -1 ? (row[typeCol] || '') : '';
-      const stem = row[stemCol] || '';
+      
+      // 无题型时，跳过该列，直接读取下一列的题目
+      const type = hasTypeCol ? (row[typeCol] || '') : '';
+      const stem = hasTypeCol ? (row[stemCol] || '') : (row[typeCol] || '');
       if (!stem) continue;
 
       let optionsStr = [];
-      const optStart = (typeCol !== -1 || hasTypeCol) ? 4 : 3; 
+      // 选项永远是物理列 4~9 (E~J)，不做偏移
+      const optStart = hasTypeCol ? 4 : 3; 
       
       for (let j = optStart; j <= optStart + 5 && j < row.length; j++) {
         const val = row[j];
         if (val && val !== '-' && val !== '--' && val !== '无') {
-          optionsStr.push(val);
+          optionsStr.push(val); // 物理读取，不做任何过滤
         }
       }
 
@@ -227,7 +227,7 @@ const CoreParser = {
       
       if (hasOpts) {
         let rawOpts = String(raw.options || '').split(/[;；|]/).filter(Boolean);
-        options = rawOpts.map((txt, i) => ({ k: LETTERS[i], t: txt.trim().replace(/^[A-Z]\s*[.、．]\s*/, '') }));
+        options = rawOpts.map((txt, i) => ({ k: LETTERS[i], t: txt.trim() })); // 物理保留选项文本
         
         let matches = extractLetters(raw.answer);
         
@@ -296,7 +296,7 @@ window.onFileChange = function(file) {
   if (!file) return;
   document.getElementById('fileNameDisplay').textContent = `✅ 已选：${file.name}`;
   
-  // 🎯 新增：自动提取文件名并填入题库名称
+  // 自动填入题库名
   const libNameInput = document.getElementById('libName');
   if (libNameInput.value === '') {
     libNameInput.value = file.name.replace(/\.[^/.]+$/, '');
