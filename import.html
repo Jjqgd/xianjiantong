@@ -70,8 +70,8 @@ body{background:var(--bg);color:var(--text);font-size:14px;padding:10px}
   </div>
   <input class="input-name" id="libName" placeholder="请输入题库名称（如：高铁线路专业题库）">
   <div class="import-tabs">
-    <button id="btnModeFile" class="active" onclick="switchMode('file')">📁 选择文件</button>
-    <button id="btnModeText" class="inactive" onclick="switchMode('text')">📋 粘贴文本</button>
+    <button id="btnModeFile" class="active" style="background:#b71c1c !important;color:#fff !important;border-color:#b71c1c !important;" onclick="switchMode('file')">📁 选择文件</button>
+    <button id="btnModeText" class="inactive" style="background:#fff !important;color:#b71c1c !important;border-color:#b71c1c !important;" onclick="switchMode('text')">📋 粘贴文本</button>
   </div>
   <label class="file-zone" id="paneFile" for="fileInput">
     <div class="icon">📄</div>
@@ -104,6 +104,11 @@ window.switchMode = function(mode){
   appState.mode = mode;
   document.getElementById('btnModeFile').className = mode==='file' ? 'active':'inactive';
   document.getElementById('btnModeText').className = mode==='text' ? 'active':'inactive';
+  var _fileOn = mode==='file';
+  document.getElementById('btnModeFile').style.setProperty('background', _fileOn ? '#b71c1c':'#fff', 'important');
+  document.getElementById('btnModeFile').style.setProperty('color', _fileOn ? '#fff':'#b71c1c', 'important');
+  document.getElementById('btnModeText').style.setProperty('background', _fileOn ? '#fff':'#b71c1c', 'important');
+  document.getElementById('btnModeText').style.setProperty('color', _fileOn ? '#b71c1c':'#fff', 'important');
   document.getElementById('paneFile').style.display = mode==='file' ? 'block':'none';
   document.getElementById('paneText').style.display = mode==='text' ? 'block':'none';
 };
