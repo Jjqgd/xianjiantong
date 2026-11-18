@@ -88,6 +88,7 @@
 
 <div style="text-align:center; color:#999; margin-top:30px; font-size:13px;">技术支持：秦十三郎</div>
 
+<!-- 必须引入完整版库，否则无法解析 .xls 老文件 -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
     let rawData = [];
@@ -98,6 +99,7 @@
     const progressFill = document.getElementById('progressFill');
     const logBox = document.getElementById('logBox');
 
+    // 兼容 .xls 和 .xlsx 的二进制安全读取方式
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -109,12 +111,24 @@
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
-                const workbook = XLSX.read(e.target.result, {type: 'array'});
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                rawData = XLSX.utils.sheet_to_json(firstSheet, {defval:''});
-            } catch(err){ alert('文件读取失败，请检查是否为损坏的 Excel 文件'); }
+                // 兼容新版浏览器 API，同时保留二进制安全
+                let data = e.target.result;
+                if (file.arrayBuffer) {
+                    // 现代浏览器直接获取二进制流
+                    file.arrayBuffer().then(buffer => {
+                        const workbook = XLSX.read(buffer, { type: 'array', cellFormula: false, cellStyles: false });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        rawData = XLSX.utils.sheet_to_json(firstSheet, {defval:''});
+                    });
+                } else {
+                    // 传统浏览器 fallback
+                    const workbook = XLSX.read(data, { type: 'binary', cellFormula: false, cellStyles: false });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    rawData = XLSX.utils.sheet_to_json(firstSheet, {defval:''});
+                }
+            } catch(err){ alert('文件读取失败，请检查是否为损坏的 Excel 文件'); console.error(err); }
         };
-        reader.readAsArrayBuffer(file);
+        reader.readAsBinaryString(file);
     });
 
     async function startParse(){
