@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -172,77 +170,22 @@
   
   #fireworks-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9998; }
 
-  /* ========== 新增：折叠面板 ========== */
+  /* ========== 折叠面板 ========== */
   .fold-panel { margin-bottom: 12px; background: var(--card-bg); border-radius: 8px; overflow: hidden; }
-  .fold-header {
-    padding: 10px 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 0.95rem;
-    color: var(--text-main);
-    background: var(--input-bg);
-  }
-  .fold-header .fold-icon {
-    transition: transform 0.25s;
-    font-size: 0.8rem;
-    color: var(--text-sub);
-  }
-  .fold-header.collapsed .fold-icon {
-    transform: rotate(-90deg);
-  }
-  .panel-content {
-    overflow: hidden;
-    max-height: 600px;
-    transition: max-height 0.32s cubic-bezier(0.4, 0, 0.2, 1), padding 0.32s cubic-bezier(0.4, 0, 0.2, 1);
-    padding: 10px 12px;
-  }
-  .panel-content.collapsed {
-    max-height: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-  }
-  .rename-btn {
-    padding: 3px 8px;
-    font-size: 0.75rem;
-    margin-right: 10px;
-    border: 1px solid var(--border-color);
-    background: var(--card-bg);
-    color: var(--text-main);
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  .bank-fold-content {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-  .bank-fold-content .btn {
-    padding: 6px 12px;
-    font-size: 0.8rem;
-  }
+  .fold-header { padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: bold; font-size: 0.95rem; color: var(--text-main); background: var(--input-bg); }
+  .fold-header .fold-icon { transition: transform 0.25s; font-size: 0.8rem; color: var(--text-sub); }
+  .fold-header.collapsed .fold-icon { transform: rotate(-90deg); }
+  .panel-content { overflow: hidden; max-height: 600px; transition: max-height 0.32s cubic-bezier(0.4, 0, 0.2, 1), padding 0.32s cubic-bezier(0.4, 0, 0.2, 1); padding: 10px 12px; }
+  .panel-content.collapsed { max-height: 0; padding-top: 0; padding-bottom: 0; }
+  .rename-btn { padding: 3px 8px; font-size: 0.75rem; margin-right: 10px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-main); border-radius: 4px; cursor: pointer; }
+  .bank-fold-content { display: flex; gap: 8px; align-items: center; }
+  .bank-fold-content .btn { padding: 6px 12px; font-size: 0.8rem; }
 
-  /* ========== 新增：字号调节 ========== */
-  .font-ctrl {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-  }
-  .font-ctrl button {
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    font-size: 0.85rem;
-    line-height: 1;
-  }
-  .q-text, .opt, .analysis, .subjective-answer {
-    font-size: var(--q-font-size, 1rem);
-  }
-  .opt .opt-prefix {
-    font-size: calc(var(--q-font-size, 1rem) * 0.8);
-  }
+  /* ========== 字号调节 ========== */
+  .font-ctrl { display: flex; gap: 4px; align-items: center; }
+  .font-ctrl button { width: 28px; height: 28px; padding: 0; font-size: 0.85rem; line-height: 1; }
+  .q-text, .opt, .analysis, .subjective-answer { font-size: var(--q-font-size, 1rem); }
+  .opt .opt-prefix { font-size: calc(var(--q-font-size, 1rem) * 0.8); }
   .fav-star { float:right; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-sub); border-radius:6px; padding:3px 8px; font-size:0.75rem; cursor:pointer; white-space:nowrap; }
   .fav-star.on { background:#fff7e6; color:#b45309; border-color:#fcd34d; }
   .fav-star:active { opacity:0.8; }
@@ -283,6 +226,14 @@
 <div id="toast" class="toast"></div>
 
 <script>
+// 禁用右键和F12，提高破解门槛（防君子不防小人）
+document.oncontextmenu = function() { return false; };
+document.onkeydown = function(e) {
+  if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key))) {
+    return false;
+  }
+};
+
 // ================= 夜间模式（支持系统自动跟随） =================
 var manualThemeSet = false;
 
@@ -330,10 +281,10 @@ function initDarkMode() {
 }
 initDarkMode();
 
-// ================= 全局设置：答案开关功能已下线，作答后始终显示答案 =================
+// ================= 全局设置：作答后始终显示答案 =================
 var autoShowAnswer = true;
 
-// ================= 已做题库存储（用于未做题优先组卷） =================
+// ================= 已做题库存储 =================
 function getDoneQuestions() {
   try { return JSON.parse(localStorage.getItem('xjt_done_questions') || '[]'); }
   catch(e) { return []; }
@@ -346,7 +297,7 @@ function addDoneQuestion(qid) {
   }
 }
 
-// ================= 新增：折叠状态、字号全局变量 =================
+// ================= 折叠状态、字号全局变量 =================
 var foldState = JSON.parse(localStorage.getItem('xjt_fold_state') || '{}');
 var qFontSize = parseFloat(localStorage.getItem('xjt_font_size')) || 1.05;
 document.documentElement.style.setProperty('--q-font-size', qFontSize + 'rem');
@@ -421,23 +372,20 @@ function changeFontSize(delta) {
 var splashDelay = 4800;
 setTimeout(function() { document.getElementById('splash-screen').classList.add('hidden'); }, splashDelay);
 
-// ================= 授权系统（强制联网校验 / 一机一码 / 免费试用 2 天） =================
-/* 部署前必读：
-   1) AUTH_SECRET 已随机生成并与发码脚本 gen-code.js 的 SECRET 保持一致（如需换密钥，两处必须同时改）；
-   2) 必须使用 HTTPS 部署（HTTP 下浏览器不开放 crypto.subtle，会自动降级为内置纯 JS 实现，功能不变）；
-   3) 发码方式：node gen-code.js 设备码 [天数]   （不填天数即为永久授权）。 */
+// ================= 授权系统 =================
 var AUTH_SECRET = 'ETwGVfCXjcDu3d1PUGDzPBQIV1f0oTsGKSsN56tH6dEt';
-var AUTH_TRIAL_MS = 48 * 60 * 60 * 1000;         /* 免费试用 2 天 */
-var AUTH_HEARTBEAT = 20 * 60 * 1000;             /* 联网心跳 20 分钟 */
-var AUTH_PERM = 4102444800000;                   /* 2100-01-01，代表永久授权 */
+var AUTH_TRIAL_MS = 24 * 60 * 60 * 1000;         /* 免费体验 1 天 */
+var AUTH_HEARTBEAT = 20 * 60 * 1000;             /* 心跳 20 分钟 */
+var AUTH_PERM = 4102444800000;                   /* 永久授权 2100-01-01 */
 var AUTH_B32 = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 var AUTH_KEYS = { ls: 'xjt_lic_v2', ck: 'xjt_lic', ss: 'xjt_lic', idb: 'xjt_lic_db', dom: 'data-xjt-lic' };
 
-var isAuthorized = false; var isTrialMode = false; var trialDays = 2;
+var isAuthorized = false; var isTrialMode = false; var trialDays = 1;
 var authReady = false; var authMode = ''; var authLockReason = '';
 var authExpire = 0; var authDeviceCode = ''; var authFp = ''; var authFpLoose = '';
+var pendingTrial = false; // 是否处于首次选择体验状态
 
-/* ---------- 哈希与编码（WebCrypto 优先，非安全上下文自动降级，两者结果一致） ---------- */
+/* ---------- 哈希与编码 ---------- */
 function authHex(u8) { var s = ''; for (var i = 0; i < u8.length; i++) s += (u8[i] < 16 ? '0' : '') + u8[i].toString(16); return s; }
 function authHexU8(h) { var u = new Uint8Array(h.length / 2); for (var i = 0; i < u.length; i++) u[i] = parseInt(h.substr(i * 2, 2), 16); return u; }
 function authB32(u8, n) { var o = ''; for (var i = 0; i < u8.length; i++) { o += AUTH_B32[u8[i] >> 3]; if (o.length >= n) break; } return o.slice(0, n); }
@@ -489,7 +437,7 @@ function authSha256Pure(msg) {
   return out;
 }
 
-/* ---------- 设备指纹（strict 全量 / loose 稳定子集，容忍浏览器小版本升级） ---------- */
+/* ---------- 设备指纹 ---------- */
 function authCanvasSig() {
   try {
     var c = document.createElement('canvas'); c.width = 320; c.height = 120;
@@ -523,7 +471,7 @@ function authFpOf(c, loose) {
 }
 function authDeviceCodeOf(fp) { return authGroup(authB32(authHexU8(fp).slice(0, 15), 15), 5); }
 
-/* ---------- 冗余存储（localStorage + Cookie + sessionStorage + IndexedDB + 隐藏 DOM 属性） ---------- */
+/* ---------- 冗余存储 ---------- */
 function authIdb() {
   return new Promise(function (res, rej) {
     var r = indexedDB.open(AUTH_KEYS.idb, 1);
@@ -588,21 +536,33 @@ function authReadAll() {
   });
 }
 
-/* ---------- 网络时间（不允许离线：取不到时间一律锁定） ---------- */
+/* ---------- 淘宝时间双重控制（高防） ---------- */
 function authNetTime() {
-  return fetch(location.pathname + (location.pathname.indexOf('?') > -1 ? '&' : '?') + '_t=' + Math.random(), { method: 'HEAD', cache: 'no-store' })
-    .then(function (r) { var d = r.headers.get('date') || r.headers.get('Date'); if (d) { var t = Date.parse(d); if (!isNaN(t)) return t; } throw new Error('no date header'); })
-    .catch(function () { return authNetTimeApi('https://timeapi.io/api/Time/current/zone?timeZone=Asia/Shanghai'); });
-}
-function authNetTimeApi(url) {
-  return fetch(url, { cache: 'no-store', mode: 'cors' }).then(function (r) {
-    if (!r.ok) throw new Error('http ' + r.status);
-    return r.json();
-  }).then(function (d) {
-    if (d && d.dateTime) return Date.parse(String(d.dateTime).slice(0, 19) + 'Z') - 8 * 3600000;
-    if (d && d.unixtime) return Number(d.unixtime) * 1000;
-    throw new Error('bad payload');
-  }).catch(function () { return authNetTimeApi('https://worldtimeapi.org/api/ip'); });
+  // 接口一：淘宝授时 (极速，国内无墙)
+  return fetch('https://api.m.taobao.com/rest/api3.do?api=mtop.common.getTimestamp', { cache: 'no-store' })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d && d.data && d.data.t) return parseInt(d.data.t);
+      throw new Error('Taobao format error');
+    })
+    .catch(function() {
+      // 接口二：TimeAPI 备用
+      return fetch('https://timeapi.io/api/Time/current/zone?timeZone=Asia/Shanghai', { cache: 'no-store' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d && d.dateTime) return Date.parse(String(d.dateTime).slice(0, 19) + 'Z') - 8 * 3600000;
+          throw new Error('TimeAPI error');
+        });
+    })
+    .catch(function() {
+      // 接口三：WorldTimeAPI 备用
+      return fetch('https://worldtimeapi.org/api/ip', { cache: 'no-store' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d && d.unixtime) return d.unixtime * 1000;
+          throw new Error('WorldTime error');
+        });
+    });
 }
 function netTime() { return authNetTime().catch(function () { return null; }); }
 
@@ -617,14 +577,13 @@ function authLock(reason) {
   if (examTimer) { clearInterval(examTimer); examTimer = null; }
   currentMode = 'login'; render();
 }
-/* 关键入口埋点：未授权时拦截并弹回授权页 */
 function guardGate() {
   if (authReady && isAuthorized) return true;
   if (!authReady) { showToast('正在联网校验授权，请稍候', true); return false; }
   authLock(authLockReason || 'device'); return false;
 }
 
-/* ---------- 激活码校验（与 gen-code.js 完全一致） ---------- */
+/* ---------- 激活码校验 ---------- */
 function authVerifyCode(code, devCode) {
   var dc = devCode || authDeviceCode;
   var p = String(code).toUpperCase().replace(/[^A-Z0-9-]/g, '').split('-');
@@ -635,6 +594,7 @@ function authVerifyCode(code, devCode) {
     return tag === 'PERM' ? AUTH_PERM : parseInt(tag.slice(1), 36);
   });
 }
+
 function doLogin() {
   var box = document.getElementById('regCodeInput');
   var code = box ? box.value.trim() : '';
@@ -648,12 +608,39 @@ function doLogin() {
         var rec = res.rec || { v: 2, fp: authFp, fpl: authFpLoose, first: now, exp: 0, act: false, code: '', maxSeen: now };
         rec.act = true; rec.exp = exp; rec.code = code; rec.maxSeen = now;
         authSaveAll(rec).then(function () {
+          pendingTrial = false;
           showToast(exp >= AUTH_PERM ? '永久授权激活成功' : '授权激活成功');
           authOk('activated', exp);
         });
       });
     });
   });
+}
+
+/* ---------- 体验与激活选择逻辑 ---------- */
+function startTrialOnce() {
+  if (!pendingTrial) return;
+  netTime().then(function (now) {
+    if (now == null) { showToast('需要联网获取准确时间，请检查网络', true); return; }
+    authReadAll().then(function (res) {
+      if (res.rec && res.rec.first) {
+        pendingTrial = false;
+        authBoot(); // 如果发现已有残留记录，立刻重新校验并拦截
+        return;
+      }
+      var rec = { v: 2, fp: authFp, fpl: authFpLoose, first: now, exp: now + AUTH_TRIAL_MS, act: false, code: '', maxSeen: now };
+      authSaveAll(rec).then(function () {
+        pendingTrial = false;
+        showToast('已开启 1 天免费体验');
+        authOk('trial', rec.exp);
+      });
+    });
+  });
+}
+
+function chooseActivate() {
+  pendingTrial = false;
+  render(); 
 }
 
 /* ---------- 启动校验 ---------- */
@@ -669,10 +656,18 @@ function authBoot() {
     return authReadAll().then(function (res) {
       if (res.tamper) { authLock('tamper'); return; }
       var rec = res.rec;
-      if (!rec) {                                                  /* 首次使用：以网络时间起算 2 天试用 */
-        rec = { v: 2, fp: authFp, fpl: authFpLoose, first: now, exp: now + AUTH_TRIAL_MS, act: false, code: '', maxSeen: now };
-        authSaveAll(rec);
+      
+      if (!rec) {
+        // 首次打开：不直接给时间，标记为 pendingTrial，等待用户选择
+        pendingTrial = true;
+        authReady = true;
+        isAuthorized = false;
+        currentMode = 'login';
+        render();
+        return;
       }
+      pendingTrial = false;
+
       if (rec.fp !== authFp && rec.fpl !== authFpLoose) { authLock('device'); return; }
       if (rec.maxSeen && now < rec.maxSeen - 5 * 60000) { authLock('clock'); return; }   /* 时钟回拨 */
       rec.maxSeen = now; authSaveAll(rec);
@@ -685,24 +680,94 @@ function authRetry() {
   if (currentMode === 'login') { appContainer.innerHTML = '<div class="card" style="text-align:center;padding:40px 15px;">正在重新联网校验授权…</div>'; }
   authBoot();
 }
+
+var authOfflineCount = 0; // 记录连续断网次数
 function authHeartbeat() {
   netTime().then(function (now) {
-    if (now == null) { if (isAuthorized) authLock('offline'); return; }
+    if (now == null) {
+      // 如果是断网，不立刻锁死！允许离线使用一段时间
+      authOfflineCount++;
+      // 如果连续断网超过 6 次（约 2 小时），且没有任何网络，则强制锁定
+      if (authOfflineCount >= 6) {
+        if (isAuthorized) authLock('offline');
+      } else {
+        // 静默提示，不打断用户操作
+        console.warn('网络不佳，已切换至离线模式，剩余容错次数：' + (6 - authOfflineCount));
+      }
+      return; 
+    }
+    
+    // 网络恢复了，重置计数
+    authOfflineCount = 0;
+    
     if (!isAuthorized) return;
-    if (authExpire < AUTH_PERM && authExpire <= now) { authLock('expired'); return; }
+    
+    // 校验是否过期
+    if (authExpire < AUTH_PERM && authExpire <= now) { 
+      authLock('expired'); 
+      return; 
+    }
+    
+    // 更新最后联网时间
     authReadAll().then(function (res) {
       if (res.tamper) { authLock('tamper'); return; }
-      if (res.rec) { res.rec.maxSeen = now; authSaveAll(res.rec); }
+      if (res.rec) { 
+        res.rec.maxSeen = now; 
+        authSaveAll(res.rec); 
+      }
     });
   });
 }
-function getDeviceId() { return authDeviceCode || ''; }
+
 function checkAuth() {
   currentMode = 'login'; render();
   authBoot();
   setInterval(authHeartbeat, AUTH_HEARTBEAT);
-  window.addEventListener('offline', function () { if (isAuthorized) authLock('offline'); });
-  document.addEventListener('visibilitychange', function () { if (!document.hidden && isAuthorized) authHeartbeat(); });
+  authLocalTick(); // 开启本地时钟守护
+  
+  // 如果断网了，不要立刻踢出，而是记录
+  window.addEventListener('offline', function () { 
+    if (isAuthorized) {
+      showToast('网络已断开，当前处于离线保护模式');
+    }
+  });
+  
+  // 恢复网络时，立即校验一次
+  window.addEventListener('online', function () { 
+    if (isAuthorized) {
+      showToast('网络已恢复，正在重新校验授权...');
+      authHeartbeat(); 
+    }
+  });
+  
+  // 切回前台时，校验
+  document.addEventListener('visibilitychange', function () { 
+    if (!document.hidden && isAuthorized) authHeartbeat(); 
+  });
+}
+
+// 新增：本地时钟守护（防断网改时间）
+var lastLocalTick = Date.now();
+function authLocalTick() {
+  setInterval(function() {
+    var now = Date.now();
+    // 如果本地时间发生了回拨（比如往回改了 5 分钟以上）
+    if (now < lastLocalTick - 300000) {
+      authLock('clock');
+      return;
+    }
+    // 如果本地时间发生大幅度飞跃（比如直接跳到明年）
+    if (now > lastLocalTick + 86400000) {
+      authLock('clock');
+      return;
+    }
+    lastLocalTick = now;
+    
+    // 本地倒计时检查（即使断网，到期了也会自动锁）
+    if (isAuthorized && authExpire < AUTH_PERM && authExpire <= now) {
+       authLock('expired');
+    }
+  }, 10000); // 每10秒查一次本地时间
 }
 
 // ================= 业务逻辑区 =================
@@ -744,12 +809,31 @@ function saveData() { localStorage.setItem('xjt_banks', JSON.stringify(allBanks)
 function savePracticeProgress() { if (currentMode === 'practice' || currentMode === 'recite') { localStorage.setItem('xjt_practice_progress', JSON.stringify({ mode: currentMode, questions: practiceQuestions, index: practiceIndex, selections: practiceSelections, isWrong: isWrongPracticeMode })); } }
 function restorePracticeProgress() {
   var pStr = localStorage.getItem('xjt_practice_progress');
-  if (pStr) { try { var p = JSON.parse(pStr); if (p.questions && p.questions.length > 0) { var modeName = p.mode === 'recite' ? '背题' : '练习'; showAppConfirm('铁途学练', '检测到上次未完成的' + modeName + '，是否继续？', '继续', '放弃', function() { practiceQuestions = p.questions; practiceIndex = p.index; practiceSelections = p.selections; isWrongPracticeMode = p.isWrong; currentMode = p.mode || 'practice'; render(); }, function() { localStorage.removeItem('xjt_practice_progress'); }); } } catch(e) {} }
-}
+  if (pStr) { try { var p = JSON.parse(pStr); if (p.questions && p.questions.length > 0) { var modeName = p.mode === 'recite' ? '背题' : '练习'; showAppConfirm('铁途学练', '检测到上次未完成的' + modeName + '，是否继续？', '继续', '放弃', function() { practiceQuestions = p.questions; practiceIndex = p.index; practiceSelections = p.selections; isWrongPracticeMode = p.isWrong; currentMode = p.mode || 'practice'; render(); }, function() { localStorage.removeItem('xjt_practice_progress'); }); } } catch(e) {} } }
 function loadData() { try { var b = localStorage.getItem('xjt_banks'); var a = localStorage.getItem('xjt_active'); var w = localStorage.getItem('xjt_wrong'); if (b) allBanks = JSON.parse(b); if (a) activeBankId = a; if (w) { wrongBook = JSON.parse(w); for (var i=0; i<wrongBook.length; i++) { if (wrongBook[i].streak === undefined) wrongBook[i].streak = 0; } } var favStr = localStorage.getItem('xjt_fav'); if (favStr) { try { favorites = JSON.parse(favStr); } catch(e2) { favorites = []; } } if (activeBankId && !allBanks[activeBankId]) activeBankId = null; } catch(e) {} }
 function checkNewImport() { var newBankStr = localStorage.getItem('xjt_new_import'); if (newBankStr) { try { var newBank = JSON.parse(newBankStr); allBanks[newBank.id] = { name: newBank.name, questions: newBank.questions }; activeBankId = newBank.id; localStorage.removeItem('xjt_new_import'); saveData(); showToast('导入成功，共 ' + newBank.questions.length + ' 题'); } catch(e) {} } }
 
 function render() {
+  // 【防破解暗桩】：每次渲染重测状态，拦截控制台强制改参数的普通人
+  try {
+    if (window._originRender === undefined) {
+       window._originRender = render;
+    } else if (window._originRender !== render) {
+       throw new Error("Invalid");
+    }
+    if (isAuthorized && currentMode !== 'login' && currentMode !== 'import') {
+      var checkRec = JSON.parse(localStorage.getItem(AUTH_KEYS.ls) || '{}');
+      if (!checkRec.sig) { // 没有有效签名记录
+         isAuthorized = false; // 打回原形
+         currentMode = 'login';
+         showToast('检测到非法篡改，请重新授权', true);
+      }
+    }
+  } catch(e) {
+     isAuthorized = false;
+     currentMode = 'login';
+  }
+
   if (!isAuthorized) { currentMode = 'login'; }
   else if (Object.keys(allBanks).length === 0) { currentMode = 'import'; }
   else if (currentMode === 'login' || currentMode === 'import') { currentMode = 'home'; }
@@ -760,41 +844,73 @@ function renderLogin() {
   var dc = authDeviceCode || '计算中…';
   var reasonTip = '';
   var tips = {
-    offline: '<b>需要联网验证授权</b><br>本软件必须联网使用，请连接网络后点击下方按钮重新校验。',
+    offline: '<b>网络未连接</b><br>请检查手机网络，连接后点击下方按钮重新校验授权即可继续使用（做题进度不会丢失）。',
     clock: '<b>检测到系统时间异常</b><br>授权记录与你当前时间不符，请联系客服处理。',
     device: '<b>当前设备未授权</b><br>请把下方设备码发给客服，获取本机专属激活码。',
     expired: '<b>授权已到期</b><br>续费或购买永久授权请联系客服，输入新激活码即可继续使用。',
-    trial: '<b>免费试用已结束</b><br>试用期为 2 天。请输入激活码继续使用。',
+    trial: '<b>免费体验已结束</b><br>体验期为 1 天。请输入激活码继续使用。',
     tamper: '<b>授权记录异常</b><br>检测到本地记录被修改，请重新输入激活码。'
   };
-  if (authLockReason && tips[authLockReason]) { reasonTip = '<div class="tip-danger" style="background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; padding:12px; border-radius:8px; font-size:0.9rem; text-align:left; line-height:1.6; margin-bottom:15px;">' + tips[authLockReason] + '</div>'; }
-  else if (!authReady) { reasonTip = '<div class="tip-ok" style="background:#eff6ff; border:1px solid #bfdbfe; color:#1d4ed8; padding:12px; border-radius:8px; font-size:0.9rem; text-align:left; margin-bottom:15px;">正在联网校验授权，请稍候…</div>'; }
+
+  if (authLockReason && tips[authLockReason]) {
+    reasonTip = '<div class="tip-danger" style="background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; padding:12px; border-radius:8px; font-size:0.9rem; text-align:left; line-height:1.6; margin-bottom:15px;">' + tips[authLockReason] + '</div>';
+  } else if (!authReady) {
+    reasonTip = '<div class="tip-ok" style="background:#eff6ff; border:1px solid #bfdbfe; color:#1d4ed8; padding:12px; border-radius:8px; font-size:0.9rem; text-align:left; margin-bottom:15px;">正在通过淘宝时间服务器校验授权，请稍候…</div>';
+  }
+  
   var retryBtn = authLockReason === 'offline' ? '<button class="btn btn-green btn-block" style="margin-bottom:15px; border-radius:8px; font-size:1rem; padding:13px;" onclick="authRetry()">重新联网校验</button>' : '';
+
+  // 首次使用二选一面板
+  var trialChoicePanel = '';
+  if (pendingTrial && authReady) {
+    trialChoicePanel = `
+      <div style="background:#eff6ff; border:2px solid #bfdbfe; border-radius:12px; padding:20px 15px; margin-bottom:15px; text-align:center;">
+        <div style="font-size:1.1rem; font-weight:bold; color:#0d47a1; margin-bottom:8px;">🎁 欢迎使用铁途学练</div>
+        <div style="font-size:0.85rem; color:#475569; line-height:1.6; margin-bottom:15px;">
+          您可以先免费体验 <b style="color:#b71c1c; font-size:1rem;">1 天</b><br>或直接输入客服提供的激活码。
+        </div>
+        <button class="btn btn-green btn-block" style="padding:13px; font-size:1rem; margin-bottom:10px; box-shadow:0 4px 6px rgba(16,185,129,0.2);" onclick="startTrialOnce()">🎁 开启 1 天免费体验</button>
+        <button class="btn btn-outline btn-block" style="padding:13px; font-size:1rem;" onclick="chooseActivate()">🔑 我有激活码，直接激活</button>
+      </div>`;
+  }
+
+  // 表单是否可见：如果正在做选择则隐藏，否则显示
+  var showActivateForm = !pendingTrial;
+  
+  // 改为使用图片展示重要提示 (请将 tip.png 放在根目录)
+  var noticeImage = `<div style="text-align:center; margin-bottom:15px;"><img src="tip.png" style="width:100%; border-radius:8px;" onerror="this.style.display='none'"></div>`;
 
   appContainer.innerHTML = `
     <div class="card" style="text-align:center; margin-top:10px; padding: 20px 15px;">
-      <h2 style="color:#b71c1c;margin-bottom:10px;">专属授权登录</h2>
+      <h2 style="color:#b71c1c;margin-bottom:15px;">专属授权登录</h2>
+      
+      ${noticeImage}
       ${reasonTip}
       ${retryBtn}
-      <div class="tip-danger" style="background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; padding:12px; border-radius:8px; font-size:0.85rem; text-align:left; line-height:1.6; margin-bottom:15px;"><b>重要提示（必读）：</b><br>1. 本软件采用 <b>一机一码</b> 授权机制，激活码与设备绑定。<br>2. <b>必须联网使用</b>：授权有效期以网络时间为准，修改手机时间无效。<br>3. 请勿清除浏览器数据（清除后需重新输入激活码，激活码不变，无需重新购买）。</div>
-      <div style="display:flex; gap:5px; margin-bottom:15px; text-align:center; flex-wrap:wrap;">
-        <div style="flex:1; min-width:18%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#64748b; margin-bottom:5px;">7 天</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥2</div></div>
-        <div style="flex:1; min-width:18%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#64748b; margin-bottom:5px;">15 天</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥4</div></div>
-        <div style="flex:1; min-width:18%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#64748b; margin-bottom:5px;">30 天</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥5</div></div>
-        <div style="flex:1; min-width:18%; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:10px 2px; position:relative;"><div style="position:absolute; top:-8px; left:50%; transform:translateX(-50%); background:#ef4444; color:#fff; font-size:0.6rem; padding:2px 5px; border-radius:10px; white-space:nowrap; font-weight:bold;">热卖</div><div style="font-size:0.75rem; color:#d97706; margin-bottom:5px; margin-top:3px;">半年</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥15</div></div>
-        <div style="flex:1; min-width:18%; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#1d4ed8; margin-bottom:5px;">永久</div><div style="font-size:1.1rem; color:#0d47a1; font-weight:bold;">￥49.9</div></div>
-      </div>
-      <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin-bottom:15px; border: 1px dashed #cbd5e1;">
-        <div style="font-size:0.8rem; color:#64748b; margin-bottom:5px;">您的专属设备码</div>
-        <div style="font-size:1.15rem; font-weight:bold; color:#0d47a1; letter-spacing:1px; word-break:break-all;">${dc}</div>
-        <button class="btn btn-outline" style="margin-top:10px; padding:6px 12px; font-size:0.85rem; display:inline-block;" onclick="copyDeviceId('${authDeviceCode}')">一键复制设备码并发给客服</button>
-      </div>
-      <div style="text-align:left; font-size:0.85rem; font-weight:bold; color:#475569; margin-bottom:5px;">请输入专属激活码：</div>
-      <input type="text" id="regCodeInput" placeholder="请联系客服购买后获取" style="width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:8px;text-align:center;font-size:1rem;margin-bottom:20px; text-transform:uppercase;">
-      <button class="btn btn-primary btn-block" onclick="doLogin()" style="padding:14px; font-size:1.1rem; box-shadow: 0 4px 10px rgba(13, 71, 161, 0.3);">立即激活正式版</button>
+      ${trialChoicePanel}
+
+      ${showActivateForm ? `
+        <div style="display:flex; gap:5px; margin-bottom:15px; text-align:center; flex-wrap:wrap;">
+          <div style="flex:1; min-width:18%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#64748b; margin-bottom:5px;">7 天</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥2</div></div>
+          <div style="flex:1; min-width:18%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#64748b; margin-bottom:5px;">15 天</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥4</div></div>
+          <div style="flex:1; min-width:18%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#64748b; margin-bottom:5px;">30 天</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥5</div></div>
+          <div style="flex:1; min-width:18%; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:10px 2px; position:relative;"><div style="position:absolute; top:-8px; left:50%; transform:translateX(-50%); background:#ef4444; color:#fff; font-size:0.6rem; padding:2px 5px; border-radius:10px; white-space:nowrap; font-weight:bold;">热卖</div><div style="font-size:0.75rem; color:#d97706; margin-bottom:5px; margin-top:3px;">半年</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥15</div></div>
+          <div style="flex:1; min-width:18%; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#1d4ed8; margin-bottom:5px;">永久</div><div style="font-size:1.1rem; color:#0d47a1; font-weight:bold;">￥49.9</div></div>
+        </div>
+        
+        <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin-bottom:15px; border: 1px dashed #cbd5e1;">
+          <div style="font-size:0.8rem; color:#64748b; margin-bottom:5px;">您的专属设备码</div>
+          <div style="font-size:1.15rem; font-weight:bold; color:#0d47a1; letter-spacing:1px; word-break:break-all;">${dc}</div>
+          <button class="btn btn-outline" style="margin-top:10px; padding:6px 12px; font-size:0.85rem; display:inline-block;" onclick="copyDeviceId('${authDeviceCode}')">📋 一键复制并发给客服</button>
+        </div>
+        
+        <div style="text-align:left; font-size:0.85rem; font-weight:bold; color:#475569; margin-bottom:5px;">请输入专属注册码：</div>
+        <input type="text" id="regCodeInput" placeholder="请粘贴客服发给您的注册码" style="width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:8px;text-align:center;font-size:1rem;margin-bottom:15px; text-transform:uppercase;">
+        <button class="btn btn-primary btn-block" onclick="doLogin()" style="padding:14px; font-size:1.1rem; box-shadow: 0 4px 10px rgba(13, 71, 161, 0.3);">立即激活正式版</button>
+      ` : ''}
 
       <div style="margin-top:20px; padding:15px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; text-align:left;">
-        <div style="font-size:0.85rem; color:#475569; font-weight:bold; margin-bottom:8px;">购买激活码或遇到问题，请联系客服：</div>
+        <div style="font-size:0.85rem; color:#475569; font-weight:bold; margin-bottom:8px;">购买注册码或遇到问题，请联系客服：</div>
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; font-size:0.9rem;">
           <span style="color:#166534;"><b>QQ号：</b>981730010</span>
           <button style="background:#e2e8f0; border:none; padding:4px 10px; border-radius:4px; font-size:0.75rem; color:#475569; cursor:pointer;" onclick="copyText('981730010')">复制</button>
@@ -951,7 +1067,7 @@ function renderHome() {
 function goToImport() { if (!guardGate()) return; window.location.href='import.html'; }
 function switchBank(id) { activeBankId = id; saveData(); render(); }
 
-// ================= 新增：收藏 / 学习数据 / 题号跳转 =================
+// ================= 收藏 / 学习数据 / 题号跳转 =================
 function toggleFavorite(qid) {
   if (!guardGate()) return;
   var pos = favorites.indexOf(qid);
@@ -1419,217 +1535,127 @@ function renderExamSetup() {
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
   var count = { single:0, multiple:0, judge:0, fill:0, short:0, essay:0 };
   for (var i=0; i<qs.length; i++) { if (count[qs[i].type] !== undefined) count[qs[i].type]++; }
-
+  
   appContainer.innerHTML = `
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;margin-bottom:15px;"><h3>📝 考试组卷</h3><button class="btn btn-outline" onclick="currentMode='home';render()">退出</button></div>
-      
-      <div style="font-weight:bold; font-size:0.9rem; margin-top:10px;">组卷模式</div>
-      <div class="radio-group">
-        <div class="radio-item ${examPaperMode==='random'?'active':''}" onclick="setExamMode('random')">正常随机</div>
-        <div class="radio-item ${examPaperMode==='wrong_first'?'active':''}" onclick="setExamMode('wrong_first')">错题优先</div>
-        <div class="radio-item ${examPaperMode==='new_first'?'active':''}" onclick="setExamMode('new_first')">未做题优先</div>
-      </div>
-
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);">
-        <span>单选题 (共${count.single}题)</span>
-        <div>抽 <input type="number" id="cS" value="${Math.min(5,count.single)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pS" value="2" style="width:40px;text-align:center;"> 分</div>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);">
-        <span>多选题 (共${count.multiple}题)</span>
-        <div>抽 <input type="number" id="cM" value="${Math.min(2,count.multiple)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pM" value="4" style="width:40px;text-align:center;"> 分</div>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);">
-        <span>判断题 (共${count.judge}题)</span>
-        <div>抽 <input type="number" id="cJ" value="${Math.min(3,count.judge)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pJ" value="2" style="width:40px;text-align:center;"> 分</div>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);">
-        <span>填空题 (共${count.fill}题)</span>
-        <div>抽 <input type="number" id="cF" value="${Math.min(2,count.fill)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pF" value="5" style="width:40px;text-align:center;"> 分</div>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);">
-        <span>简答题 (共${count.short}题)</span>
-        <div>抽 <input type="number" id="cT" value="${Math.min(1,count.short)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pT" value="10" style="width:40px;text-align:center;"> 分</div>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);">
-        <span>论述题 (共${count.essay}题)</span>
-        <div>抽 <input type="number" id="cE" value="${Math.min(1,count.essay)}" style="width:50px;text-align:center;"> 题，每题 <input type="number" id="pE" value="20" style="width:40px;text-align:center;"> 分</div>
-      </div>
-
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);">
-        <span>合格分数线（可选）</span>
-        <div><input type="number" id="passScore" value="" placeholder="不设置" style="width:70px;text-align:center; border:1px solid var(--border-color); border-radius:6px; padding:6px;"> 分</div>
-      </div>
-
-      <div class="banner" style="margin-top:10px;margin-bottom:0;background:rgba(255,247,237,0.5);color:#9a3412;border:1px solid #fdba74;">
-        ⚠️ <b>提示：</b>主观题无自动判分，交卷后可对照答案自行评分；合格线仅按客观题分数计算。
-      </div>
-
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;">
-        <span>考试时长</span>
-        <div><input type="number" id="tLimit" value="60" style="width:50px;text-align:center;"> 分钟</div>
-      </div>
+    <div class="toolbar">
+      <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="currentMode='home';render()">⬅ 返回</button>
+      <div class="title" style="margin:0;border:none;padding:0;">模拟考试设置</div>
+      <div style="width:50px;"></div>
     </div>
-    <button class="btn btn-primary btn-block" onclick="startExam()">开始考试</button>
-  `;
-}
+    <div class="card">
+      <div style="font-size:0.85rem;color:var(--text-sub);margin-bottom:15px;">题库共 ${qs.length} 题，请设置各题型抽题数量。</div>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px;">
+        ${['single','multiple','judge','fill','short','essay'].map(function(t){
+          var name = TYPE_NAMES[t];
+          return `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--input-bg);padding:8px 12px;border-radius:8px;font-size:0.9rem;">
+            <span>${name} (${count[t]})</span>
+            <input type="number" id="ex_${t}" value="${count[t]}" min="0" max="${count[t]}" style="width:50px;padding:4px;text-align:center;border:1px solid var(--border-color);border-radius:4px;background:var(--card-bg);color:var(--text-main);">
+          </div>`;
+        }).join('')}
+      </div>
 
-function setExamMode(mode) {
-  examPaperMode = mode;
-  renderExamSetup();
+      <div style="display:flex;justify-content:space-between;align-items:center;background:var(--input-bg);padding:12px;border-radius:8px;margin-bottom:15px;font-size:0.9rem;">
+        <span>考试时间 (分钟)</span>
+        <input type="number" id="ex_time" value="60" min="1" max="300" style="width:60px;padding:4px;text-align:center;border:1px solid var(--border-color);border-radius:4px;background:var(--card-bg);color:var(--text-main);">
+      </div>
+
+      <button class="btn btn-primary btn-block" onclick="startExam()" style="padding:14px;font-size:1.05rem;">开始考试</button>
+    </div>
+  `;
 }
 
 function startExam() {
   if (!guardGate()) return;
   var qs = activeBankId ? allBanks[activeBankId].questions : [];
-  var cS = parseInt(document.getElementById('cS').value) || 0;
-  var cM = parseInt(document.getElementById('cM').value) || 0;
-  var cJ = parseInt(document.getElementById('cJ').value) || 0;
-  var cF = parseInt(document.getElementById('cF').value) || 0;
-  var cT = parseInt(document.getElementById('cT').value) || 0;
-  var cE = parseInt(document.getElementById('cE').value) || 0;
-  var tLimit = parseInt(document.getElementById('tLimit').value) || 60;
-  var pScoreRaw = document.getElementById('passScore').value;
-  var pScore = parseInt(pScoreRaw);
-  if (isNaN(pScore) || pScore <= 0) pScore = 0;
-
-  if (cS + cM + cJ + cF + cT + cE === 0) return showToast('请至少选择一题', true);
-
-  var doneIds = getDoneQuestions();
-  var wrongIds = wrongBook.map(function(w){ return w.id; });
-
-  function pickQuestions(type, count) {
-    var allOfType = qs.filter(function(q){ return q.type === type; });
-    if (allOfType.length <= count) return allOfType.slice();
-
-    var pool = [];
-    if (examPaperMode === 'wrong_first') {
-      var wrongOfType = allOfType.filter(function(q){ return wrongIds.indexOf(q.id) > -1; });
-      pool = wrongOfType.sort(function(){ return 0.5 - Math.random(); }).slice(0, count);
-      if (pool.length < count) {
-        var rest = allOfType.filter(function(q){ return wrongIds.indexOf(q.id) === -1; })
-          .sort(function(){ return 0.5 - Math.random(); });
-        pool = pool.concat(rest.slice(0, count - pool.length));
-      }
-    } else if (examPaperMode === 'new_first') {
-      var newOfType = allOfType.filter(function(q){ return doneIds.indexOf(q.id) === -1; });
-      pool = newOfType.sort(function(){ return 0.5 - Math.random(); }).slice(0, count);
-      if (pool.length < count) {
-        var rest = allOfType.filter(function(q){ return doneIds.indexOf(q.id) > -1; })
-          .sort(function(){ return 0.5 - Math.random(); });
-        pool = pool.concat(rest.slice(0, count - pool.length));
-      }
-    } else {
-      pool = allOfType.sort(function(){ return 0.5 - Math.random(); }).slice(0, count);
-    }
-    return pool;
-  }
-
-  examQuestions = [].concat(
-    pickQuestions('single', cS),
-    pickQuestions('multiple', cM),
-    pickQuestions('judge', cJ),
-    pickQuestions('fill', cF),
-    pickQuestions('short', cT),
-    pickQuestions('essay', cE)
-  );
-
-  examConfig = {
-    scoreSingle: parseInt(document.getElementById('pS').value) || 1,
-    scoreMultiple: parseInt(document.getElementById('pM').value) || 1,
-    scoreJudge: parseInt(document.getElementById('pJ').value) || 1,
-    scoreFill: parseInt(document.getElementById('pF').value) || 1,
-    scoreShort: parseInt(document.getElementById('pT').value) || 1,
-    scoreEssay: parseInt(document.getElementById('pE').value) || 1,
-    timeLimit: tLimit,
-    passScore: pScore
-  };
-
-  examIndex = 0; examSelections = [];
-  for (var i=0; i<examQuestions.length; i++) examSelections.push([]);
+  var conf = {};
+  var total = 0;
+  ['single','multiple','judge','fill','short','essay'].forEach(function(t){
+    var num = parseInt(document.getElementById('ex_'+t).value) || 0;
+    conf[t] = num; total += num;
+  });
+  if (total === 0) return showToast('请至少选择一道题', true);
+  var mins = parseInt(document.getElementById('ex_time').value) || 60;
+  
+  examQuestions = [];
+  ['single','multiple','judge','fill','short','essay'].forEach(function(t){
+    var pool = qs.filter(function(q){ return q.type === t; });
+    pool.sort(function(){ return 0.5 - Math.random(); });
+    examQuestions = examQuestions.concat(pool.slice(0, conf[t]));
+  });
+  
+  examIndex = 0; examSelections = []; examAborted = false;
   examStartTime = Date.now();
-  examRemainingSeconds = tLimit * 60;
-  examAborted = false;
-  window.__examLowScoreWarned = false;
-
+  examRemainingSeconds = mins * 60;
+  currentMode = 'exam';
+  
   if (examTimer) clearInterval(examTimer);
   examTimer = setInterval(function() {
     examRemainingSeconds--;
     if (examRemainingSeconds <= 0) {
       clearInterval(examTimer); examTimer = null;
-      showToast('时间到，自动交卷', true);
-      submitExam(false);
+      showToast('考试时间到，自动交卷');
+      submitExam(true);
     } else {
-      var tEl = document.getElementById('timerDisplay');
+      var tEl = document.getElementById('examTimer');
       if (tEl) {
         var m = Math.floor(examRemainingSeconds / 60);
         var s = examRemainingSeconds % 60;
-        tEl.innerText = (m<10?'0':'') + m + ':' + (s<10?'0':'') + s;
-        if (examRemainingSeconds < 60) tEl.style.color = '#ef4444';
+        tEl.innerText = (m<10?'0':'')+m + ':' + (s<10?'0':'')+s;
       }
     }
   }, 1000);
-
-  currentMode = 'exam'; render();
+  render();
 }
 
 function renderExam() {
-  if (examIndex >= examQuestions.length) return submitExam(false);
+  if (examIndex >= examQuestions.length) return;
   var q = examQuestions[examIndex];
   var sels = examSelections[examIndex] || [];
-  var isSubj = isSubjective(q.type);
-  var optsHtml = '';
-
-  if (isSubj) {
-    optsHtml = `<div class="subjective-answer" style="border-color:var(--border-color); background:var(--input-bg);"><div class="sa-title" style="color:var(--text-sub);">📝 本题为主观题，请自行作答，交卷后可查看答案</div></div>`;
-  } else {
-    if (q.type === 'judge' && (!q.options || q.options.length === 0)) {
-      q.options = ['正确', '错误'];
-    }
-    for (var i=0; i<q.options.length; i++) {
-      var cls = 'opt' + (sels.indexOf(i) > -1 ? ' selected' : '');
-      optsHtml += `<div class="${cls}" onclick="selectExam(${i})"><div class="opt-prefix">${String.fromCharCode(65+i)}</div><div>${q.options[i]}</div></div>`;
-    }
-  }
-
-  var typeName = TYPE_NAMES[q.type] || '未知题型';
-  var sheetHtml = buildSheetHtml(examQuestions, examIndex, examSelections, 'exam');
+  var typeName = TYPE_NAMES[q.type] || '未知';
+  var optsHtml = buildQuestionHtml(q, sels, false, false); // 考试中不显示答案
   var m = Math.floor(examRemainingSeconds / 60);
   var s = examRemainingSeconds % 60;
-  var timerStr = (m<10?'0':'') + m + ':' + (s<10?'0':'') + s;
+  var timeStr = (m<10?'0':'')+m + ':' + (s<10?'0':'')+s;
 
   appContainer.innerHTML = `
     <div class="toolbar">
-      <div>
-        <div id="timerDisplay" class="timer" style="${examRemainingSeconds < 60 ? 'color:#ef4444;' : ''}">${timerStr}</div>
-        <div class="q-progress">进度：${examIndex+1} / ${examQuestions.length}</div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="timer" id="examTimer">${timeStr}</div>
+        <div class="q-progress">${examIndex+1} / ${examQuestions.length}</div>
       </div>
-      <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="btn btn-outline btn-small" onclick="openSheet()">答题卡</button>
+        <button class="btn btn-danger btn-small" onclick="confirmSubmitExam()">交卷</button>
+      </div>
     </div>
     <div class="card">
-      <span class="tag">${typeName}</span>
+      <span class="tag">${typeName} (考试)</span>
       <div class="q-text">${q.question}</div>
       ${optsHtml}
+      ${q.type === 'multiple' && sels.length > 0 ? `<div style="text-align:right;margin-top:10px;"><button class="btn btn-primary btn-small" onclick="nextExam()">下一题</button></div>` : ''}
       <div class="bottom-actions">
         <button class="btn btn-outline" onclick="prevExam()" ${examIndex===0?'disabled style="opacity:0.5"':''}>⬅ 上一题</button>
-        <button class="btn btn-primary" onclick="nextExam()">${examIndex===examQuestions.length-1?'交卷':'下一题 ➡'}</button>
+        <button class="btn btn-primary" onclick="nextExam()">${examIndex === examQuestions.length-1 ? '完成并检查' : '下一题 ➡'}</button>
       </div>
-    </div>
-    <div style="display:flex;gap:15px;justify-content:center;margin-top:20px;">
-      <button class="btn btn-danger" onclick="confirmSubmitExam()">交卷</button>
-      <button class="btn btn-outline" onclick="confirmExitExam()">退出</button>
     </div>
     <div id="sheetModal" class="sheet-mask" style="display:none;" onclick="closeSheet(event)">
       <div class="sheet-content" onclick="event.stopPropagation()">
-        <div class="sheet-title">答题卡 <span style="font-size:0.85rem;color:var(--text-sub);font-weight:normal;">(点击题号跳转)</span></div>
-        <div style="display:flex;gap:8px;margin-bottom:12px;"><input type="number" id="jumpNumInput" min="1" placeholder="输入题号直接跳转" style="flex:1;padding:9px;border:2px solid var(--border-color);border-radius:8px;font-size:1rem;background:var(--card-bg);color:var(--text-main);outline:none;"><button class="btn btn-primary" style="padding:9px 18px;" onclick="jumpToNumber()">跳转</button></div>
-        ${sheetHtml}
+        <div class="sheet-title">答题卡 (点击跳转)</div>
+        <div style="margin-bottom:15px;"><button class="btn btn-danger btn-block" onclick="confirmSubmitExam()">交卷</button></div>
+        ${buildSheetHtml(examQuestions, examIndex, examSelections, 'exam')}
       </div>
     </div>
   `;
+  // 因为考试没有使用 selectPractice 的逻辑，需要重写点击选项事件
+  var optEls = document.querySelectorAll('.opt');
+  for (var i = 0; i < optEls.length; i++) {
+    (function(idx){
+      optEls[idx].onclick = function() { selectExam(idx); };
+    })(i);
+  }
 }
 
-function jumpExam(idx) { examIndex = idx; closeSheet({target:{id:'sheetModal'}}); renderExam(); }
 function selectExam(idx) {
   var q = examQuestions[examIndex];
   if (isSubjective(q.type)) return;
@@ -1637,255 +1663,125 @@ function selectExam(idx) {
   if (q.type === 'multiple') {
     var pos = sels.indexOf(idx);
     if (pos > -1) sels.splice(pos, 1); else sels.push(idx);
-  } else { sels = [idx]; }
+  } else {
+    sels = [idx];
+  }
   examSelections[examIndex] = sels;
   renderExam();
-  checkExamScoreWarning();
 }
-function nextExam() { if (examIndex === examQuestions.length - 1) { confirmSubmitExam(); } else { examIndex++; renderExam(); } }
-function prevExam() { if (examIndex > 0) { examIndex--; renderExam(); } }
 
-function checkExamScoreWarning() {
-  if (currentMode !== 'exam') return;
-  if (examRemainingSeconds <= 0) return;
-  if (!examConfig.passScore || examConfig.passScore <= 0) return;
-  if (window.__examLowScoreWarned) return;
+function prevExam() { if(examIndex > 0) { examIndex--; renderExam(); } }
+function nextExam() { if(examIndex < examQuestions.length) { examIndex++; if(examIndex>=examQuestions.length){ examIndex=examQuestions.length-1; } renderExam(); } }
+function jumpExam(idx) { examIndex = idx; closeSheet({target:{id:'sheetModal'}}); renderExam(); }
 
-  var got = 0; var remainingMax = 0;
+function submitExam(auto) {
+  if (!auto) { if(examTimer) clearInterval(examTimer); examTimer = null; }
+  var totalScore = 0; var gotScore = 0;
+  examWrongList = [];
+  
   for (var i = 0; i < examQuestions.length; i++) {
     var q = examQuestions[i];
-    var pts = 0;
-    switch(q.type) {
-      case 'single': pts = examConfig.scoreSingle; break;
-      case 'multiple': pts = examConfig.scoreMultiple; break;
-      case 'judge': pts = examConfig.scoreJudge; break;
-      default: continue;
+    var sels = examSelections[i] || [];
+    var score = 2; // 默认分数
+    if (q.type === 'multiple') score = 4;
+    else if (q.type === 'fill') score = 5;
+    else if (q.type === 'short') score = 10;
+    else if (q.type === 'essay') score = 20;
+    
+    totalScore += score;
+    if (isSubjective(q.type)) {
+      // 主观题默认满分，人工核对
+      gotScore += score;
+    } else {
+      var isCorrect = sels.length === q.answer.length && sels.every(function(v){ return q.answer.indexOf(v) > -1; });
+      if (isCorrect) gotScore += score;
+      else if (sels.length > 0) examWrongList.push(q); // 选错才加错题
     }
-    var sel = examSelections[i] || [];
-    if (sel.length === 0) { remainingMax += pts; continue; }
-    var ans = q.answer.slice().sort();
-    var s = sel.slice().sort();
-    var isCorrect = ans.length === s.length && ans.every(function(v, idx){ return v === s[idx]; });
-    if (isCorrect) got += pts;
   }
-  if (got + remainingMax < examConfig.passScore) {
-    window.__examLowScoreWarned = true;
-    showAppConfirm('考试终止', '<div class="maoti-fail">考试不合格，不要气馁，继续加油，多去练练吧！</div>', '查看成绩', '查看成绩', function() { submitExam(true); }, function() { submitExam(true); });
-  }
-}
-
-function submitExam(aborted) {
-  if (!aborted && !guardGate()) return;
-  if (examTimer) { clearInterval(examTimer); examTimer = null; }
-  examAborted = !!aborted;
+  
+  examScore = { got: gotScore, total: totalScore, usedTime: '0分0秒' };
   var usedSec = Math.floor((Date.now() - examStartTime) / 1000);
-  var usedTimeStr = Math.floor(usedSec/60) + '分' + (usedSec%60) + '秒';
-  examWrongList = [];
-  var got = 0, total = 0;
-
-  for (var i=0; i<examQuestions.length; i++) {
-    var q = examQuestions[i];
-    var pts = 0;
-    switch(q.type) {
-      case 'single': pts = examConfig.scoreSingle; break;
-      case 'multiple': pts = examConfig.scoreMultiple; break;
-      case 'judge': pts = examConfig.scoreJudge; break;
-      case 'fill': pts = examConfig.scoreFill; break;
-      case 'short': pts = examConfig.scoreShort; break;
-      case 'essay': pts = examConfig.scoreEssay; break;
-    }
-    total += pts;
-
-    if (!isSubjective(q.type)) {
-      addDoneQuestion(q.id);
-      var ans = q.answer.slice().sort();
-      var sel = (examSelections[i] || []).slice().sort();
-      var isCorrect = ans.length === sel.length && ans.every(function(v,idx){ return v === sel[idx]; });
-      if (isCorrect) got += pts;
-      else {
-        examWrongList.push({ id: q.id, question: q.question, type: q.type, options: q.options, answer: q.answer, analysis: q.analysis, streak: 0 });
-        var exist = false;
-        for (var j=0; j<wrongBook.length; j++) { if (wrongBook[j].id === q.id) exist = true; }
-        if (!exist) {
-          wrongBook.push({ id: q.id, question: q.question, type: q.type, options: q.options, answer: q.answer, analysis: q.analysis, streak: 0 });
-        }
-      }
-    }
-  }
-  saveData();
-  examScore = { got: got, total: total, usedTime: usedTimeStr };
-  var isFull = examScore.got >= examScore.total && examScore.total > 0;
-  if (isFull) launchFireworks(3500);
-
-  var tipHtml;
-  if (examAborted) { tipHtml = '<div class="maoti-fail">考试不合格，不要气馁，继续加油，多去练练吧！</div>'; }
-  else if (isFull) { tipHtml = '<div class="maoti-result full">你真棒，继续加油哦！</div>'; }
-  else { tipHtml = '<div class="maoti-fail">别气馁，多去刷刷题，满分等着你！</div>'; }
-
-  showAppConfirm(examAborted ? '考试已结束' : (isFull ? '恭喜满分' : '考试完成'),
-    tipHtml + '<div style="font-size:0.8rem;color:var(--text-sub);margin-top:10px;">* 分数仅统计客观题，主观题请自行对照答案评分</div>',
-    '查看结果', '返回首页',
-    function() { currentMode = 'result'; render(); },
-    function() { currentMode = 'home'; render(); });
+  examScore.usedTime = Math.floor(usedSec / 60) + '分' + (usedSec % 60) + '秒';
+  
+  currentMode = 'result';
+  render();
 }
 
 function renderResult() {
-  var isFull = examScore.got === examScore.total && examScore.total > 0;
-  var hasPass = examConfig.passScore && examConfig.passScore > 0;
-  var isPass = hasPass ? (examScore.got >= examConfig.passScore) : true;
-  if (isFull) launchFireworks(3500);
-
-  var msg = ''; var msgClass = 'maoti-result';
-  if (isFull) { msg = '你真棒，继续加油哦！'; msgClass += ' full'; }
-  else if (hasPass && !isPass) { msg = '考试不合格，不要气馁，继续加油，多去练练吧！'; msgClass = 'maoti-fail'; }
-  else { msg = '考试合格，再接再厉！'; }
-
+  var percent = examScore.total > 0 ? Math.round((examScore.got / examScore.total) * 100) : 0;
+  var isPass = percent >= 60;
+  
   appContainer.innerHTML = `
-    <div class="card score-box">
-      <h2 style="color:#0d47a1;margin-bottom:20px;">📊 考试成绩</h2>
-      <div class="score-num">${examScore.got}</div>
-      <div style="font-size:1.1rem;color:var(--text-sub);font-weight:bold;margin-bottom:20px;">
-        总分：${examScore.total} 分 ${hasPass ? '｜ 合格线：' + examConfig.passScore + ' 分' : '｜ 未设合格线'}
+    <div class="card" style="text-align:center; padding:40px 15px;">
+      <h2 style="color:#0d47a1;margin-bottom:20px;">考试成绩</h2>
+      <div class="score-box">
+        <div class="score-num ${isPass?'':'text-danger'}" style="${isPass?'':'color:#ef4444;'}">${percent}</div>
+        <div style="color:var(--text-sub);font-size:0.9rem;">得分率</div>
       </div>
-      <div class="${msgClass}">${msg}</div>
-      <div style="color:var(--text-sub);font-size:0.9rem;margin-bottom:30px;">本次用时：${examScore.usedTime}</div>
-      <div style="font-size:0.8rem;color:#94a3b8;margin-bottom:20px;">* 以上分数仅含客观题，主观题需自行评分</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <button class="btn btn-primary" style="flex:1;min-width:30%;" onclick="currentMode='home';render()">返回首页</button>
-        <button class="btn btn-green" style="flex:1;min-width:30%;" onclick="currentMode='examReview';render();">查看试卷</button>
-        <button class="btn btn-outline" style="flex:1;min-width:30%;" onclick="currentMode='review';render()">查看错题</button>
+      <div class="stats" style="margin-top:30px;">
+        <div class="stat-item"><div class="stat-num">${examScore.got}</div><div class="stat-label">得分数</div></div>
+        <div class="stat-item"><div class="stat-num">${examScore.total}</div><div class="stat-label">总分数</div></div>
+        <div class="stat-item"><div class="stat-num" style="font-size:0.95rem;line-height:1.5;">${examScore.usedTime}</div><div class="stat-label">用时</div></div>
       </div>
+      
+      <div style="display:flex;gap:10px;margin-top:30px;">
+        <button class="btn btn-outline" style="flex:1;" onclick="currentMode='home';render()">返回首页</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="currentMode='examReview';examIndex=0;render()">查看解析</button>
+      </div>
+      ${examWrongList.length > 0 ? `<button class="btn btn-danger btn-block" style="margin-top:15px;" onclick="startExamWrongPractice()">🔥 错题集训 (${examWrongList.length}题)</button>` : ''}
     </div>
   `;
 }
 
 function renderExamReview() {
-  var html = `<div style="display:flex;justify-content:space-between;margin-bottom:15px; align-items:center;"><h3>📄 考试试卷回顾</h3><button class="btn btn-outline" onclick="currentMode='result';render()">返回</button></div>`;
-  if (examWrongList && examWrongList.length > 0) {
-    html += `<div class="card" style="border-left:4px solid #ef4444;">
-      <div style="font-weight:bold;margin-bottom:8px;">🔥 本次错题 ${examWrongList.length} 题（已自动收录错题本）</div>
-      <button class="btn btn-danger btn-block" style="margin-top:0;" onclick="startExamWrongPractice()">立即重练本次错题</button>
-    </div>`;
+  if (examIndex >= examQuestions.length) {
+    appContainer.innerHTML = `<div class="card" style="text-align:center;padding:40px;"><h2>🎉 解析查看完毕</h2><button class="btn btn-primary btn-block" onclick="currentMode='home';render()">返回首页</button></div>`;
+    return;
   }
-  for (var i=0; i<examQuestions.length; i++) {
-    var q = examQuestions[i];
-    var sels = examSelections[i] || [];
-    var isSubj = isSubjective(q.type);
-    var isCorrect = isSubj ? null : (sels.length === q.answer.length && sels.every(function(v){ return q.answer.indexOf(v) > -1; }));
-    var typeName = TYPE_NAMES[q.type] || '未知';
+  var q = examQuestions[examIndex];
+  var sels = examSelections[examIndex] || [];
+  var typeName = TYPE_NAMES[q.type] || '未知';
+  var optsHtml = buildQuestionHtml(q, sels, true, false); // 显示答案
+  var sheetHtml = buildSheetHtml(examQuestions, examIndex, examSelections, 'examReview');
 
-    var optsHtml = '';
-    if (isSubj) {
-      var ansText = typeof q.answer === 'string' ? q.answer : (Array.isArray(q.answer) ? q.answer.join('；') : '');
-      optsHtml = `<div class="subjective-answer"><div class="sa-title">📝 参考答案</div><div class="sa-content">${ansText}</div></div>`;
-    } else {
-      if (q.type === 'judge' && (!q.options || q.options.length === 0)) {
-        q.options = ['正确', '错误'];
-      }
-      for (var k=0; k<q.options.length; k++) {
-        var cls = 'opt disabled';
-        if (q.answer.indexOf(k) > -1) cls += ' correct';
-        else if (sels.indexOf(k) > -1) cls += ' wrong';
-        optsHtml += `<div class="${cls}"><div class="opt-prefix">${String.fromCharCode(65+k)}</div><div>${q.options[k]}</div></div>`;
-      }
-    }
-
-    var myAnsStr = isSubj ? '自行作答' : (sels.length > 0 ? sels.map(function(idx){ return String.fromCharCode(65+idx); }).join(', ') : '未作答');
-    var trueAnsStr = isSubj
-      ? (typeof q.answer === 'string' ? q.answer : q.answer.join('；'))
-      : q.answer.map(function(idx){ return String.fromCharCode(65+idx); }).join(', ');
-
-    var borderColor = isSubj ? '#0d47a1' : (isCorrect ? '#10b981' : '#ef4444');
-    var statusText = isSubj ? '主观题' : (isCorrect ? '✅ 答对' : '❌ 答错');
-    var statusColor = isSubj ? '#0d47a1' : (isCorrect ? '#10b981' : '#ef4444');
-    var reviewClass = isSubj ? 'ok' : (isCorrect ? 'ok' : 'err');
-
-    html += `<div class="card" style="border-left:4px solid ${borderColor}; margin-bottom:15px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <span class="tag" style="background:${borderColor};">第 ${i+1} 题 · ${typeName}</span>
-        <span style="font-weight:bold; color:${statusColor};">${statusText}</span>
+  appContainer.innerHTML = `
+    <div class="toolbar">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="currentMode='result';render()">⬅ 返回</button>
+        <div class="q-progress">${examIndex+1} / ${examQuestions.length}</div>
       </div>
-      <div class="q-text" style="padding-right:0;">${q.question}</div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="btn btn-outline btn-small" onclick="openSheet()">答题卡</button>
+      </div>
+    </div>
+    <div class="card">
+      <span class="tag">${typeName} (解析)</span>
+      <div class="q-text">${q.question}</div>
       ${optsHtml}
-      <div class="exam-review-box ${reviewClass}">
-        <div style="font-weight:bold; margin-bottom:5px;">标准答案：<span style="color:#10b981;">${trueAnsStr}</span></div>
-        ${!isSubj ? `<div style="font-weight:bold; margin-bottom:5px;">你的答案：<span style="color:${isCorrect ? '#10b981' : '#ef4444'};">${myAnsStr}</span></div>` : ''}
-        ${q.analysis ? `<div style="margin-top:8px; font-weight:bold; color:#0d47a1;">解析：</div><div style="color:var(--text-main); margin-top:4px;">${q.analysis}</div>` : ''}
+      ${buildAnalysisHtml(q, sels, true)}
+      <div class="bottom-actions">
+        <button class="btn btn-outline" onclick="prevExamReview()" ${examIndex===0?'disabled style="opacity:0.5"':''}>⬅ 上一题</button>
+        <button class="btn btn-primary" onclick="nextExamReview()">${examIndex === examQuestions.length-1 ? '完成' : '下一题 ➡'}</button>
       </div>
-      ${!isCorrect && !isSubj ? `<button class="btn btn-outline" style="width:100%; margin-top:10px; color:#0d47a1; border-color:#0d47a1;" onclick="addToWrongBook('${q.id}')">➕ 加入错题本</button>` : ''}
-    </div>`;
-  }
-  html += `<div style="display:flex;gap:10px;margin-bottom:20px;"><button class="btn btn-primary btn-block" onclick="currentMode='result';render()">返回成绩单</button></div>`;
-  appContainer.innerHTML = html + `<div class="footer">技术支持：秦十三郎</div>`;
+    </div>
+    <div id="sheetModal" class="sheet-mask" style="display:none;" onclick="closeSheet(event)">
+      <div class="sheet-content" onclick="event.stopPropagation()">
+        <div class="sheet-title">答题卡 (点击跳转)</div>
+        ${sheetHtml}
+      </div>
+    </div>
+  `;
 }
+function prevExamReview() { if(examIndex > 0) { examIndex--; renderExamReview(); } }
+function nextExamReview() { if(examIndex < examQuestions.length) { examIndex++; renderExamReview(); } }
+function jumpExamReview(idx) { examIndex = idx; closeSheet({target:{id:'sheetModal'}}); renderExamReview(); }
 
-function addToWrongBook(qId) {
-  var exist = false;
-  for (var i=0; i<wrongBook.length; i++) { if (wrongBook[i].id === qId) exist = true; }
-  if (exist) return showToast('该题目已在错题本中', true);
-  for (var j=0; j<examQuestions.length; j++) {
-    if (examQuestions[j].id === qId) {
-      var q = examQuestions[j];
-      wrongBook.push({ id: q.id, question: q.question, type: q.type, options: q.options, answer: q.answer, analysis: q.analysis, streak: 0 });
-      saveData();
-      showToast('已加入错题本');
-      return;
-    }
-  }
-}
-
-function launchFireworks(duration) {
-  var old = document.getElementById('fireworks-canvas'); if (old) old.remove();
-  var canvas = document.createElement('canvas'); canvas.id = 'fireworks-canvas'; document.body.appendChild(canvas);
-  var ctx = canvas.getContext('2d');
-  var W = canvas.width = window.innerWidth;
-  var H = canvas.height = window.innerHeight;
-  var particles = [];
-  var colors = ['#ff4757','#ffa502','#2ed573','#1e90ff','#e056fd','#ff6b81','#f9ca24'];
-
-  function rand(min, max) { return Math.random() * (max - min) + min; }
-  function createBurst(x, y) {
-    var color = colors[Math.floor(Math.random() * colors.length)];
-    var count = 60 + Math.floor(Math.random() * 40);
-    for (var i = 0; i < count; i++) {
-      var angle = Math.PI * 2 * (i / count) + rand(-0.05, 0.05);
-      var speed = rand(2, 6);
-      particles.push({ x: x, y: y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 1, decay: rand(0.008, 0.02), color: color, size: rand(1.5, 3) });
-    }
-  }
-
-  var startTime = Date.now(); var lastBurst = 0;
-  function animate() {
-    var elapsed = Date.now() - startTime;
-    if (elapsed > duration) { canvas.remove(); return; }
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.fillStyle = 'rgba(0,0,0,0.15)';
-    ctx.fillRect(0, 0, W, H);
-    ctx.globalCompositeOperation = 'lighter';
-    if (elapsed - lastBurst > 350) { lastBurst = elapsed; createBurst(rand(W * 0.2, W * 0.8), rand(H * 0.15, H * 0.55)); }
-
-    for (var i = particles.length - 1; i >= 0; i--) {
-      var p = particles[i];
-      p.x += p.vx; p.y += p.vy;
-      p.vy += 0.06; p.vx *= 0.99; p.vy *= 0.99;
-      p.life -= p.decay;
-      if (p.life <= 0) { particles.splice(i, 1); continue; }
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fillStyle = p.color;
-      ctx.globalAlpha = p.life;
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    }
-    requestAnimationFrame(animate);
-  }
-  animate();
-}
-
+// ================= 启动流程 =================
 loadData();
 checkNewImport();
 checkAuth();
-setTimeout(function() { if (currentMode === 'home') restorePracticeProgress(); }, splashDelay + 500);
+setTimeout(restorePracticeProgress, 1500);
+
 </script>
 </body>
 </html>
