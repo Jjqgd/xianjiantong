@@ -20,18 +20,34 @@ body{background:var(--bg);color:var(--text);font-size:14px;padding:10px}
 .input-name{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none;background:var(--input-bg);margin-bottom:14px}
 .input-name:focus{border-color:var(--primary)}
 .import-tabs{display:flex;gap:12px;margin-bottom:14px}
-.import-tabs button{flex:1;padding:12px 0;border:1.5px solid var(--primary);border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;background:#fff;color:var(--primary)}
-.import-tabs button.active{background:var(--primary) !important;color:#fff !important;border-color:var(--primary) !important}
-.import-tabs button.inactive{background:#fff !important;color:#b71c1c !important;border-color:var(--primary) !important}
-.file-zone{border:2px dashed #fcdada;border-radius:12px;background:#fff;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
-.file-zone:hover{background:#fffafb;border-color:var(--primary)}
-.file-zone .icon{font-size:34px;margin-bottom:10px;opacity:.6}
-.file-zone .text{font-size:13px;color:var(--sub)}
-.file-zone .file-name{color:var(--primary);font-weight:600;margin-top:10px}
+.import-tabs button{flex:1;padding:10px 0;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;background:#fff;color:var(--sub);transition:all .2s}
+.import-tabs button.active{background:var(--primary) !important;color:#fff !important;border-color:var(--primary) !important;box-shadow: 0 2px 6px rgba(183,28,28,0.2);}
+.import-tabs button.inactive{background:#fff !important;color:var(--sub) !important;border-color:var(--border) !important}
+.file-select-area{ text-align:center; padding: 10px 0; }
+.file-select-btn{ width:100%; padding:20px; background:#fffafb; border:2px dashed #b71c1c; border-radius:12px; color:#b71c1c; font-size:16px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; transition:all .2s; box-shadow:0 4px 12px rgba(183,28,28,0.06); }
+.file-select-btn:active{ background:#fff0f2; transform:scale(0.98); }
+.file-select-btn .icon{ font-size:26px; }
+.file-name{ color:var(--success); font-weight:bold; margin-top:15px; font-size:14px; }
 .file-input-wrap{position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;opacity:0;}
 .file-input-wrap input[type=file]{width:100%;height:100%;cursor:pointer;}
-.paste-area{width:100%;height:200px;padding:12px;border:1px solid var(--border);border-radius:8px;font-size:13px;resize:vertical;outline:none;background:var(--input-bg);font-family:monospace}
-.paste-area:focus{border-color:var(--primary)}
+.paste-area {
+    width: 100%;
+    height: 220px;
+    padding: 15px;
+    border: 2px dashed #b71c1c;
+    border-radius: 12px;
+    font-size: 14px;
+    resize: vertical;
+    outline: none;
+    background: #fffafb;
+    font-family: monospace;
+    box-shadow: 0 4px 12px rgba(183, 28, 28, 0.06);
+}
+.paste-area:focus {
+    border-color: #d32f2f;
+    background: #fff0f2;
+}
+.file-name { text-align: center; color: var(--success); font-weight: bold; margin-top: 15px; font-size: 16px; }
 .actions{display:flex;gap:14px;margin-top:18px}
 .btn{flex:1;padding:14px 0;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer}
 .btn-parse{background:#fff;border:1.5px solid var(--border);color:var(--sub)}
@@ -50,6 +66,7 @@ body{background:var(--bg);color:var(--text);font-size:14px;padding:10px}
     <h2>📥 铁途学练 · 题库导入</h2>
     <p>解析后自动写回主程序，点「确认导入」即跳转进入刷题</p>
   </div>
+  
   <div class="card rules-card">
     <div class="title">支持的格式</div>
     <ul>
@@ -58,35 +75,49 @@ body{background:var(--bg);color:var(--text);font-size:14px;padding:10px}
       <li>✅ 答案支持：ABCD / A,B / A#B / A+B / 正确·错 / √·× / Y·N 等全部写法</li>
     </ul>
   </div>
+  
   <input class="input-name" id="libName" placeholder="请输入题库名称（如：高铁线路专业题库）">
+  
   <div class="import-tabs">
-    <button id="btnModeFile" class="active" onclick="switchMode('file')">📁 选择文件</button>
+    <div style="flex:1; position:relative; display:flex;">
+      <!-- 选择文件按钮 -->
+      <button id="btnModeFile" class="active" style="flex:1; width:100%;">📁 选择文件</button>
+      <!-- 透明覆盖层 -->
+      <input type="file" id="fileInput" accept="*/*" onchange="onFileChange(this.files[0])" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:99;">
+    </div>
+    <!-- 粘贴文本按钮 -->
     <button id="btnModeText" class="inactive" onclick="switchMode('text')">📋 粘贴文本</button>
   </div>
-  
-  <div class="file-zone" id="paneFile">
-    <div class="icon">📄</div>
-    <div class="text">点击此处选择 Excel 文件</div>
-    <div class="file-input-wrap">
-        <input type="file" id="fileInput" accept="*/*" onchange="onFileChange(this.files[0])">
-    </div>
-    <div id="fileNameDisplay" class="file-name"></div>
+
+  <!-- 选择文件后的提示区 -->
+  <div id="paneFile" style="display:block; text-align: center; padding: 30px 20px;">
+    <div id="fileNameDisplay" class="file-name" style="color:var(--sub); font-weight:normal;">未选择文件，请点击上方【📁 选择文件】</div>
   </div>
-  
+
+  <!-- 粘贴文本区 -->
   <div id="paneText" style="display:none">
     <textarea class="paste-area" id="textArea" placeholder="从 Excel 框选数据（含表头行）→ Ctrl+C 复制 → Ctrl+V 粘贴到这里..."></textarea>
   </div>
+
+  <!-- ======== 补全缺失的操作按钮区 ======== -->
   <div class="actions">
     <button class="btn btn-parse" onclick="startParse()">解析并校验题库</button>
     <button class="btn btn-confirm" onclick="confirmImport()">确认导入</button>
   </div>
-  <div id="resultBox" class="result-box">
-    <span class="stat-line"><span class="ok" id="sucCount">成功 0 条</span><span class="fail" id="failCount">失败 0 条</span></span>
-    <div id="debugArea" class="debug-box"></div>
-    <div id="failList" class="fail-list" style="display:none"></div>
-    <div id="successDemo"></div>
+
+  <!-- ======== 补全缺失的解析结果区 ======== -->
+  <div class="result-box" id="resultBox">
+    <div class="stat-line">
+      <span class="ok" id="sucCount">成功 0 条</span>
+      <span class="fail" id="failCount">失败 0 条</span>
+    </div>
+    <div class="fail-list" id="failList" style="display:none;"></div>
+    <div id="successDemo" style="margin-top:10px;"></div>
   </div>
+
 </div>
+
+<!-- ======== 补全缺失的 toast 提示框 ======== -->
 <div id="toast"></div>
 
 <script>
@@ -94,12 +125,18 @@ body{background:var(--bg);color:var(--text);font-size:14px;padding:10px}
 var appState = { mode:'file', tempRaw:[], finalParsed:[], failErrors:[], debugLogs:[] };
 
 function showToast(msg){
-    var d=document.getElementById('toast');
+    var d = document.getElementById('toast');
+    if(!d){ 
+        if (typeof plus !== 'undefined') plus.nativeUI.toast(msg);
+        else console.log('Toast:', msg);
+        return; 
+    }
     d.innerText=msg; 
     d.style.display='block';
     clearTimeout(d._h);
     d._h=setTimeout(function(){d.style.display='none';},3000);
 }
+
 function log(msg){ 
     appState.debugLogs.push('[' + new Date().toLocaleTimeString() + '] ' + msg);
     var db = document.getElementById('debugArea');
@@ -111,7 +148,6 @@ window.switchMode = function(mode){
     appState.mode = mode;
     document.getElementById('btnModeFile').className = mode==='file' ? 'active':'inactive';
     document.getElementById('btnModeText').className = mode==='text' ? 'active':'inactive';
-    var _fileOn = mode==='file';
     document.getElementById('paneFile').style.display = mode==='file' ? 'block':'none';
     document.getElementById('paneText').style.display = mode==='text' ? 'block':'none';
 };
@@ -133,7 +169,10 @@ function parseExcelContent(arrayBuffer, fileName) {
         }
 
         appState.tempRaw = parseGrid(rows);
-        document.getElementById('fileNameDisplay').textContent = '✅ 文件已就绪，共识别出 ' + appState.tempRaw.length + ' 条原始数据';
+        document.getElementById('fileNameDisplay').style.color = 'var(--success)';
+        document.getElementById('fileNameDisplay').style.fontWeight = 'bold';
+        document.getElementById('fileNameDisplay').textContent = '✅ 已选文件：' + fileName + '（共识别出 ' + appState.tempRaw.length + ' 条数据）';
+        switchMode('file');
         showToast('文件读取成功！请点击「解析并校验」');
         
         var _ln = document.getElementById('libName');
@@ -154,15 +193,7 @@ function parseExcelContent(arrayBuffer, fileName) {
 }
 
 function bindFileZone() {
-    var fileInput = document.getElementById('fileInput');
-    var paneFile = document.getElementById('paneFile');
-    if(!fileInput || !paneFile) return;
-
-    paneFile.addEventListener('click', function(e) {
-        if (e.target && e.target.id === 'fileInput') return;
-        appState.debugLogs = [];
-        log("准备打开系统文件选择器...");
-    });
+    // 由于使用了透明 input 覆盖，不需要额外的 click 监听了
 }
 
 window.onFileChange = function(file){
@@ -430,7 +461,6 @@ window.startParse = function(){
     
     var demo=document.getElementById('successDemo');
     if(appState.finalParsed.length){
-        // === 新增：统计各题型数量 ===
         var typeCount = {single:0, multiple:0, judge:0, fill:0, short:0, essay:0};
         for(var i=0; i<appState.finalParsed.length; i++){
             var tp = appState.finalParsed[i].type;
@@ -444,19 +474,46 @@ window.startParse = function(){
         if(typeCount.short > 0) statsHtml.push('简答 ' + typeCount.short + ' 题');
         if(typeCount.essay > 0) statsHtml.push('论述 ' + typeCount.essay + ' 题');
         
-        var html='<div style="font-size:14px; color:var(--text-main); margin-top:14px; font-weight:bold; padding:10px; background:#f8fafc; border:1px solid var(--border); border-radius:8px;">✅ 题型统计：' + (statsHtml.length ? statsHtml.join('，') : '无') + '</div>';
-        html+='<div style="font-size:12px;color:var(--sub);margin-top:14px">解析示例（前3条）：</div>';
+        var html='<div style="font-size:14px; color:var(--text); margin-top:14px; font-weight:bold; padding:10px; background:#f8fafc; border:1px solid var(--border); border-radius:8px;">✅ 题型统计：' + (statsHtml.length ? statsHtml.join('，') : '无') + '</div>';
+        html+='<div style="font-size:12px;color:var(--sub);margin-top:14px">解析示例（每种题型显示首题）：</div>';
         
-        appState.finalParsed.slice(0,3).forEach(function(q){
-            var ansShow;
-            if(q.type==='fill'||q.type==='short'||q.type==='essay'){
-                ansShow = (Array.isArray(q.answer)?q.answer.join('；'):q.answer);
-            } else if (q.type==='judge'){
-                ansShow = q.answer[0] === 0 ? '正确' : '错误';
-            } else {
-                ansShow = q.answer.map(function(i){return String.fromCharCode(65+i);}).join('、');
+        var previewQs = [];
+        var seenTypes = {};
+        for(var k=0; k<appState.finalParsed.length; k++){
+            var qq = appState.finalParsed[k];
+            if(!seenTypes[qq.type]){
+                seenTypes[qq.type] = true;
+                previewQs.push(qq);
             }
-            html+='<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-top:12px"><div style="font-weight:600;font-size:15px;margin-bottom:8px">'+q.question+'</div><div style="font-size:13px;color:#10b981;font-weight:bold">答案：'+ansShow+'</div></div>';
+        }
+        
+        var typeNames = {single:'单选题', multiple:'多选题', judge:'判断题', fill:'填空题', short:'简答题', essay:'论述题'};
+        
+        previewQs.forEach(function(q){
+            var ansShow = '';
+            if(q.type==='fill'||q.type==='short'||q.type==='essay'){
+                ansShow = (Array.isArray(q.answer) ? q.answer.join('；') : (q.answer||''));
+            } else if (q.type==='judge'){
+                ansShow = (Array.isArray(q.answer) && q.answer[0] === 0) ? '正确' : '错误';
+            } else if (Array.isArray(q.answer)) {
+                ansShow = q.answer.map(function(idx){return String.fromCharCode(65+idx);}).join('、');
+            }
+            
+            var optsHtml = '';
+            if(q.options && q.options.length > 0) {
+                optsHtml = q.options.map(function(opt, idx){
+                    return String.fromCharCode(65+idx) + '. ' + opt;
+                }).join('<br>');
+            }
+            var typeName = typeNames[q.type] || q.type;
+            
+            html+='<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-top:12px">' +
+                  '<div style="font-size:12px; color:#0d47a1; margin-bottom:6px; font-weight:bold;">['+typeName+']</div>' +
+                  '<div style="font-weight:600;font-size:15px;margin-bottom:10px">'+q.question+'</div>' +
+                  (optsHtml ? '<div style="font-size:13px;color:#475569;line-height:1.6;margin-bottom:10px;">'+optsHtml+'</div>' : '') +
+                  '<div style="font-size:13px;color:#10b981;font-weight:bold; padding-top:8px; border-top:1px dashed #e2e8f0;">正确答案：'+ansShow+'</div>' +
+                  (q.analysis ? '<div style="font-size:12px;color:#64748b;margin-top:6px;">解析：'+q.analysis+'</div>' : '') +
+                  '</div>';
         });
         demo.innerHTML=html;
     } else { demo.innerHTML=''; }
