@@ -1189,12 +1189,13 @@ function renderFavReview() {
     appContainer.innerHTML = `<div style="margin-bottom:10px;"><button class="btn btn-outline" onclick="currentMode='home';render()">⬅ 返回</button></div><div class="card" style="text-align:center;padding:30px;">🔖 暂无收藏题目，去练习页点 ☆ 收藏吧</div>`;
     return;
   }
-  var html = `<div class="toolbar" style="flex-wrap:wrap; gap:10px;">
+  
+  var html = `<div class="toolbar" style="padding:10px;">
     <div style="display:flex; align-items:center; gap:10px;">
       <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="currentMode='home';render()">⬅ 返回</button>
-      <div class="q-progress">收藏夹 (${favQs.length})</div>
+      <div class="q-progress" style="font-size:0.9rem;">收藏夹 (${favQs.length})</div>
     </div>
-    <button class="btn btn-primary btn-small" onclick="startPractice('fav')">集训</button>
+    <button class="btn btn-primary btn-small" style="padding:6px 12px;font-size:0.85rem;" onclick="startPractice('fav')">集训</button>
   </div>`;
 
   html += `<div style="overflow-y:auto; -webkit-overflow-scrolling:touch; padding-bottom:20px;">`;
@@ -1206,8 +1207,8 @@ function renderFavReview() {
     
     html += `<div class="card review-item" style="border-left:4px solid #f59e0b;">
       <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:8px;align-items:center;">
-        <span class="tag" style="background:#f59e0b;">${tName} · 第 ${i+1} 题</span>
-        <button class="fav-star on" onclick="toggleFavorite('${qFavKey(q)}','${q.id||''}')">⭐ 取消收藏</button>
+        <span class="tag" style="background:#f59e0b; margin-bottom:0;">${tName} · 第 ${i+1} 题</span>
+        <button class="fav-star on" style="float:none; margin:0;" onclick="toggleFavorite('${qFavKey(q)}','${q.id||''}')">⭐ 取消收藏</button>
       </div>
       <div class="q-text" style="padding-right:0;">${q.question}</div>`;
       
@@ -1225,7 +1226,6 @@ function renderFavReview() {
   html += `</div>`;
   appContainer.innerHTML = html + `<div class="footer">技术支持：秦十三郎</div>`;
 }
-
 function openStudyStats() { if (!guardGate()) return; currentMode = 'stats'; render(); }
 function renderStudyStats() {
   var totalDone = 0, totalCorrect = 0;
@@ -1445,8 +1445,7 @@ function renderPractice() {
   var typeName = TYPE_NAMES[q.type] || '未知题型';
   
   var targetStreak = parseInt(localStorage.getItem('xjt_streak_target')) || 5;
-  // 如果是错题集训，显示当前连对次数和目标
-  var streakHtml = isWrongPracticeMode ? `<span style="float:right;font-size:0.8rem;color:#ef4444;font-weight:bold; cursor:pointer;" onclick="showStreakSetting()">🔥连对: ${q.streak||0}/${targetStreak} ⚙️</span>` : '';
+  var streakHtml = isWrongPracticeMode ? `<span style="font-size:0.8rem;color:#ef4444;font-weight:bold; cursor:pointer;" onclick="showStreakSetting()">🔥连对: ${q.streak||0}/${targetStreak} ⚙️</span>` : '';
   
   var sheetHtml = buildSheetHtml(practiceQuestions, practiceIndex, practiceSelections, 'practice');
   var feedbackAnim = '';
@@ -1459,22 +1458,22 @@ function renderPractice() {
   }
 
   appContainer.innerHTML = `
-    <div class="toolbar">
+    <div class="toolbar" style="padding:10px;">
       <div style="display:flex; align-items:center; gap:10px;">
         <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="confirmExitPractice()">⬅ 退出</button>
-        <div class="q-progress">${practiceIndex+1} / ${practiceQuestions.length}</div>
+        <div class="q-progress" style="font-size:0.9rem;">${practiceIndex+1} / ${practiceQuestions.length}</div>
       </div>
-      <div style="display:flex; gap:8px; align-items:center;">
-        <div class="font-ctrl">
-          <button class="btn btn-outline btn-small" onclick="changeFontSize(-1)">A-</button>
-          <button class="btn btn-outline btn-small" onclick="changeFontSize(1)">A+</button>
-        </div>
-        <button class="btn btn-outline btn-small" onclick="openSheet()">答题卡</button>
-      </div>
+      <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
     </div>
     <div class="card">
-      <span class="tag">${typeName}</span>${streakHtml}<button class="fav-star ${isFav(q)?'on':''}" style="float:right; margin-right:8px;" onclick="toggleFavorite('${qFavKey(q)}','${q.id||''}')">${isFav(q)?'⭐ 已收藏':'☆ 收藏'}</button>
-      <div class="q-text">${q.question}${feedbackAnim}</div>
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+        <span class="tag" style="margin-bottom:0;">${typeName}</span>
+        <div style="display:flex; align-items:center; gap:10px;">
+          ${streakHtml}
+          <button class="fav-star ${isFav(q)?'on':''}" style="float:none; margin:0;" onclick="toggleFavorite('${qFavKey(q)}','${q.id||''}')">${isFav(q)?'⭐ 已收藏':'☆ 收藏'}</button>
+        </div>
+      </div>
+      <div class="q-text" style="padding-right:0;">${q.question}${feedbackAnim}</div>
       ${optsHtml}
       ${buildAnalysisHtml(q, sels, showAns)}
       <div class="bottom-actions">
@@ -1512,25 +1511,24 @@ function renderRecite() {
   }
 
   appContainer.innerHTML = `
-    <div class="toolbar">
+    <div class="toolbar" style="padding:10px;">
       <div style="display:flex; align-items:center; gap:10px;">
         <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="confirmExitPractice()">⬅ 退出</button>
-        <div class="q-progress">${practiceIndex+1} / ${practiceQuestions.length}</div>
+        <div class="q-progress" style="font-size:0.9rem;">${practiceIndex+1} / ${practiceQuestions.length}</div>
       </div>
       <div style="display:flex; gap:8px; align-items:center;">
-        <div class="font-ctrl">
-          <button class="btn btn-outline btn-small" onclick="changeFontSize(-1)">A-</button>
-          <button class="btn btn-outline btn-small" onclick="changeFontSize(1)">A+</button>
-        </div>
         <button class="btn btn-outline btn-small" onclick="toggleReciteBrowse()">📜 滑动</button>
         <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem; background:#f0f9ff; color:#0369a1; border-color:#bae6fd;" onclick="openSearch()">🔍 搜题</button>
         <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
       </div>
     </div>
     <div class="card">
-      <span class="tag" style="background:#10b981;">${typeName} · 背题模式</span><button class="fav-star ${isFav(q)?'on':''}" style="float:right" onclick="toggleFavorite('${qFavKey(q)}','${q.id||''}')">${isFav(q)?'⭐ 已收藏':'☆ 收藏'}</button>
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+        <span class="tag" style="background:#10b981; margin-bottom:0;">${typeName} · 背题模式</span>
+        <button class="fav-star ${isFav(q)?'on':''}" style="float:none; margin:0;" onclick="toggleFavorite('${qFavKey(q)}','${q.id||''}')">${isFav(q)?'⭐ 已收藏':'☆ 收藏'}</button>
+      </div>
       ${filterHtml}
-      <div class="q-text">${q.question}</div>
+      <div class="q-text" style="padding-right:0;">${q.question}</div>
       ${optsHtml}
       ${buildAnalysisHtml(q, sels, true)}
       <div class="bottom-actions">
@@ -1751,15 +1749,15 @@ function renderReview() {
     appContainer.innerHTML = `<div style="margin-bottom:10px;"><button class="btn btn-outline" onclick="currentMode='home';render()">⬅ 返回</button></div><div class="card" style="text-align:center;padding:30px;">🎉 暂无错题</div>`;
     return;
   }
-  var html = `<div class="toolbar" style="flex-wrap:wrap; gap:10px;">
+  var targetStreak = parseInt(localStorage.getItem('xjt_streak_target')) || 5;
+  var html = `<div class="toolbar" style="padding:10px;">
     <div style="display:flex; align-items:center; gap:10px;">
       <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="currentMode='home';render()">⬅ 返回</button>
-      <div class="q-progress">错题本 (${wrongBook.length})</div>
+      <div class="q-progress" style="font-size:0.9rem;">错题本 (${wrongBook.length})</div>
     </div>
-    <button class="btn btn-primary btn-small" onclick="startPractice('wrong')">🔥 集训</button>
+    <button class="btn btn-primary btn-small" style="padding:6px 12px;font-size:0.85rem;" onclick="startPractice('wrong')">🔥 集训</button>
   </div>`;
 
-  // 这里直接使用滑动式布局展示，和背题滑动模式一致
   html += `<div style="overflow-y:auto; -webkit-overflow-scrolling:touch; padding-bottom:20px;">`;
   for (var i = 0; i < wrongBook.length; i++) {
     var q = wrongBook[i];
@@ -1769,8 +1767,8 @@ function renderReview() {
     
     html += `<div class="card review-item">
       <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:8px;align-items:center;">
-        <span class="tag" style="background:#ef4444;">${tName} · 第 ${i+1} 题</span>
-        <span style="color:#ef4444;font-weight:bold;">连对: ${q.streak||0}/5</span>
+        <span class="tag" style="background:#ef4444; margin-bottom:0;">${tName} · 第 ${i+1} 题</span>
+        <span style="color:#ef4444;font-weight:bold;">连对: ${q.streak||0}/${targetStreak}</span>
       </div>
       <div class="q-text" style="padding-right:0;">${q.question}</div>`;
       
@@ -2464,22 +2462,18 @@ function toggleReciteBrowse() {
 
 function renderReciteScroll() {
   var html = `
-    <div class="toolbar" style="position:sticky; top:0; z-index:50;">
+    <div class="toolbar" style="position:sticky; top:0; z-index:50; padding:10px;">
       <div style="display:flex; align-items:center; gap:10px;">
         <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="confirmExitPractice()">⬅ 退出</button>
-        <div class="q-progress">共 ${practiceQuestions.length} 题</div>
+        <div class="q-progress" style="font-size:0.9rem;">共 ${practiceQuestions.length} 题</div>
       </div>
       <div style="display:flex; gap:8px; align-items:center;">
-        <div class="font-ctrl">
-          <button class="btn btn-outline btn-small" onclick="changeFontSize(-1)">A-</button>
-          <button class="btn btn-outline btn-small" onclick="changeFontSize(1)">A+</button>
-        </div>
         <button class="btn btn-outline btn-small" onclick="toggleReciteBrowse()">📄 翻页</button>
         <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem; background:#f0f9ff; color:#0369a1; border-color:#bae6fd;" onclick="openSearch()">🔍 搜题</button>
         <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
       </div>
     </div>
-    <div id="reciteScrollContainer" style="overflow-y:auto; -webkit-overflow-scrolling:touch; height:calc(100vh - 150px); padding-bottom:20px;">`;
+    <div id="reciteScrollContainer" style="overflow-y:auto; -webkit-overflow-scrolling:touch; height:calc(100vh - 140px); padding-bottom:20px;">`;
 
   for (var i = 0; i < practiceQuestions.length; i++) {
     var q = practiceQuestions[i];
@@ -2497,8 +2491,8 @@ function renderReciteScroll() {
     }
     html += `<div class="card recite-scroll-item" id="recite-item-${i}" data-idx="${i}" style="scroll-margin-top:10px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <span class="tag" style="background:#10b981;">${typeName} · 第 ${i+1} 题</span>
-        <button class="fav-star ${isFav(q)?'on':''}" onclick="toggleFavorite('${qFavKey(q)}','${q.id||''}')">${isFav(q)?'⭐ 已收藏':'☆ 收藏'}</button>
+        <span class="tag" style="background:#10b981; margin-bottom:0;">${typeName} · 第 ${i+1} 题</span>
+        <button class="fav-star ${isFav(q)?'on':''}" style="float:none; margin:0;" onclick="toggleFavorite('${qFavKey(q)}','${q.id||''}')">${isFav(q)?'⭐ 已收藏':'☆ 收藏'}</button>
       </div>
       <div class="q-text" style="padding-right:0;">${q.question}</div>
       ${optsHtml}
