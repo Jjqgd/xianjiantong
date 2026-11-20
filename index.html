@@ -1,7 +1,5 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<script src="https://cdn.jsdelivr.net/npm/bmob-js-sdk@latest/dist/bmob.min.js"></script>
-<script src="auth.js"></script>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -233,41 +231,7 @@
 .result-mao-text.full { color:#b71c1c; }
 </style>
 <body>
-<script>
-window.onload = async function() {
-    // 1. 先跟 Bmob 云端对暗号（体验/注册码）
-    var res = await checkAccess(); 
-    
-    if (res.ok) {
-        if (res.type === 'trial') {
-            alert(res.msg); // 弹窗提示：剩余体验时间
-        }
-        // 2. 验证通过，执行你原本的刷题代码
-        initApp(); 
-    } else {
-        // 3. 验证失败，要求输入注册码
-        var code = prompt("免费体验已结束！请输入注册码继续使用：");
-        if (code) {
-            var fp = getFingerprint();
-            var vRes = await verifyLicense(code.trim(), fp);
-            if (vRes.ok) {
-                alert("授权成功！");
-                location.reload(); // 刷新，重新走验证流程
-            } else {
-                alert(vRes.msg);
-            }
-        } else {
-            alert("您需要注册码才能继续使用哦");
-        }
-    }
-};
 
-// 把你原本在 onload 里读取题库、渲染界面的代码，包进这个函数里
-function initApp() {
-    // ... 你原来的代码 ...
-}
-</script>
-  
 <div id="splash-screen">
   <div class="splash-container">
     <div class="calligraphy-group" id="group-normal">
