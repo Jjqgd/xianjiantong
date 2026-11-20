@@ -1189,23 +1189,32 @@ function renderFavReview() {
     appContainer.innerHTML = `<div style="margin-bottom:10px;"><button class="btn btn-outline" onclick="currentMode='home';render()">⬅ 返回</button></div><div class="card" style="text-align:center;padding:30px;">🔖 暂无收藏题目，去练习页点 ☆ 收藏吧</div>`;
     return;
   }
-  
+
+  if (favBrowseMode === 'page') {
+    renderFavPage();
+    return;
+  }
+
+  // 滑动模式
   var html = `<div class="toolbar" style="padding:10px;">
     <div style="display:flex; align-items:center; gap:10px;">
       <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="currentMode='home';render()">⬅ 返回</button>
       <div class="q-progress" style="font-size:0.9rem;">收藏夹 (${favQs.length})</div>
     </div>
-    <button class="btn btn-primary btn-small" style="padding:6px 12px;font-size:0.85rem;" onclick="startPractice('fav')">集训</button>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button class="btn btn-outline btn-small" onclick="toggleFavBrowse()">📄 翻页</button>
+      <button class="btn btn-outline btn-small" onclick="openFavSheet()">答题卡</button>
+    </div>
   </div>`;
 
-  html += `<div style="overflow-y:auto; -webkit-overflow-scrolling:touch; padding-bottom:20px;">`;
+  html += `<div id="favScrollContainer" style="overflow-y:auto; -webkit-overflow-scrolling:touch; height:calc(100vh - 140px); padding-bottom:20px;">`;
   for (var i = 0; i < favQs.length; i++) {
     var q = favQs[i];
     var tName = TYPE_NAMES[q.type] || '未知';
     var isSubj = isSubjective(q.type);
     var ansDisplay = isSubj ? (typeof q.answer === 'string' ? q.answer : q.answer.join('；')) : q.answer.map(function(x){ return String.fromCharCode(65+x); }).join(', ');
     
-    html += `<div class="card review-item" style="border-left:4px solid #f59e0b;">
+    html += `<div class="card review-item" id="fav-item-${i}" data-idx="${i}" style="scroll-margin-top:10px;">
       <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:8px;align-items:center;">
         <span class="tag" style="background:#f59e0b; margin-bottom:0;">${tName} · 第 ${i+1} 题</span>
         <button class="fav-star on" style="float:none; margin:0;" onclick="toggleFavorite('${qFavKey(q)}','${q.id||''}')">⭐ 取消收藏</button>
@@ -1223,8 +1232,123 @@ function renderFavReview() {
     }
     html += `${buildAnalysisHtml(q, [], true)}</div>`;
   }
-  html += `</div>`;
+  html += `</div>
+    <div id="sheetModal" class="sheet-mask" style="display:none;" onclick="closeSheet(event)">
+      <div class="sheet-content" onclick="event.stopPropagation()">
+        <div class="sheet-title">答题卡 <span style="font-size:0.85rem;color:var(--text-sub);font-weight:normal;">点击题号可跳转</span></div>
+        ${buildSheetHtml(favQs, window.favPageIndex || 0, [], 'favReview')}
+      </div>
+    </div>`;
   appContainer.innerHTML = html + `<div class="footer">技术支持：秦十三郎</div>`;
+
+  setTimeout(function() {
+    var el = document.getElementById('fav-item-' + (window.favPageIndex || 0));
+    var container = document.getElementById('favScrollContainer');
+    if (el && container) container.scrollTop = el.offsetTop - 10;
+  }, 40);
+
+  var scrollTimer = null;
+  var container = document.getElementById('favScrollContainer');
+  if (container) {
+    container.addEventListener('scroll', function() {
+      if (scrollTimer) clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(function() {
+        var items = container.querySelectorAll('.review-item');
+        var bestIdx = 0, bestDist = Infinity;
+        var cTop = container.getBoundingClientRect().top;
+        for (var k = 0; k < items.length; k++) {
+          var r = items[k].getBoundingClientRect();
+          var d = Math.abs(r.top - cTop - 10);
+          if (d < bestDist) { bestDist = d; bestIdx = k; }
+        }
+        window.favPageIndex = bestIdx;
+      }, 250);
+    }, { passive: true });
+  }
+}
+
+function toggleFavBrowse() {
+  favBrowseMode = favBrowseMode === 'scroll' ? 'page' : 'scroll';
+  localStorage.setItem('xjt_fav_browse', favBrowseMode);
+  render();
+}
+
+function openFavSheet() {
+  document.getElementById('sheetModal').style.display='flex';
+  setTimeout(function(){document.getElementById('sheetModal').classList.add('show');},10);
+}
+
+function jumpFav(idx) {
+  window.favPageIndex = idx;
+  closeSheet({target:{id:'sheetModal'}});
+  if (favBrowseMode === 'scroll') {
+    setTimeout(function() {
+      var el = document.getElementById('fav-item-' + idx);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 320);
+  } else {
+    render();
+  }
+}
+
+function renderFavPage() {
+  var qs = activeBankId ? allBanks[activeBankId].questions : [];
+  var favQs = qs.filter(function(q){ return isFav(q); });
+  if (!window.favPageIndex) window.favPageIndex = 0;
+  if (window.favPageIndex >= favQs.length) window.favPageIndex = 0;
+  var q = favQs[window.favPageIndex];
+  var tName = TYPE_NAMES[q.type] || '未知';
+  var isSubj = isSubjective(q.type);
+  var ansDisplay = isSubj ? (typeof q.answer === 'string' ? q.answer : q.answer.join('；')) : q.answer.map(function(x){ return String.fromCharCode(65+x); }).join(', ');
+  var optsHtml = '';
+  if (q.type === 'judge' && (!q.options || q.options.length === 0)) q.options = ['正确', '错误'];
+  if (!isSubj) {
+    for (var j = 0; j < q.options.length; j++) {
+      var isAns = q.answer.indexOf(j) > -1;
+      optsHtml += `<div class="opt ${isAns ? 'correct' : ''} disabled"><div class="opt-prefix">${String.fromCharCode(65+j)}</div><div>${q.options[j]}</div></div>`;
+    }
+  } else {
+    optsHtml = `<div class="subjective-answer"><div class="sa-title">📝 参考答案</div><div class="sa-content">${ansDisplay}</div></div>`;
+  }
+
+  appContainer.innerHTML = `
+    <div class="toolbar" style="padding:10px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="currentMode='home';render()">⬅ 返回</button>
+        <div class="q-progress" style="font-size:0.9rem;">${window.favPageIndex+1} / ${favQs.length}</div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="btn btn-outline btn-small" onclick="toggleFavBrowse()">📜 滑动</button>
+        <button class="btn btn-outline btn-small" onclick="openFavSheet()">答题卡</button>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+        <span class="tag" style="background:#f59e0b; margin-bottom:0;">${tName} · 收藏查看</span>
+        <button class="fav-star on" style="float:none; margin:0;" onclick="toggleFavorite('${qFavKey(q)}','${q.id||''}')">⭐ 取消收藏</button>
+      </div>
+      <div class="q-text" style="padding-right:0;">${q.question}</div>
+      ${optsHtml}
+      ${buildAnalysisHtml(q, [], true)}
+      <div class="bottom-actions">
+        <button class="btn btn-outline" onclick="prevFavPage()" ${window.favPageIndex===0?'disabled style="opacity:0.5"':''}>⬅ 上一题</button>
+        <button class="btn btn-primary" onclick="nextFavPage()">${window.favPageIndex === favQs.length-1 ? '完成' : '下一题 ➡'}</button>
+      </div>
+    </div>
+    <div id="sheetModal" class="sheet-mask" style="display:none;" onclick="closeSheet(event)">
+      <div class="sheet-content" onclick="event.stopPropagation()">
+        <div class="sheet-title">答题卡 <span style="font-size:0.85rem;color:var(--text-sub);font-weight:normal;">点击题号可跳转</span></div>
+        ${buildSheetHtml(favQs, window.favPageIndex || 0, [], 'favReview')}
+      </div>
+    </div>
+  `;
+}
+
+function prevFavPage() { if (window.favPageIndex > 0) { window.favPageIndex--; renderFavPage(); } }
+function nextFavPage() {
+  var qs = activeBankId ? allBanks[activeBankId].questions : [];
+  var favQs = qs.filter(function(q){ return isFav(q); });
+  if (window.favPageIndex < favQs.length - 1) { window.favPageIndex++; renderFavPage(); } else { currentMode='home'; render(); }
 }
 function openStudyStats() { if (!guardGate()) return; currentMode = 'stats'; render(); }
 function renderStudyStats() {
@@ -1320,12 +1444,16 @@ function buildSheetHtml(questions, currentIdx, selections, type) {
   if (type === 'exam') jumpFn = 'jumpExam';
   else if (type === 'examReview') jumpFn = 'jumpExamReview';
   else if (type === 'recite') jumpFn = 'jumpRecite';
+  else if (type === 'review') jumpFn = 'jumpReview';
+  else if (type === 'favReview') jumpFn = 'jumpFav';
 
   for (var t = 0; t < types.length; t++) {
     var tp = types[t]; var items = groups[tp]; if (items.length === 0) continue;
     html += `<div class="acc-group"><div class="acc-header" onclick="this.nextElementSibling.classList.toggle('hidden')"><span style="font-size:1.05rem;">${TYPE_NAMES[tp]}</span><span>共 ${items.length} 题</span></div><div class="acc-body">`;
     for (var i = 0; i < items.length; i++) {
       var item = items[i]; var cls = 'num-btn'; var s = selections[item.idx] || [];
+      
+      // 根据模式决定答题卡的颜色
       if (type === 'practice') {
         if (item.q.isAnswered) {
           if (isSubjective(item.q.type)) cls += ' right';
@@ -1334,9 +1462,11 @@ function buildSheetHtml(questions, currentIdx, selections, type) {
             cls += okP ? ' right' : ' wrong';
           }
         }
-      } else if (type === 'recite') { cls += ' right'; }
-      else if (type === 'exam') { if (s.length > 0 || isSubjective(item.q.type)) cls += ' right'; }
-      else if (type === 'examReview') {
+      } else if (type === 'recite' || type === 'review' || type === 'favReview') { 
+        cls += ' right'; 
+      } else if (type === 'exam') { 
+        if (s.length > 0 || isSubjective(item.q.type)) cls += ' right'; 
+      } else if (type === 'examReview') {
         if (isSubjective(item.q.type)) { if (s.length > 0) cls += ' right'; }
         else if (s.length > 0) {
           var ok = s.length === item.q.answer.length && s.every(function(v){ return item.q.answer.indexOf(v) > -1; });
@@ -1551,81 +1681,6 @@ function toggleReciteBrowse() {
   render();
 }
 
-function renderReciteScroll() {
-  var html = `
-    <div class="toolbar" style="position:sticky; top:0; z-index:50;">
-      <div style="display:flex; align-items:center; gap:10px;">
-        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="confirmExitPractice()">⬅ 退出</button>
-        <div class="q-progress">共 ${practiceQuestions.length} 题</div>
-      </div>
-      <div style="display:flex; gap:8px; align-items:center;">
-        <div class="font-ctrl">
-          <button class="btn btn-outline btn-small" onclick="changeFontSize(-1)">A-</button>
-          <button class="btn btn-outline btn-small" onclick="changeFontSize(1)">A+</button>
-        </div>
-        <button class="btn btn-outline btn-small" onclick="toggleReciteBrowse()">📄 翻页</button>
-        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem; background:#f0f9ff; color:#0369a1; border-color:#bae6fd;" onclick="openSearch()">🔍 搜题</button>
-        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
-      </div>
-    </div>
-    <div id="reciteScrollContainer" style="overflow-y:auto; -webkit-overflow-scrolling:touch; height:calc(100vh - 150px); padding-bottom:20px;">`;
-
-  for (var i = 0; i < practiceQuestions.length; i++) {
-    var q = practiceQuestions[i];
-    if (q.type === 'judge' && (!q.options || q.options.length === 0)) q.options = ['正确', '错误'];
-    var typeName = TYPE_NAMES[q.type] || '未知题型';
-    var optsHtml = '';
-    if (isSubjective(q.type)) {
-      var ansText = typeof q.answer === 'string' ? q.answer : (Array.isArray(q.answer) ? q.answer.join('；') : '');
-      optsHtml = `<div class="subjective-answer"><div class="sa-title">📝 参考答案</div><div class="sa-content">${ansText}</div></div>`;
-    } else {
-      for (var j = 0; j < q.options.length; j++) {
-        var isAns = q.answer.indexOf(j) > -1;
-        optsHtml += `<div class="opt ${isAns ? 'correct' : ''} disabled"><div class="opt-prefix">${String.fromCharCode(65+j)}</div><div>${q.options[j]}</div></div>`;
-      }
-    }
-    html += `<div class="card recite-scroll-item" id="recite-item-${i}" data-idx="${i}" style="scroll-margin-top:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <span class="tag" style="background:#10b981;">${typeName} · 第 ${i+1} 题</span>
-        <button class="fav-star ${isFav(q)?'on':''}" onclick="toggleFavorite('${qFavKey(q)}','${q.id||''}')">${isFav(q)?'⭐ 已收藏':'☆ 收藏'}</button>
-      </div>
-      <div class="q-text" style="padding-right:0;">${q.question}</div>
-      ${optsHtml}
-      ${buildAnalysisHtml(q, practiceSelections[i] || q.answer, true)}
-    </div>`;
-  }
-  html += `</div>
-    <div id="sheetModal" class="sheet-mask" style="display:none;" onclick="closeSheet(event)">
-      <div class="sheet-content" onclick="event.stopPropagation()">
-        <div class="sheet-title">答题卡 <span style="font-size:0.85rem;color:var(--text-sub);font-weight:normal;">点击题号可跳转</span></div>
-        ${buildSheetHtml(practiceQuestions, practiceIndex, practiceSelections, 'recite')}
-      </div>
-    </div>`;
-  appContainer.innerHTML = html;
-  setTimeout(function() {
-    var el = document.getElementById('recite-item-' + practiceIndex);
-    var container = document.getElementById('reciteScrollContainer');
-    if (el && container) container.scrollTop = el.offsetTop - 10;
-  }, 40);
-  var scrollTimer = null;
-  var container = document.getElementById('reciteScrollContainer');
-  if (container) {
-    container.addEventListener('scroll', function() {
-      if (scrollTimer) clearTimeout(scrollTimer);
-      scrollTimer = setTimeout(function() {
-        var items = container.querySelectorAll('.recite-scroll-item');
-        var bestIdx = 0, bestDist = Infinity;
-        var cTop = container.getBoundingClientRect().top;
-        for (var k = 0; k < items.length; k++) {
-          var r = items[k].getBoundingClientRect();
-          var d = Math.abs(r.top - cTop - 10);
-          if (d < bestDist) { bestDist = d; bestIdx = k; }
-        }
-        if (bestIdx !== practiceIndex) { practiceIndex = bestIdx; savePracticeProgress(); }
-      }, 250);
-    }, { passive: true });
-  }
-}
 function toggleReciteJudge(idx) {
   var q = practiceQuestions[practiceIndex];
   var sels = practiceSelections[practiceIndex] || [];
@@ -1749,23 +1804,33 @@ function renderReview() {
     appContainer.innerHTML = `<div style="margin-bottom:10px;"><button class="btn btn-outline" onclick="currentMode='home';render()">⬅ 返回</button></div><div class="card" style="text-align:center;padding:30px;">🎉 暂无错题</div>`;
     return;
   }
+
+  if (reviewBrowseMode === 'page') {
+    renderReviewPage();
+    return;
+  }
+
+  // 滑动模式
   var targetStreak = parseInt(localStorage.getItem('xjt_streak_target')) || 5;
   var html = `<div class="toolbar" style="padding:10px;">
     <div style="display:flex; align-items:center; gap:10px;">
       <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="currentMode='home';render()">⬅ 返回</button>
       <div class="q-progress" style="font-size:0.9rem;">错题本 (${wrongBook.length})</div>
     </div>
-    <button class="btn btn-primary btn-small" style="padding:6px 12px;font-size:0.85rem;" onclick="startPractice('wrong')">🔥 集训</button>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button class="btn btn-outline btn-small" onclick="toggleReviewBrowse()">📄 翻页</button>
+      <button class="btn btn-outline btn-small" onclick="openReviewSheet()">答题卡</button>
+    </div>
   </div>`;
 
-  html += `<div style="overflow-y:auto; -webkit-overflow-scrolling:touch; padding-bottom:20px;">`;
+  html += `<div id="reviewScrollContainer" style="overflow-y:auto; -webkit-overflow-scrolling:touch; height:calc(100vh - 140px); padding-bottom:20px;">`;
   for (var i = 0; i < wrongBook.length; i++) {
     var q = wrongBook[i];
     var tName = TYPE_NAMES[q.type] || '未知';
     var isSubj = isSubjective(q.type);
     var ansDisplay = isSubj ? (typeof q.answer === 'string' ? q.answer : q.answer.join('；')) : q.answer.map(function(idx){ return String.fromCharCode(65+idx); }).join(', ');
     
-    html += `<div class="card review-item">
+    html += `<div class="card review-item" id="review-item-${i}" data-idx="${i}" style="scroll-margin-top:10px;">
       <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:8px;align-items:center;">
         <span class="tag" style="background:#ef4444; margin-bottom:0;">${tName} · 第 ${i+1} 题</span>
         <span style="color:#ef4444;font-weight:bold;">连对: ${q.streak||0}/${targetStreak}</span>
@@ -1783,9 +1848,120 @@ function renderReview() {
     }
     html += `${buildAnalysisHtml(q, [], true)}</div>`;
   }
-  html += `</div>`;
+  html += `</div>
+    <div id="sheetModal" class="sheet-mask" style="display:none;" onclick="closeSheet(event)">
+      <div class="sheet-content" onclick="event.stopPropagation()">
+        <div class="sheet-title">答题卡 <span style="font-size:0.85rem;color:var(--text-sub);font-weight:normal;">点击题号可跳转</span></div>
+        ${buildSheetHtml(wrongBook, window.reviewPageIndex || 0, [], 'review')}
+      </div>
+    </div>`;
   appContainer.innerHTML = html + `<div class="footer">技术支持：秦十三郎</div>`;
+
+  // 滚动定位
+  setTimeout(function() {
+    var el = document.getElementById('review-item-' + (window.reviewPageIndex || 0));
+    var container = document.getElementById('reviewScrollContainer');
+    if (el && container) container.scrollTop = el.offsetTop - 10;
+  }, 40);
+
+  // 滚动监听
+  var scrollTimer = null;
+  var container = document.getElementById('reviewScrollContainer');
+  if (container) {
+    container.addEventListener('scroll', function() {
+      if (scrollTimer) clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(function() {
+        var items = container.querySelectorAll('.review-item');
+        var bestIdx = 0, bestDist = Infinity;
+        var cTop = container.getBoundingClientRect().top;
+        for (var k = 0; k < items.length; k++) {
+          var r = items[k].getBoundingClientRect();
+          var d = Math.abs(r.top - cTop - 10);
+          if (d < bestDist) { bestDist = d; bestIdx = k; }
+        }
+        window.reviewPageIndex = bestIdx;
+      }, 250);
+    }, { passive: true });
+  }
 }
+
+function toggleReviewBrowse() {
+  reviewBrowseMode = reviewBrowseMode === 'scroll' ? 'page' : 'scroll';
+  localStorage.setItem('xjt_review_browse', reviewBrowseMode);
+  render();
+}
+
+function openReviewSheet() {
+  document.getElementById('sheetModal').style.display='flex';
+  setTimeout(function(){document.getElementById('sheetModal').classList.add('show');},10);
+}
+
+function jumpReview(idx) {
+  window.reviewPageIndex = idx;
+  closeSheet({target:{id:'sheetModal'}});
+  if (reviewBrowseMode === 'scroll') {
+    setTimeout(function() {
+      var el = document.getElementById('review-item-' + idx);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 320);
+  } else {
+    render();
+  }
+}
+
+function renderReviewPage() {
+  if (!window.reviewPageIndex) window.reviewPageIndex = 0;
+  if (window.reviewPageIndex >= wrongBook.length) window.reviewPageIndex = 0;
+  var q = wrongBook[window.reviewPageIndex];
+  var targetStreak = parseInt(localStorage.getItem('xjt_streak_target')) || 5;
+  var tName = TYPE_NAMES[q.type] || '未知';
+  var isSubj = isSubjective(q.type);
+  var ansDisplay = isSubj ? (typeof q.answer === 'string' ? q.answer : q.answer.join('；')) : q.answer.map(function(idx){ return String.fromCharCode(65+idx); }).join(', ');
+  var optsHtml = '';
+  if (q.type === 'judge' && (!q.options || q.options.length === 0)) q.options = ['正确', '错误'];
+  if (!isSubj) {
+    for (var j = 0; j < q.options.length; j++) {
+      var isAns = q.answer.indexOf(j) > -1;
+      optsHtml += `<div class="opt ${isAns ? 'correct' : ''} disabled"><div class="opt-prefix">${String.fromCharCode(65+j)}</div><div>${q.options[j]}</div></div>`;
+    }
+  } else {
+    optsHtml = `<div class="subjective-answer"><div class="sa-title">📝 参考答案</div><div class="sa-content">${ansDisplay}</div></div>`;
+  }
+
+  appContainer.innerHTML = `
+    <div class="toolbar" style="padding:10px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="currentMode='home';render()">⬅ 返回</button>
+        <div class="q-progress" style="font-size:0.9rem;">${window.reviewPageIndex+1} / ${wrongBook.length}</div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="btn btn-outline btn-small" onclick="toggleReviewBrowse()">📜 滑动</button>
+        <button class="btn btn-outline btn-small" onclick="openReviewSheet()">答题卡</button>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+        <span class="tag" style="background:#ef4444; margin-bottom:0;">${tName} · 错题查看</span>
+        <span style="color:#ef4444;font-weight:bold; font-size:0.85rem;">连对: ${q.streak||0}/${targetStreak}</span>
+      </div>
+      <div class="q-text" style="padding-right:0;">${q.question}</div>
+      ${optsHtml}
+      ${buildAnalysisHtml(q, [], true)}
+      <div class="bottom-actions">
+        <button class="btn btn-outline" onclick="prevReviewPage()" ${window.reviewPageIndex===0?'disabled style="opacity:0.5"':''}>⬅ 上一题</button>
+        <button class="btn btn-primary" onclick="nextReviewPage()">${window.reviewPageIndex === wrongBook.length-1 ? '完成' : '下一题 ➡'}</button>
+      </div>
+    </div>
+    <div id="sheetModal" class="sheet-mask" style="display:none;" onclick="closeSheet(event)">
+      <div class="sheet-content" onclick="event.stopPropagation()">
+        <div class="sheet-title">答题卡 <span style="font-size:0.85rem;color:var(--text-sub);font-weight:normal;">点击题号可跳转</span></div>
+        ${buildSheetHtml(wrongBook, window.reviewPageIndex || 0, [], 'review')}
+      </div>
+    </div>
+  `;
+}
+function prevReviewPage() { if (window.reviewPageIndex > 0) { window.reviewPageIndex--; renderReviewPage(); } }
+function nextReviewPage() { if (window.reviewPageIndex < wrongBook.length - 1) { window.reviewPageIndex++; renderReviewPage(); } else { currentMode='home'; render(); } }
 /* ================= 模拟考试 ================= */
 function startExamSetup() { if (!guardGate()) return; currentMode = 'examSetup'; render(); }
 
