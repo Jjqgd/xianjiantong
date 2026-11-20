@@ -229,6 +229,7 @@
 /* ===== 成绩页毛体大字 ===== */
 .result-mao-text { font-family:'MaoTi','STXingkai','KaiTi',cursive; color:#d32f2f; font-weight:bold; font-size:1.35rem; line-height:1.75; text-align:center; padding:14px 8px; margin:10px 0 4px; border-top:2px dashed rgba(211,47,47,0.25); border-bottom:2px dashed rgba(211,47,47,0.25); }
 .result-mao-text.full { color:#b71c1c; }
+.recite-scroll-item { margin-bottom: 14px; } #reciteScrollContainer { -webkit-overflow-scrolling: touch; }
 </style>
 <body>
 
@@ -786,6 +787,7 @@ var examTimer = null, examStartTime = 0, examRemainingSeconds = 0;
 var examAborted = false; var reciteJudgeFilter = 'all'; var searchKeyword = ''; var searchType = 'all';
 var examPaperMode = 'random';
 var favorites = []; var examWrongList = [];
+var practiceSource = 'all'; var reciteSource = 'all'; var reciteBrowseMode = localStorage.getItem('xjt_recite_browse') || 'page';
 
 // 新增：考试逐题判定状态 + 设置开关（统一为一个即时反馈开关，默认关闭）
 var examAnswered = [];
@@ -879,10 +881,22 @@ function confirmSubmitExam() { showAppConfirm('铁途学练', '确定要交卷�
 function confirmDeleteBank(id) { showAppConfirm('铁途学练', '确定删除该题库？', '删除', '取消', function() { delete allBanks[id]; if (activeBankId === id) { var keys = Object.keys(allBanks); activeBankId = keys.length > 0 ? keys[0] : null; } saveData(); render(); }); }
 
 function saveData() { localStorage.setItem('xjt_banks', JSON.stringify(allBanks)); localStorage.setItem('xjt_active', activeBankId || ''); localStorage.setItem('xjt_wrong', JSON.stringify(wrongBook)); localStorage.setItem('xjt_fav', JSON.stringify(favorites)); }
-function savePracticeProgress() { if (currentMode === 'practice' || currentMode === 'recite') { localStorage.setItem('xjt_practice_progress', JSON.stringify({ mode: currentMode, questions: practiceQuestions, index: practiceIndex, selections: practiceSelections, isWrong: isWrongPracticeMode })); } }
+function savePracticeProgress() { if (currentMode === 'practice' || currentMode === 'recite') { localStorage.setItem('xjt_practice_progress', JSON.stringify({ mode: currentMode, source: currentMode === 'recite' ? reciteSource : practiceSource, bankId: activeBankId, questions: practiceQuestions, index: practiceIndex, selections: practiceSelections, isWrong: isWrongPracticeMode })); } }
 function restorePracticeProgress() {
   var pStr = localStorage.getItem('xjt_practice_progress');
-  if (pStr) { try { var p = JSON.parse(pStr); if (p.questions && p.questions.length > 0) { var modeName = p.mode === 'recite' ? '背题' : '练习'; showAppConfirm('铁途学练', '检测到上次未完成的' + modeName + '，是否继续？', '继续', '放弃', function() { practiceQuestions = p.questions; practiceIndex = p.index; practiceSelections = p.selections; isWrongPracticeMode = p.isWrong; currentMode = p.mode || 'practice'; render(); }, function() { localStorage.removeItem('xjt_practice_progress'); }); } } catch(e) {} } }
+  if (!pStr) return;
+  try {
+    var p = JSON.parse(pStr);
+    if (!p.questions || p.questions.length === 0 || p.index >= p.questions.length) { localStorage.removeItem('xjt_practice_progress'); return; }
+    if (p.bankId && !allBanks[p.bankId]) { localStorage.removeItem('xjt_practice_progress'); return; }
+    var modeName = p.mode === 'recite' ? '背题' : '练习';
+    showAppConfirm('铁途学练', '检测到上次未完成的' + modeName + '，是否继续？', '继续', '放弃', function() {
+      practiceQuestions = p.questions; practiceIndex = p.index || 0; practiceSelections = p.selections || [];
+      isWrongPracticeMode = !!p.isWrong; practiceSource = p.source || 'all'; reciteSource = p.source || 'all';
+      currentMode = p.mode || 'practice'; installBackGuard(); render();
+    }, function() { localStorage.removeItem('xjt_practice_progress'); });
+  } catch(e) {}
+}
 function loadData() { try { var b = localStorage.getItem('xjt_banks'); var a = localStorage.getItem('xjt_active'); var w = localStorage.getItem('xjt_wrong'); if (b) allBanks = JSON.parse(b); if (a) activeBankId = a; if (w) { wrongBook = JSON.parse(w); for (var i=0; i<wrongBook.length; i++) { if (wrongBook[i].streak === undefined) wrongBook[i].streak = 0; } } var favStr = localStorage.getItem('xjt_fav'); if (favStr) { try { favorites = JSON.parse(favStr); } catch(e2) { favorites = []; } } if (activeBankId && !allBanks[activeBankId]) activeBankId = null; } catch(e) {} }
 function checkNewImport() { var newBankStr = localStorage.getItem('xjt_new_import'); if (newBankStr) { try { var newBank = JSON.parse(newBankStr); allBanks[newBank.id] = { name: newBank.name, questions: newBank.questions }; activeBankId = newBank.id; localStorage.removeItem('xjt_new_import'); saveData(); showToast('导入成功，共 ' + newBank.questions.length + ' 题'); } catch(e) {} } }
 
@@ -1455,6 +1469,7 @@ function renderRecite() {
     appContainer.innerHTML = `<div class="card" style="text-align:center;padding:40px;"><h2 style="color:#0d47a1;margin-bottom:15px;">🎉 背题完成</h2><p style="color:var(--text-sub);margin-bottom:20px;">您已完成本轮背题。</p><button class="btn btn-primary btn-block" onclick="currentMode='home';render()">返回首页</button></div>`;
     return;
   }
+  if (reciteBrowseMode === 'scroll') { renderReciteScroll(); return; }
   var q = practiceQuestions[practiceIndex];
   var showAns = true;
   var sels = practiceSelections[practiceIndex] || q.answer;
@@ -1477,6 +1492,7 @@ function renderRecite() {
           <button class="btn btn-outline btn-small" onclick="changeFontSize(-1)">A-</button>
           <button class="btn btn-outline btn-small" onclick="changeFontSize(1)">A+</button>
         </div>
+        <button class="btn btn-outline btn-small" onclick="toggleReciteBrowse()">📜 滑动</button>
         <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem; background:#f0f9ff; color:#0369a1; border-color:#bae6fd;" onclick="openSearch()">🔍 搜题</button>
         <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
       </div>
@@ -1501,7 +1517,87 @@ function renderRecite() {
     </div>
   `;
 }
+function toggleReciteBrowse() {
+  reciteBrowseMode = reciteBrowseMode === 'scroll' ? 'page' : 'scroll';
+  localStorage.setItem('xjt_recite_browse', reciteBrowseMode);
+  render();
+}
 
+function renderReciteScroll() {
+  var html = `
+    <div class="toolbar" style="position:sticky; top:0; z-index:50;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="confirmExitPractice()">⬅ 退出</button>
+        <div class="q-progress">共 ${practiceQuestions.length} 题</div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <div class="font-ctrl">
+          <button class="btn btn-outline btn-small" onclick="changeFontSize(-1)">A-</button>
+          <button class="btn btn-outline btn-small" onclick="changeFontSize(1)">A+</button>
+        </div>
+        <button class="btn btn-outline btn-small" onclick="toggleReciteBrowse()">📄 翻页</button>
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem; background:#f0f9ff; color:#0369a1; border-color:#bae6fd;" onclick="openSearch()">🔍 搜题</button>
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
+      </div>
+    </div>
+    <div id="reciteScrollContainer" style="overflow-y:auto; -webkit-overflow-scrolling:touch; height:calc(100vh - 150px); padding-bottom:20px;">`;
+
+  for (var i = 0; i < practiceQuestions.length; i++) {
+    var q = practiceQuestions[i];
+    if (q.type === 'judge' && (!q.options || q.options.length === 0)) q.options = ['正确', '错误'];
+    var typeName = TYPE_NAMES[q.type] || '未知题型';
+    var optsHtml = '';
+    if (isSubjective(q.type)) {
+      var ansText = typeof q.answer === 'string' ? q.answer : (Array.isArray(q.answer) ? q.answer.join('；') : '');
+      optsHtml = `<div class="subjective-answer"><div class="sa-title">📝 参考答案</div><div class="sa-content">${ansText}</div></div>`;
+    } else {
+      for (var j = 0; j < q.options.length; j++) {
+        var isAns = q.answer.indexOf(j) > -1;
+        optsHtml += `<div class="opt ${isAns ? 'correct' : ''} disabled"><div class="opt-prefix">${String.fromCharCode(65+j)}</div><div>${q.options[j]}</div></div>`;
+      }
+    }
+    html += `<div class="card recite-scroll-item" id="recite-item-${i}" data-idx="${i}" style="scroll-margin-top:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span class="tag" style="background:#10b981;">${typeName} · 第 ${i+1} 题</span>
+        <button class="fav-star ${isFav(q)?'on':''}" onclick="toggleFavorite('${qFavKey(q)}','${q.id||''}')">${isFav(q)?'⭐ 已收藏':'☆ 收藏'}</button>
+      </div>
+      <div class="q-text" style="padding-right:0;">${q.question}</div>
+      ${optsHtml}
+      ${buildAnalysisHtml(q, practiceSelections[i] || q.answer, true)}
+    </div>`;
+  }
+  html += `</div>
+    <div id="sheetModal" class="sheet-mask" style="display:none;" onclick="closeSheet(event)">
+      <div class="sheet-content" onclick="event.stopPropagation()">
+        <div class="sheet-title">答题卡 <span style="font-size:0.85rem;color:var(--text-sub);font-weight:normal;">点击题号可跳转</span></div>
+        ${buildSheetHtml(practiceQuestions, practiceIndex, practiceSelections, 'recite')}
+      </div>
+    </div>`;
+  appContainer.innerHTML = html;
+  setTimeout(function() {
+    var el = document.getElementById('recite-item-' + practiceIndex);
+    var container = document.getElementById('reciteScrollContainer');
+    if (el && container) container.scrollTop = el.offsetTop - 10;
+  }, 40);
+  var scrollTimer = null;
+  var container = document.getElementById('reciteScrollContainer');
+  if (container) {
+    container.addEventListener('scroll', function() {
+      if (scrollTimer) clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(function() {
+        var items = container.querySelectorAll('.recite-scroll-item');
+        var bestIdx = 0, bestDist = Infinity;
+        var cTop = container.getBoundingClientRect().top;
+        for (var k = 0; k < items.length; k++) {
+          var r = items[k].getBoundingClientRect();
+          var d = Math.abs(r.top - cTop - 10);
+          if (d < bestDist) { bestDist = d; bestIdx = k; }
+        }
+        if (bestIdx !== practiceIndex) { practiceIndex = bestIdx; savePracticeProgress(); }
+      }, 250);
+    }, { passive: true });
+  }
+}
 function toggleReciteJudge(idx) {
   var q = practiceQuestions[practiceIndex];
   var sels = practiceSelections[practiceIndex] || [];
@@ -1521,7 +1617,7 @@ function closeSheet(e) {
   }
 }
 function jumpPractice(idx) { practiceIndex = idx; closeSheet({target:{id:'sheetModal'}}); savePracticeProgress(); render(); }
-function jumpRecite(idx) { practiceIndex = idx; closeSheet({target:{id:'sheetModal'}}); savePracticeProgress(); render(); }
+function jumpRecite(idx) { practiceIndex = idx; savePracticeProgress(); closeSheet({target:{id:'sheetModal'}}); if (reciteBrowseMode === 'scroll') { setTimeout(function() { var el = document.getElementById('recite-item-' + idx); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 320); } else { render(); } }
 function prevPractice() { if(practiceIndex > 0) { practiceIndex--; savePracticeProgress(); render(); } }
 
 function selectPractice(idx) {
@@ -2103,38 +2199,82 @@ checkNewImport();
 checkAuth();
 setTimeout(restorePracticeProgress, 1500);
 
-// ===== 覆盖旧的 startPractice，加入进度询问 =====
+// ===== 进度恢复公共校验 =====
+function validateResumeQuestions(p) {
+  var list = p.questions;
+  if (p.isWrong) {
+    var wMap = {};
+    for (var wi = 0; wi < wrongBook.length; wi++) wMap[wrongBook[wi].id] = wrongBook[wi];
+    var f1 = [];
+    for (var qi = 0; qi < list.length; qi++) { 
+      var qq = list[qi]; 
+      if (wMap[qq.id]) { 
+        qq.streak = wMap[qq.id].streak || 0; 
+        f1.push(qq); 
+      } 
+    }
+    if (f1.length === 0) { 
+      localStorage.removeItem('xjt_practice_progress'); 
+      showToast('错题已全部掌握，进度已清空', true); 
+      return null; 
+    }
+    list = f1;
+  } else if ((p.source || '') === 'fav') {
+    var f2 = list.filter(function(qq){ return isFav(qq); });
+    if (f2.length === 0) { 
+      localStorage.removeItem('xjt_practice_progress'); 
+      showToast('收藏夹已清空，进度已重置', true); 
+      return null; 
+    }
+    list = f2;
+  } else if (['single','multiple','judge','fill','short','essay'].indexOf(p.source || '') > -1) {
+    var curQs = activeBankId ? allBanks[activeBankId].questions : [];
+    var idSet = {};
+    for (var ci = 0; ci < curQs.length; ci++) { 
+      if (curQs[ci].id != null) idSet[String(curQs[ci].id)] = 1; 
+    }
+    var f3 = list.filter(function(qq){ return qq.id == null || idSet[String(qq.id)]; });
+    if (f3.length === 0) { 
+      localStorage.removeItem('xjt_practice_progress'); 
+      showToast('题库已变更，进度已重置', true); 
+      return null; 
+    }
+    list = f3;
+  }
+  return list;
+}
+
 function startPractice(type) {
   if (!guardGate()) return;
-  
-  // 如果是点击「顺序练习」或「随机练习」，检查是否有未完成进度
-  if ((type === 'all' || type === 'random') && localStorage.getItem('xjt_practice_progress')) {
+  var pStr = localStorage.getItem('xjt_practice_progress');
+  if (pStr) {
     try {
-      var p = JSON.parse(localStorage.getItem('xjt_practice_progress'));
+      var p = JSON.parse(pStr);
       if (p.mode === 'practice' && p.questions && p.questions.length > 0 && p.index < p.questions.length) {
-        showAppConfirm('继续练习', '检测到上次未完成的练习，是否接着上次的进度继续？', '继续', '重新开始', 
-          function() {
-            // 用户选择继续
-            practiceQuestions = p.questions;
-            practiceIndex = p.index;
-            practiceSelections = p.selections;
-            isWrongPracticeMode = p.isWrong;
-            currentMode = 'practice';
-            installBackGuard();
-            render();
-          }, 
-          function() {
-            // 用户选择重新开始
-            localStorage.removeItem('xjt_practice_progress');
-            startPracticeNew(type);
-          }
-        );
-        return; // 拦截，等待用户选择
+        var canResume = (type === 'all' || type === 'random') ? (p.source === 'all' || p.source === 'random') : (p.source === type);
+        if (canResume) {
+          showAppConfirm('继续练习', '检测到上次未完成的练习，是否接着上次的进度继续？', '继续', '重新开始',
+            function() {
+              var valid = validateResumeQuestions(p);
+              if (!valid) return;
+              practiceQuestions = valid;
+              practiceIndex = p.index || 0;
+              if (practiceIndex >= practiceQuestions.length) practiceIndex = 0;
+              practiceSelections = p.selections || [];
+              isWrongPracticeMode = !!p.isWrong;
+              practiceSource = p.source || 'all';
+              currentMode = 'practice'; installBackGuard(); render();
+            },
+            function() { 
+              localStorage.removeItem('xjt_practice_progress'); 
+              startPracticeNew(type); 
+            }
+          );
+          return;
+        }
       }
     } catch(e) {}
   }
-  
-  // 没有旧进度，或不是顺序练习，直接开始新的
   startPracticeNew(type);
 }
 
@@ -2154,12 +2294,132 @@ function startPracticeNew(type) {
     isWrongPracticeMode = false;
   }
   if (practiceQuestions.length === 0) return showToast('该分类下暂无题目', true);
+  practiceSource = type;
   practiceIndex = 0; practiceSelections = [];
   for (var i = 0; i < practiceQuestions.length; i++) {
     practiceQuestions[i].isAnswered = isSubjective(practiceQuestions[i].type);
     if (practiceQuestions[i].streak === undefined) practiceQuestions[i].streak = 0;
   }
   currentMode = 'practice'; savePracticeProgress(); installBackGuard(); render();
+}
+
+function startRecite(type) {
+  if (!guardGate()) return;
+  var qs = activeBankId ? allBanks[activeBankId].questions : [];
+  if (qs.length === 0) return showToast('题库为空', true);
+  var pStr = localStorage.getItem('xjt_practice_progress');
+  if (pStr) {
+    try {
+      var p = JSON.parse(pStr);
+      if (p.mode === 'recite' && p.questions && p.questions.length > 0 && p.index < p.questions.length) {
+        if (p.source === type) {
+          showAppConfirm('继续背题', '检测到上次未完成的背题，是否接着上次的进度继续？', '继续', '重新开始',
+            function() {
+              practiceQuestions = p.questions; practiceIndex = p.index || 0; practiceSelections = p.selections || [];
+              reciteSource = p.source || 'all'; currentMode = 'recite'; installBackGuard(); render();
+            },
+            function() { localStorage.removeItem('xjt_practice_progress'); startReciteNew(type); }
+          );
+          return;
+        }
+      }
+    } catch(e) {}
+  }
+  startReciteNew(type);
+}
+
+function startReciteNew(type) {
+  var qs = activeBankId ? allBanks[activeBankId].questions : [];
+  reciteJudgeFilter = 'all';
+  var allQs = type === 'all' ? qs.slice() : qs.filter(function(q){ return q.type === type; });
+  if (allQs.length === 0) return showToast('该分类下暂无题目', true);
+  practiceQuestions = allQs; practiceIndex = 0; practiceSelections = [];
+  reciteSource = type;
+  for (var i = 0; i < practiceQuestions.length; i++) { practiceQuestions[i].isAnswered = true; }
+  isWrongPracticeMode = false; currentMode = 'recite'; savePracticeProgress(); installBackGuard(); render();
+}
+
+// ★ 背题滑动模式 ★
+function toggleReciteBrowse() {
+  reciteBrowseMode = reciteBrowseMode === 'scroll' ? 'page' : 'scroll';
+  localStorage.setItem('xjt_recite_browse', reciteBrowseMode);
+  render();
+}
+
+function renderReciteScroll() {
+  var html = `
+    <div class="toolbar" style="position:sticky; top:0; z-index:50;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="confirmExitPractice()">⬅ 退出</button>
+        <div class="q-progress">共 ${practiceQuestions.length} 题</div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <div class="font-ctrl">
+          <button class="btn btn-outline btn-small" onclick="changeFontSize(-1)">A-</button>
+          <button class="btn btn-outline btn-small" onclick="changeFontSize(1)">A+</button>
+        </div>
+        <button class="btn btn-outline btn-small" onclick="toggleReciteBrowse()">📄 翻页</button>
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem; background:#f0f9ff; color:#0369a1; border-color:#bae6fd;" onclick="openSearch()">🔍 搜题</button>
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
+      </div>
+    </div>
+    <div id="reciteScrollContainer" style="overflow-y:auto; -webkit-overflow-scrolling:touch; height:calc(100vh - 150px); padding-bottom:20px;">`;
+
+  for (var i = 0; i < practiceQuestions.length; i++) {
+    var q = practiceQuestions[i];
+    if (q.type === 'judge' && (!q.options || q.options.length === 0)) q.options = ['正确', '错误'];
+    var typeName = TYPE_NAMES[q.type] || '未知题型';
+    var optsHtml = '';
+    if (isSubjective(q.type)) {
+      var ansText = typeof q.answer === 'string' ? q.answer : (Array.isArray(q.answer) ? q.answer.join('；') : '');
+      optsHtml = `<div class="subjective-answer"><div class="sa-title">📝 参考答案</div><div class="sa-content">${ansText}</div></div>`;
+    } else {
+      for (var j = 0; j < q.options.length; j++) {
+        var isAns = q.answer.indexOf(j) > -1;
+        optsHtml += `<div class="opt ${isAns ? 'correct' : ''} disabled"><div class="opt-prefix">${String.fromCharCode(65+j)}</div><div>${q.options[j]}</div></div>`;
+      }
+    }
+    html += `<div class="card recite-scroll-item" id="recite-item-${i}" data-idx="${i}" style="scroll-margin-top:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span class="tag" style="background:#10b981;">${typeName} · 第 ${i+1} 题</span>
+        <button class="fav-star ${isFav(q)?'on':''}" onclick="toggleFavorite('${qFavKey(q)}','${q.id||''}')">${isFav(q)?'⭐ 已收藏':'☆ 收藏'}</button>
+      </div>
+      <div class="q-text" style="padding-right:0;">${q.question}</div>
+      ${optsHtml}
+      ${buildAnalysisHtml(q, practiceSelections[i] || q.answer, true)}
+    </div>`;
+  }
+  html += `</div>
+    <div id="sheetModal" class="sheet-mask" style="display:none;" onclick="closeSheet(event)">
+      <div class="sheet-content" onclick="event.stopPropagation()">
+        <div class="sheet-title">答题卡 <span style="font-size:0.85rem;color:var(--text-sub);font-weight:normal;">点击题号可跳转</span></div>
+        ${buildSheetHtml(practiceQuestions, practiceIndex, practiceSelections, 'recite')}
+      </div>
+    </div>`;
+  appContainer.innerHTML = html;
+  setTimeout(function() {
+    var el = document.getElementById('recite-item-' + practiceIndex);
+    var container = document.getElementById('reciteScrollContainer');
+    if (el && container) container.scrollTop = el.offsetTop - 10;
+  }, 40);
+  var scrollTimer = null;
+  var container = document.getElementById('reciteScrollContainer');
+  if (container) {
+    container.addEventListener('scroll', function() {
+      if (scrollTimer) clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(function() {
+        var items = container.querySelectorAll('.recite-scroll-item');
+        var bestIdx = 0, bestDist = Infinity;
+        var cTop = container.getBoundingClientRect().top;
+        for (var k = 0; k < items.length; k++) {
+          var r = items[k].getBoundingClientRect();
+          var d = Math.abs(r.top - cTop - 10);
+          if (d < bestDist) { bestDist = d; bestIdx = k; }
+        }
+        if (bestIdx !== practiceIndex) { practiceIndex = bestIdx; savePracticeProgress(); }
+      }, 250);
+    }, { passive: true });
+  }
 }
 </script>
 </body>
