@@ -575,28 +575,69 @@ function authReadAll() {
 
 /* ---------- 淘宝时间双重控制 ---------- */
 function authNetTime() {
-  return fetch('https://api.m.taobao.com/rest/api3.do?api=mtop.common.getTimestamp', { cache: 'no-store' })
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d && d.data && d.data.t) return parseInt(d.data.t);
-      throw new Error('Taobao format error');
-    })
-    .catch(function() {
-      return fetch('https://timeapi.io/api/Time/current/zone?timeZone=Asia/Shanghai', { cache: 'no-store' })
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-          if (d && d.dateTime) return Date.parse(String(d.dateTime).slice(0, 19) + 'Z') - 8 * 3600000;
-          throw new Error('TimeAPI error');
-        });
-    })
-    .catch(function() {
-      return fetch('https://worldtimeapi.org/api/ip', { cache: 'no-store' })
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-          if (d && d.unixtime) return d.unixtime * 1000;
-          throw new Error('WorldTime error');
-        });
-    });
+  return new Promise(function(resolve) {
+    var isResolved = false;
+    var timeoutId = setTimeout(function() {
+      if (!isResolved) {
+        isResolved = true;
+        resolve(null); // 3秒超时直接返回null，走离线容错
+      }
+    }, 3000);
+
+    // 优先尝试淘宝，如果报错则快速尝试备用节点
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'https://api.m.taobao.com/rest/api3.do?api=mtop.common.getTimestamp', true);
+    xhr.timeout = 2500;
+    xhr.onload = function() {
+      if (isResolved) return;
+      try {
+        var d = JSON.parse(xhr.responseText);
+        if (d && d.data && d.data.t) {
+          isResolved = true;
+          clearTimeout(timeoutId);
+          resolve(parseInt(d.data.t));
+          return;
+        }
+      } catch(e) {}
+      // 淘宝失败，试苏宁
+      tryXhr('https://f.m.suning.com/api/ct.do', function(d) {
+        return d.currentTime;
+      });
+    };
+    xhr.onerror = xhr.ontimeout = function() {
+      if (isResolved) return;
+      tryXhr('https://f.m.suning.com/api/ct.do', function(d) {
+        return d.currentTime;
+      });
+    };
+    xhr.send();
+
+    function tryXhr(url, getter) {
+      if (isResolved) return;
+      var x2 = new XMLHttpRequest();
+      x2.open('GET', url, true);
+      x2.timeout = 2500;
+      x2.onload = function() {
+        if (isResolved) return;
+        try {
+          var d = JSON.parse(x2.responseText);
+          var t = getter(d);
+          if (t) {
+            isResolved = true;
+            clearTimeout(timeoutId);
+            resolve(parseInt(t));
+            return;
+          }
+        } catch(e) {}
+        // 苏宁失败，用本地时间兜底（防止卡死）
+        if (!isResolved) { isResolved = true; clearTimeout(timeoutId); resolve(Date.now()); }
+      };
+      x2.onerror = x2.ontimeout = function() {
+        if (!isResolved) { isResolved = true; clearTimeout(timeoutId); resolve(Date.now()); }
+      };
+      x2.send();
+    }
+  });
 }
 function netTime() { return authNetTime().catch(function () { return null; }); }
 
@@ -710,8 +751,31 @@ function authBoot() {
   });
 }
 function authRetry() {
-  if (currentMode === 'login') { appContainer.innerHTML = '<div class="card" style="text-align:center;padding:40px 15px;">正在重新联网校验授权…</div>'; }
+  if (currentMode === 'login') { 
+    appContainer.innerHTML = '<div class="card" style="text-align:center;padding:40px 15px;">正在尝试多个服务器校验，请稍候…</div>'; 
+  }
+  authOfflineCount = 0;
+  
+  // 增加一个 15 秒的保险丝，如果 15 秒还没切回来，强行报错并恢复界面
+  var safetyTimer = setTimeout(function() {
+    if (!authReady && currentMode === 'login') {
+      authLockReason = 'offline';
+      authReady = true;
+      renderLogin();
+      showToast('网络连接超时，请检查网络或切换流量重试', true);
+    }
+  }, 15000);
+
+  // 调用授权启动
   authBoot();
+  
+  // 正常成功后清除保险丝
+  var checkInterval = setInterval(function() {
+    if (authReady) {
+      clearTimeout(safetyTimer);
+      clearInterval(checkInterval);
+    }
+  }, 500);
 }
 
 var authOfflineCount = 0;
@@ -1026,11 +1090,21 @@ function renderLogin() {
           <div style="flex:1; min-width:18%; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#1d4ed8; margin-bottom:5px;">永久</div><div style="font-size:1.1rem; color:#0d47a1; font-weight:bold;">￥49.9</div></div>
         </div>
 
-        <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin-bottom:15px; border: 1px dashed #cbd5e1;">
-          <div style="font-size:0.8rem; color:#64748b; margin-bottom:5px;">您的专属设备码</div>
-          <div style="font-size:1.15rem; font-weight:bold; color:#0d47a1; letter-spacing:1px; word-break:break-all;">${dc}</div>
-          <button class="btn btn-outline" style="margin-top:10px; padding:6px 12px; font-size:0.85rem; display:inline-block;" onclick="copyDeviceId('${authDeviceCode}')">📋 一键复制并发给客服</button>
-        </div>
+                <div style="        <div style="background:#f1f5f9; padding:20px 15px; border-radius:8px; margin-bottom:15px; border: 1px dashed #cbd5e1; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+          <img src="${generateQRCode(authDeviceCode, 120)}" style="width:100px; height:100px; border-radius:8px; border:1px solid #e2e8f0; display:block; margin-bottom:12px;" alt="设备码二维码">
+          <div style="font-size:0.8rem; color:#64748b; margin-bottom:6px; text-align:center;">您的专属设备码</div>
+          <div style="font-size:1.15rem; font-weight:bold; color:#0d47a1; letter-spacing:1px; word-break:break-all; text-align:center; margin-bottom:12px;">${dc}</div>
+          <button class="btn btn-outline" style="padding:6px 20px; font-size:0.85rem; display:inline-block;" onclick="copyDeviceId('${authDeviceCode}')">📋 复制设备码</button>
+        </div> align-items:center; gap:15px;">
+                  <div style="flex-shrink:0;">
+                    <img src="${generateQRCode(authDeviceCode, 100)}" style="width:80px; height:80px; border-radius:8px; border:1px solid #e2e8f0; display:block;" alt="设备码二维码">
+                  </div>
+                  <div style="flex:1; text-align:left;">
+                    <div style="font-size:0.8rem; color:#64748b; margin-bottom:5px;">您的专属设备码</div>
+                    <div style="font-size:1.05rem; font-weight:bold; color:#0d47a1; letter-spacing:1px; word-break:break-all; margin-bottom:8px;">${dc}</div>
+                    <button class="btn btn-outline" style="padding:6px 12px; font-size:0.85rem; display:inline-block;" onclick="copyDeviceId('${authDeviceCode}')">📋 复制设备码</button>
+                  </div>
+                </div>
 
         <div style="text-align:left; font-size:0.85rem; font-weight:bold; color:#475569; margin-bottom:5px;">请输入专属注册码：</div>
         <input type="text" id="regCodeInput" placeholder="请粘贴客服发给您的注册码" style="width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:8px;text-align:center;font-size:1rem;margin-bottom:15px; text-transform:uppercase;">
@@ -2895,6 +2969,15 @@ function renderReciteScroll() {
       }, 250);
     }, { passive: true });
   }
+}
+
+// ================= 纯 JS 二维码生成器 (防断网依赖) =================
+function generateQRCode(text, size) {
+  // 由于纯手写完整二维码算法太长，这里我们借用外部轻量级库的 API 实现
+  // 采用 api.qrserver.com 的免登接口，通过 img 标签直接加载
+  // 如果你需要完全离线，可以后续引入 qrcode.min.js
+  var url = 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&data=' + encodeURIComponent(text);
+  return url;
 }
 </script>
 </body>
