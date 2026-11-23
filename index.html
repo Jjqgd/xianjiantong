@@ -872,7 +872,7 @@ var examConfig = {
   scoreSingle: 2, scoreMultiple: 4, scoreJudge: 2, scoreFill: 5, scoreShort: 10, scoreEssay: 20,
   timeLimit: 60, passScore: -1
 };
-
+var similarQMode = localStorage.getItem('xjt_similar_q_mode') === '1'; // 默认关闭
 var examScore = { got: 0, total: 0, usedTime: '0分0秒' };
 var examTimer = null, examStartTime = 0, examRemainingSeconds = 0;
 var examAborted = false; var reciteJudgeFilter = 'all'; var searchKeyword = ''; var searchType = 'all';
@@ -1919,7 +1919,12 @@ function renderPractice() {
         <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="confirmExitPractice()">⬅ 退出</button>
         <div class="q-progress" style="font-size:0.9rem;">${practiceIndex+1} / ${practiceQuestions.length}</div>
       </div>
-      <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
+     <div style="display:flex; align-items:center; gap:8px;">
+       <label style="display:flex; align-items:center; font-size:0.75rem; color:var(--text-sub); cursor:pointer;">
+         <input type="checkbox" id="similarQToggle" onchange="toggleSimilarQMode(this.checked)" ${similarQMode?'checked':''} style="margin-right:4px; transform:scale(1.2);"> 相似提醒
+       </label>
+       <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
+     </div>
     </div>
     <div class="card" style="position:relative;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -1960,31 +1965,49 @@ function renderPractice() {
       </div>
     </div>
   `;
-    // ★ 新增：相似题对比提醒
-    setTimeout(function() {
-      var similar = findSimilarQuestions(q);
-      if (similar.length > 0) {
-        var simHtml = '';
-        for (var s = 0; s < similar.length && s < 3; s++) { // 最多显示3道
-          simHtml += `<div style="background:#f8fafc; border:1px solid #e2e8f0; padding:10px; border-radius:8px; margin-bottom:10px; font-size:0.9rem;">
-            <div style="color:#dc2626; font-weight:bold; margin-bottom:5px; font-size:0.8rem;">相似度：${similar[s].score}%</div>
-            <div style="color:#334155; line-height:1.5;">${similar[s].q.question}</div>
-          </div>`;
+      // ★ 相似题对比提醒（只在未作答时弹一次）
+      if (similarQMode && !q.isAnswered) {
+        var currentQText = q.question;
+        if (window._lastSimilarCheckedQ !== currentQText) {
+          window._lastSimilarCheckedQ = currentQText;
+          setTimeout(function() {
+            try {
+              if (document.getElementById('simModalMask')) return;
+              var similar = findSimilarQuestions(q);
+              if (similar.length > 0) {
+                var simHtml = '';
+                for (var s = 0; s < similar.length && s < 3; s++) {
+                  simHtml += `<div style="background:#f8fafc; border:1px solid #e2e8f0; padding:10px; border-radius:8px; margin-bottom:10px; font-size:0.9rem;">
+                    <div style="color:#dc2626; font-weight:bold; margin-bottom:5px; font-size:0.8rem;">相似度：${similar[s].score}%</div>
+                    <div style="color:#334155; line-height:1.5;">${similar[s].q.question}</div>
+                  </div>`;
+                }
+                var mask = document.createElement('div');
+                mask.className = 'app-mask';
+                mask.id = 'simModalMask';
+                mask.innerHTML = `<div class="app-box" style="max-width:340px; text-align:left;">
+                  <h3 style="text-align:center; margin-bottom:15px; color:#b71c1c;">⚠️ 发现高相似度题目</h3>
+                  <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">请仔细对比当前题与以下题目，避免混淆：</p>
+                  <div style="max-height:250px; overflow-y:auto; padding-right:5px;">${simHtml}</div>
+                  <div class="actions" style="margin-top:20px;">
+                    <button class="btn btn-primary btn-block" onclick="document.body.removeChild(document.getElementById('simModalMask'))">我已看清，继续答题</button>
+                  </div>
+                </div>`;
+                document.body.appendChild(mask);
+              }
+            } catch(e) {}
+          }, 300);
         }
-        
-        var mask = document.createElement('div');
-        mask.className = 'app-mask';
-        mask.innerHTML = `<div class="app-box" style="max-width:340px; text-align:left;">
-          <h3 style="text-align:center; margin-bottom:15px; color:#b71c1c;">⚠️ 发现高相似度题目</h3>
-          <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">请仔细对比当前题与以下题目，避免混淆：</p>
-          <div style="max-height:250px; overflow-y:auto; padding-right:5px;">${simHtml}</div>
-          <div class="actions" style="margin-top:20px;">
-            <button class="btn btn-primary btn-block" onclick="document.body.removeChild(this.closest('.app-mask'))">我已看清，继续答题</button>
-          </div>
-        </div>`;
-        document.body.appendChild(mask);
       }
-    }, 300); // 延迟300ms弹出，不影响页面渲染
+	function toggleSimilarQMode(isChecked) {
+	  similarQMode = isChecked;
+	  localStorage.setItem('xjt_similar_q_mode', isChecked ? '1' : '0');
+	  showToast(isChecked ? '已开启相似题提醒' : '已关闭相似题提醒');
+	  if (!isChecked) {
+	    var mask = document.getElementById('simModalMask');
+	    if (mask) mask.remove();
+	  }
+	}
 }
 
 function renderRecite() {
@@ -2037,7 +2060,7 @@ function renderRecite() {
       </div>
       <div style="display:flex; gap:8px; align-items:center;">
         <button class="btn btn-outline btn-small" onclick="toggleReciteBrowse()">📜 滑动</button>
-        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem; background:#f0f9ff; color:#0369a1; border-color:#bae6fd;" onclick="openSearch()">🔍 搜题</button>
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem; background:#f0f9ff; color:#0369a1; border-color:#bae6fd;" 
         <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
 		          <!-- ★ 新增：加入对比按钮 -->
 		          <button class="btn btn-outline btn-small" style="padding:4px 8px; border-color:#cbd5e1;" onclick="toggleCompareBook(practiceQuestions[practiceIndex])">
@@ -3416,11 +3439,16 @@ function renderReciteScroll() {
       </div>`;
     }
 
-    html += `<div class="card recite-scroll-item" id="recite-item-${i}" data-idx="${i}" style="scroll-margin-top:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <span class="tag" style="background:#10b981; margin-bottom:0;">${typeName} · 第 ${i+1} 题</span>
-        <button class="fav-star ${isFav(q)?'on':''}" style="float:none; margin:0;" onclick="toggleFavorite('${qFavKey(q)}','${q.id||''}')">${isFav(q)?'⭐ 已收藏':'☆ 收藏'}</button>
-      </div>
+      html += `<div class="card recite-scroll-item" id="recite-item-${i}" data-idx="${i}" style="scroll-margin-top:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span class="tag" style="background:#10b981; margin-bottom:0;">${typeName} · 第 ${i+1} 题</span>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <button class="btn btn-outline btn-small" style="padding:4px 8px; font-size:0.75rem; border-color:#cbd5e1;" onclick="toggleCompareBook(practiceQuestions[${i}])">
+              ${compareBook.some(function(cq){ return getQKeyForNote(cq) === getQKeyForNote(q); }) ? '⚖️ 已对比' : '⚖️ 对比'}
+            </button>
+            <button class="fav-star ${isFav(q)?'on':''}" style="float:none; margin:0;" onclick="toggleFavorite('${qFavKey(q)}','${q.id||''}')">${isFav(q)?'⭐ 已收藏':'☆ 收藏'}</button>
+          </div>
+        </div>
       ${corrBanner}
       <div class="q-text" style="padding-right:0;">${qTextHtml}</div>
       ${noteHtml}
@@ -3597,7 +3625,7 @@ function renderReviewPage() {
       <div class="toolbar" style="padding:10px;">
         <div style="display:flex; align-items:center; gap:10px;">
           <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="currentMode='home';render()">⬅ 返回</button>
-          <div class="q-progress" style="font-size:0.9rem;">${window.reviewPageIndex+1} / ${currentWrong.length}</div>
+          <div class="q-progress" style="font-size:0.9rem; white-space:nowrap;">错题本 (${currentWrong.length})</div>
         </div>
         <div style="display:flex; gap:6px; align-items:center;">
 		<button class="btn btn-danger btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="clearAllWrong()">🗑️ 剔除</button>
