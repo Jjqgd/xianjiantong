@@ -75,7 +75,7 @@
   .btn-green { background: #10b981; color: #fff; }
   .btn-small { padding: 6px 10px; font-size: 0.8rem; }
 
-  .toolbar { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 10px 15px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 10px 15px; border-radi;}
   .timer { font-family: monospace; font-size: 1.1rem; font-weight: bold; color: #ef4444; }
   .q-progress { font-size: 0.85rem; color: var(--text-sub); font-weight: bold; }
 
@@ -1255,7 +1255,7 @@ var tomatoHtml = `
                   <div class="menu-btn" onclick="startExamSetup()">📝 模拟考试</div>
                   <div class="menu-btn" onclick="startPractice('wrong')">🔥 错题集训</div>
                   <div class="menu-btn" onclick="openReview()">📑 错题查看</div>
-				  <div class="menu-btn" onclick="openCompareView()">⚖️ 易混错题对比本</div>
+				  <div class="menu-btn" onclick="openCompareView()">⚖️ 易混题对比本</div>
                   <div class="menu-btn" onclick="startPractice('fav')">⭐ 收藏集训</div>
                   <div class="menu-btn" onclick="openFavReview()">🔖 收藏查看</div>
                   <div class="menu-btn" onclick="openStudyStats()">📈 学习数据</div>
