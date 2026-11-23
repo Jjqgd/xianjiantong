@@ -75,15 +75,18 @@
   .btn-green { background: #10b981; color: #fff; }
   .btn-small { padding: 6px 10px; font-size: 0.8rem; }
 
-  .toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 10px 15px; border-radi;}
+  .toolbar { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 10px 15px; border-radi;}
   .timer { font-family: monospace; font-size: 1.1rem; font-weight: bold; color: #ef4444; }
   .q-progress { font-size: 0.85rem; color: var(--text-sub); font-weight: bold; }
 
-  .sheet-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.6); z-index: 999; display: flex; align-items: flex-end; transition: opacity 0.2s; }
+  .sheet-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.6); z-index: 999; display: none; align-items: fl
+  }
+  .sheet-mask.show {
+    display: flex;
+	 }
   .sheet-content { background: var(--bg-color); width: 100%; max-height: 75vh; border-radius: 20px 20px 0 0; padding: 20px; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s; }
   .sheet-mask.show .sheet-content { transform: translateY(0); }
   .sheet-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
-
   .acc-group { margin-bottom: 12px; background: var(--card-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); }
   .acc-header { padding: 12px 15px; background: var(--input-bg); font-weight: bold; font-size: 0.95rem; color: #0d47a1; display: flex; justify-content: space-between; cursor: pointer; }
   .acc-header span { font-size: 0.8rem; color: var(--text-sub); font-weight: normal; }
@@ -240,6 +243,19 @@
 .result-mao-text { font-family:'MaoTi','STXingkai','KaiTi',cursive; color:#d32f2f; font-weight:bold; font-size:1.35rem; line-height:1.75; text-align:center; padding:14px 8px; margin:10px 0 4px; border-top:2px dashed rgba(211,47,47,0.25); border-bottom:2px dashed rgba(211,47,47,0.25); }
 .result-mao-text.full { color:#b71c1c; }
 .recite-scroll-item { margin-bottom: 14px; } #reciteScrollContainer { -webkit-overflow-scrolling: touch; }
+/* 仅错题本工具栏 右边分两行 */
+.toolbar-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: flex-end;
+}
+.toolbar-row {
+  display: flex;
+  gap: 6px;
+}
+
+
 </style>
 <body>
 
@@ -2394,13 +2410,18 @@ function renderReview() {
         <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="currentMode='home';render()">⬅ 返回</button>
         <div class="q-progress" style="font-size:0.9rem;">错题本 (${currentWrong.length})</div>
       </div>
-      <div style="display:flex; gap:6px; align-items:center;">
-	  <button class="btn btn-danger btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="clearAllWrong()">🗑️ 剔除</button>
-        <button class="btn btn-outline btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="exportWrongToPrint()">🖨️ 导出</button>
-        <button class="btn btn-outline btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="toggleReviewBrowse()">📄 翻页</button>
-        <button class="btn btn-outline btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="openReviewSheet()">答题卡</button>
+      <div class="toolbar-right-col">
+        <div class="toolbar-row">
+          <button class="btn btn-danger btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="clearAllWrong()">🗑️ 剔除</button>
+          <button class="btn btn-outline btn-small" onclick="exportWrongToPrint()">🖨️ 导出</button>
+        </div>
+        <div class="toolbar-row">
+          <button class="btn btn-outline btn-small" onclick="toggleReviewBrowse()">📄 翻页</button>
+          <button class="btn btn-outline btn-small" onclick="openReviewSheet()">答题卡</button>
+        </div>
       </div>
     </div>`;
+
 
     html += `<div id="reviewScrollContainer" style="overflow-y:auto; -webkit-overflow-scrolling:touch; height:calc(100vh - 140px); padding-bottom:20px;">`;
     for (var i = 0; i < currentWrong.length; i++) {
@@ -2542,9 +2563,9 @@ function renderExamSetup() {
         </div>`;
       }).join('');
 
-  function sw(id, checked, label){
-    return `<div class="setting-row" style="margin:0; padding:10px 12px; flex:1;"><span style="font-size:0.85rem;">${label}</span><label class="switch" style="transform:scale(0.85); transform-origin:right center;"><input type="checkbox" id="${id}" ${checked?'checked':''} onchange="toggleCrossBankMode()"><span class="slider"></span></label></div>`;
-  }
+function sw(id, checked, label, onChangeFn){
+  return `<div class="setting-row" style="margin:0; padding:10px 12px; flex:1;"><span style="font-size:0.85rem;">${label}</span><label class="switch" style="transform:scale(0.85); transform-origin:right center;"><input type="checkbox" id="${id}" ${checked?'checked':''} onchange="${onChangeFn}"><span class="slider"></span></label></div>`;
+}
 
   // 生成题库占比输入界面
   var bankCheckboxHtml = '';
@@ -2580,7 +2601,7 @@ function renderExamSetup() {
       <div style="font-size:0.85rem;color:var(--text-sub);margin-bottom:10px;">当前抽题池共 ${qs.length} 题。</div>
       
       <div style="display:flex; gap:10px; margin-bottom:15px;">
-        ${sw('ex_cross', crossBankExamMode, '启用跨题库混合组卷')}
+        ${sw('ex_cross', crossBankExamMode, '启用跨题库混合组卷', 'toggleCrossBankMode()')}
       </div>
       
       ${bankCheckboxHtml}
@@ -2597,11 +2618,11 @@ function renderExamSetup() {
 
       <div style="font-weight:bold;font-size:0.95rem;margin:14px 0 10px;">考试规则</div>
       <div style="display:flex; gap:10px; margin-bottom:10px;">
-        ${sw('ex_instant', examInstantFeedback, '答题即时反馈')}
-        ${sw('ex_preferWrong', examPreferWrong, '错题优先')}
+        ${sw('ex_instant', examInstantFeedback, '答题即时反馈', 'toggleExamInstantFeedback(this.checked)')}
+        ${sw('ex_preferWrong', examPreferWrong, '错题优先', 'toggleExamPreferWrong(this.checked)')}
       </div>
       <div style="display:flex; gap:10px; margin-bottom:15px;">
-        ${sw('ex_preferUndone', examPreferUndone, '未做题优先')}
+        ${sw('ex_preferUndone', examPreferUndone, '未做题优先', 'toggleExamPreferUndone(this.checked)')}
       </div>
       
       <div style="display:flex; gap:10px; margin-top:10px;">
