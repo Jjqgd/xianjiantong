@@ -888,7 +888,6 @@ var examConfig = {
   scoreSingle: 2, scoreMultiple: 4, scoreJudge: 2, scoreFill: 5, scoreShort: 10, scoreEssay: 20,
   timeLimit: 60, passScore: -1
 };
-var similarQMode = localStorage.getItem('xjt_similar_q_mode') === '1'; // 默认关闭
 var examScore = { got: 0, total: 0, usedTime: '0分0秒' };
 var examTimer = null, examStartTime = 0, examRemainingSeconds = 0;
 var examAborted = false; var reciteJudgeFilter = 'all'; var searchKeyword = ''; var searchType = 'all';
@@ -1936,9 +1935,7 @@ function renderPractice() {
         <div class="q-progress" style="font-size:0.9rem;">${practiceIndex+1} / ${practiceQuestions.length}</div>
       </div>
      <div style="display:flex; align-items:center; gap:8px;">
-       <label style="display:flex; align-items:center; font-size:0.75rem; color:var(--text-sub); cursor:pointer;">
-         <input type="checkbox" id="similarQToggle" onchange="toggleSimilarQMode(this.checked)" ${similarQMode?'checked':''} style="margin-right:4px; transform:scale(1.2);"> 相似提醒
-       </label>
+       <button class="btn btn-danger btn-small" style="padding:6px 10px;font-size:0.75rem;" onclick="openSimilarModal()">🔎 查找相似题目</button>
        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="openSheet()">答题卡</button>
      </div>
     </div>
@@ -1981,49 +1978,55 @@ function renderPractice() {
       </div>
     </div>
   `;
-      // ★ 相似题对比提醒（只在未作答时弹一次）
-      if (similarQMode && !q.isAnswered) {
-        var currentQText = q.question;
-        if (window._lastSimilarCheckedQ !== currentQText) {
-          window._lastSimilarCheckedQ = currentQText;
-          setTimeout(function() {
-            try {
-              if (document.getElementById('simModalMask')) return;
-              var similar = findSimilarQuestions(q);
-              if (similar.length > 0) {
-                var simHtml = '';
-                for (var s = 0; s < similar.length && s < 3; s++) {
-                  simHtml += `<div style="background:#f8fafc; border:1px solid #e2e8f0; padding:10px; border-radius:8px; margin-bottom:10px; font-size:0.9rem;">
-                    <div style="color:#dc2626; font-weight:bold; margin-bottom:5px; font-size:0.8rem;">相似度：${similar[s].score}%</div>
-                    <div style="color:#334155; line-height:1.5;">${similar[s].q.question}</div>
-                  </div>`;
-                }
-                var mask = document.createElement('div');
-                mask.className = 'app-mask';
-                mask.id = 'simModalMask';
-                mask.innerHTML = `<div class="app-box" style="max-width:340px; text-align:left;">
-                  <h3 style="text-align:center; margin-bottom:15px; color:#b71c1c;">⚠️ 发现高相似度题目</h3>
-                  <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">请仔细对比当前题与以下题目，避免混淆：</p>
-                  <div style="max-height:250px; overflow-y:auto; padding-right:5px;">${simHtml}</div>
-                  <div class="actions" style="margin-top:20px;">
-                    <button class="btn btn-primary btn-block" onclick="document.body.removeChild(document.getElementById('simModalMask'))">我已看清，继续答题</button>
-                  </div>
-                </div>`;
-                document.body.appendChild(mask);
-              }
-            } catch(e) {}
-          }, 300);
-        }
-      }
-	function toggleSimilarQMode(isChecked) {
-	  similarQMode = isChecked;
-	  localStorage.setItem('xjt_similar_q_mode', isChecked ? '1' : '0');
-	  showToast(isChecked ? '已开启相似题提醒' : '已关闭相似题提醒');
-	  if (!isChecked) {
-	    var mask = document.getElementById('simModalMask');
-	    if (mask) mask.remove();
-	  }
-	}
+}
+
+// ★ 查找相似题目：点击按钮后才弹窗，不再自动弹出
+function openSimilarModal() {
+  var q = practiceQuestions[practiceIndex];
+  if (!q) return;
+  var old = document.getElementById('simModalMask');
+  if (old) old.remove();
+  var similar = findSimilarQuestions(q);
+  if (!similar || similar.length === 0) {
+    showToast('未找到高相似度题目');
+    return;
+  }
+  var simHtml = '';
+  for (var s = 0; s < similar.length && s < 3; s++) {
+    var sq = similar[s].q;
+    if (sq.type === 'judge' && (!sq.options || sq.options.length === 0)) sq.options = ['正确', '错误'];
+    var optsHtml = '';
+    if (isSubjective(sq.type)) {
+      var ansText = typeof sq.answer === 'string' ? sq.answer : (sq.answer || []).join('；');
+      optsHtml = `<div style="margin-top:8px; font-size:0.82rem; color:#334155; line-height:1.5;">📝 参考答案：${ansText}</div>`;
+    } else if (sq.options && sq.options.length) {
+      optsHtml = '<div style="margin-top:8px;">' + sq.options.map(function(opt, j) {
+        var isAns = sq.answer && sq.answer.indexOf(j) > -1;
+        var bg = isAns ? 'background:#fef2f2;color:#b71c1c;font-weight:bold;border:1px solid #fecaca;' : 'background:#f8fafc;color:#334155;border:1px solid #e2e8f0;';
+        return `<div style="padding:6px 8px;border-radius:6px;margin-bottom:5px;font-size:0.82rem;${bg}">${String.fromCharCode(65+j)}. ${opt}${isAns?' ✔':''}</div>`;
+      }).join('') + '</div>';
+    }
+    simHtml += `<div style="background:#f8fafc; border:1px solid #e2e8f0; padding:10px; border-radius:8px; margin-bottom:10px; font-size:0.9rem;">
+      <div style="color:#dc2626; font-weight:bold; margin-bottom:5px; font-size:0.8rem;">相似度：${similar[s].score}%</div>
+      <div style="color:#334155; line-height:1.5;">${sq.question}</div>
+      <details style="margin-top:8px;">
+        <summary style="cursor:pointer; color:#0d47a1; font-size:0.8rem; font-weight:bold;">查看选项与答案 ▾</summary>
+        ${optsHtml}
+      </details>
+    </div>`;
+  }
+  var mask = document.createElement('div');
+  mask.className = 'app-mask';
+  mask.id = 'simModalMask';
+  mask.innerHTML = `<div class="app-box" style="max-width:340px; text-align:left;">
+    <h3 style="text-align:center; margin-bottom:15px; color:#b71c1c;">🔎 高相似度题目</h3>
+    <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">共找到 ${similar.length} 道相似题，点击"查看选项与答案"展开：</p>
+    <div style="max-height:250px; overflow-y:auto; padding-right:5px;">${simHtml}</div>
+    <div class="actions" style="margin-top:20px;">
+      <button class="btn btn-primary btn-block" onclick="document.body.removeChild(document.getElementById('simModalMask'))">关闭</button>
+    </div>
+  </div>`;
+  document.body.appendChild(mask);
 }
 
 function renderRecite() {
@@ -2273,13 +2276,18 @@ function renderReview() {
     var targetStreak = parseInt(localStorage.getItem('xjt_streak_target')) || 5;
     var html = `<div class="toolbar" style="padding:10px;">
       <div style="display:flex; align-items:center; gap:10px;">
-        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="currentMode='home';render()">⬅ 返回</button>
+        <button class="btn btn-outline btn-small" style="padding:6px 12px;font-size:0.85rem;" onclick="currentMode='home';render()">⬅ 返回</button>
         <div class="q-progress" style="font-size:0.9rem;">错题本 (${currentWrong.length})</div>
       </div>
-      <div style="display:flex; gap:8px; align-items:center;">
-	  <button class="btn btn-outline btn-small" onclick="exportWrongToPrint()">🖨️ 导出打印</button>
-        <button class="btn btn-outline btn-small" onclick="toggleReviewBrowse()">📄 翻页</button>
-        <button class="btn btn-outline btn-small" onclick="openReviewSheet()">答题卡</button>
+      <div class="toolbar-right-col">
+        <div class="toolbar-row">
+          <button class="btn btn-danger btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="clearAllWrong()">🗑️ 剔除</button>
+          <button class="btn btn-outline btn-small" onclick="exportWrongToPrint()">🖨️ 导出</button>
+        </div>
+        <div class="toolbar-row">
+          <button class="btn btn-outline btn-small" onclick="toggleReviewBrowse()">📄 翻页</button>
+          <button class="btn btn-outline btn-small" onclick="openReviewSheet()">答题卡</button>
+        </div>
       </div>
     </div>`;
 
