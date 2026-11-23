@@ -6,7 +6,7 @@
 <title>铁途学练</title>
 <link rel="icon" href="logo.png">
 <script src="xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="html2pdf.bundle.min.js"></script>
 <style>
   @font-face { font-family: 'MaoTi'; src: url('font.ttf') format('truetype'); font-weight: bold; font-style: normal; font-display: swap; }
   :root { --bg-color: #f0f4f8; --card-bg: #ffffff; --text-main: #1e293b; --text-sub: #64748b; --border-color: #e2e8f0; --input-bg: #f8fafc; }
@@ -69,7 +69,8 @@
   .btn { border: none; border-radius: 8px; padding: 12px 15px; font-size: 0.95rem; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; white-space: nowrap; }
   .btn:active { opacity: 0.8; }
   .btn-primary { background: #0d47a1; color: #fff; }
-  .btn-danger { background: #b71c1c; color: #fff; }
+  .btn-danger { background: #b71c1c; color: #fff; border: 1px solid transparent; }
+  .btn-danger-ghost { background: var(--input-bg); border: 1px solid #b71c1c; color: #ef4444; }
   .btn-outline { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); }
   .btn-block { width: 100%; margin-top: 10px; }
   .btn-green { background: #10b981; color: #fff; }
@@ -243,7 +244,7 @@
 .result-mao-text { font-family:'MaoTi','STXingkai','KaiTi',cursive; color:#d32f2f; font-weight:bold; font-size:1.35rem; line-height:1.75; text-align:center; padding:14px 8px; margin:10px 0 4px; border-top:2px dashed rgba(211,47,47,0.25); border-bottom:2px dashed rgba(211,47,47,0.25); }
 .result-mao-text.full { color:#b71c1c; }
 .recite-scroll-item { margin-bottom: 14px; } #reciteScrollContainer { -webkit-overflow-scrolling: touch; }
-/* 仅错题本工具栏 右边分两行 */
+/* 错题本工具栏 右边分两行 */
 .toolbar-right-col {
   display: flex;
   flex-direction: column;
@@ -254,7 +255,6 @@
   display: flex;
   gap: 6px;
 }
-
 
 </style>
 <body>
@@ -315,10 +315,28 @@ function toggleDarkMode() {
   }
 }
 
+function applyEyeCareVars(on) {
+  if (on) {
+    document.documentElement.style.setProperty('--bg-color', '#C7EDCC');
+    document.documentElement.style.setProperty('--card-bg', '#e0f2e9');
+    document.documentElement.style.setProperty('--input-bg', '#d1e7dd');
+    document.documentElement.style.setProperty('--text-main', '#1e293b');
+    document.documentElement.style.setProperty('--border-color', '#b0c4b1');
+  } else {
+    document.documentElement.style.setProperty('--bg-color', '#f0f4f8');
+    document.documentElement.style.setProperty('--card-bg', '#ffffff');
+    document.documentElement.style.setProperty('--input-bg', '#f8fafc');
+    document.documentElement.style.setProperty('--text-main', '#1e293b');
+    document.documentElement.style.setProperty('--border-color', '#e2e8f0');
+  }
+}
+
 function initDarkMode() {
   try {
-    if (typeof isEyeCareMode !== 'undefined' && isEyeCareMode) {
+    if (localStorage.getItem('xjt_eye_care') === '1') {
+      isEyeCareMode = true;
       document.body.classList.add('eye-care-mode');
+      applyEyeCareVars(true);
     }
 
     var savedMode = localStorage.getItem('xjt_dark_mode');
@@ -449,13 +467,13 @@ var splashDelay = 4800;
 setTimeout(function() { document.getElementById('splash-screen').classList.add('hidden'); }, splashDelay);
 // ================= 授权系统 =================
 var AUTH_SECRET = 'ETwGVfCXjcDu3d1PUGDzPBQIV1f0oTsGKSsN56tH6dEt';
-var AUTH_TRIAL_MS = 24 * 60 * 60 * 1000;         /* 免费体验 1 天 */
+var AUTH_TRIAL_MS = 2 * 24 * 60 * 60 * 1000;     /* 免费体验 2 天 */
 var AUTH_HEARTBEAT = 20 * 60 * 1000;             /* 心跳 20 分钟 */
 var AUTH_PERM = 4102444800000;                   /* 永久授权 2100-01-01 */
 var AUTH_B32 = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 var AUTH_KEYS = { ls: 'xjt_lic_v2', ck: 'xjt_lic', ss: 'xjt_lic', idb: 'xjt_lic_db', dom: 'data-xjt-lic' };
 
-var isAuthorized = false; var isTrialMode = false; var trialDays = 1;
+var isAuthorized = false; var isTrialMode = false; var trialDays = 2;
 var authReady = false; var authMode = ''; var authLockReason = '';
 var authExpire = 0; var authDeviceCode = ''; var authFp = ''; var authFpLoose = '';
 var pendingTrial = false;
@@ -744,7 +762,7 @@ function startTrialOnce() {
       var rec = { v: 2, fp: authFp, fpl: authFpLoose, first: now, exp: now + AUTH_TRIAL_MS, act: false, code: '', maxSeen: now };
       authSaveAll(rec).then(function () {
         pendingTrial = false;
-        showToast('已开启 1 天免费体验');
+        showToast('已开启 2 天免费体验');
         authOk('trial', rec.exp);
       });
     });
@@ -1093,7 +1111,7 @@ function renderLogin() {
     clock: '<b>检测到系统时间异常</b><br>授权记录与你当前时间不符，请联系客服处理。',
     device: '<b>当前设备未授权</b><br>请把下方设备码发给客服，获取本机专属激活码。',
     expired: '<b>授权已到期</b><br>续费或购买永久授权请联系客服，输入新激活码即可继续使用。',
-    trial: '<b>免费体验已结束</b><br>体验期为 1 天。请输入激活码继续使用。',
+    trial: '<b>免费体验已结束</b><br>体验期为 2 天。请输入激活码继续使用。',
     tamper: '<b>授权记录异常</b><br>检测到本地记录被修改，请重新输入激活码。'
   };
 
@@ -1111,9 +1129,9 @@ function renderLogin() {
       <div style="background:#eff6ff; border:2px solid #bfdbfe; border-radius:12px; padding:20px 15px; margin-bottom:15px; text-align:center;">
         <div style="font-size:1.1rem; font-weight:bold; color:#0d47a1; margin-bottom:8px;">🎁 欢迎使用铁途学练</div>
         <div style="font-size:0.85rem; color:#475569; line-height:1.6; margin-bottom:15px;">
-          您可以先免费体验 <b style="color:#b71c1c; font-size:1rem;">1 天</b><br>或直接输入客服提供的激活码。
+          您可以先免费体验 <b style="color:#b71c1c; font-size:1rem;">2 天</b><br>或直接输入客服提供的激活码。
         </div>
-        <button class="btn btn-green btn-block" style="padding:13px; font-size:1rem; margin-bottom:10px; box-shadow:0 4px 6px rgba(16,185,129,0.2);" onclick="startTrialOnce()">🎁 开启 1 天免费体验</button>
+        <button class="btn btn-green btn-block" style="padding:13px; font-size:1rem; margin-bottom:10px; box-shadow:0 4px 6px rgba(16,185,129,0.2);" onclick="startTrialOnce()">🎁 开启 2 天免费体验</button>
         <button class="btn btn-outline btn-block" style="padding:13px; font-size:1rem;" onclick="chooseActivate()">🔑 我有激活码，直接激活</button>
       </div>`;
   }
@@ -1132,11 +1150,13 @@ function renderLogin() {
 
       ${showActivateForm ? `
         <div style="display:flex; gap:5px; margin-bottom:15px; text-align:center; flex-wrap:wrap;">
-          <div style="flex:1; min-width:18%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#64748b; margin-bottom:5px;">7 天</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥2</div></div>
-          <div style="flex:1; min-width:18%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#64748b; margin-bottom:5px;">15 天</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥4</div></div>
-          <div style="flex:1; min-width:18%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#64748b; margin-bottom:5px;">30 天</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥5</div></div>
-          <div style="flex:1; min-width:18%; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:10px 2px; position:relative;"><div style="position:absolute; top:-8px; left:50%; transform:translateX(-50%); background:#ef4444; color:#fff; font-size:0.6rem; padding:2px 5px; border-radius:10px; white-space:nowrap; font-weight:bold;">热卖</div><div style="font-size:0.75rem; color:#d97706; margin-bottom:5px; margin-top:3px;">半年</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥15</div></div>
-          <div style="flex:1; min-width:18%; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#1d4ed8; margin-bottom:5px;">永久</div><div style="font-size:1.1rem; color:#0d47a1; font-weight:bold;">￥49.9</div></div>
+          <div style="flex:1; min-width:12%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#64748b; margin-bottom:5px;">7 天</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥2</div></div>
+          <div style="flex:1; min-width:12%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#64748b; margin-bottom:5px;">15 天</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥4</div></div>
+          <div style="flex:1; min-width:12%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#64748b; margin-bottom:5px;">30 天</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥7</div></div>
+          <div style="flex:1; min-width:12%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#64748b; margin-bottom:5px;">90 天</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥18</div></div>
+          <div style="flex:1; min-width:12%; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:10px 2px; position:relative;"><div style="position:absolute; top:-8px; left:50%; transform:translateX(-50%); background:#ef4444; color:#fff; font-size:0.6rem; padding:2px 5px; border-radius:10px; white-space:nowrap; font-weight:bold;">热卖</div><div style="font-size:0.75rem; color:#d97706; margin-bottom:5px; margin-top:3px;">半年</div><div style="font-size:1.1rem; color:#b71c1c; font-weight:bold;">￥30</div></div>
+          <div style="flex:1; min-width:12%; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#065f46; margin-bottom:5px;">1 年</div><div style="font-size:1.1rem; color:#065f46; font-weight:bold;">￥49.9</div></div>
+          <div style="flex:1; min-width:12%; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:10px 2px;"><div style="font-size:0.75rem; color:#1d4ed8; margin-bottom:5px;">永久</div><div style="font-size:1.1rem; color:#0d47a1; font-weight:bold;">￥99.9</div></div>
         </div>
 
                         <div style="display:flex; justify-content:center; margin-bottom:15px;">
@@ -1992,7 +2012,7 @@ function openSimilarModal() {
     return;
   }
   var simHtml = '';
-  for (var s = 0; s < similar.length && s < 3; s++) {
+  for (var s = 0; s < similar.length; s++) {
     var sq = similar[s].q;
     if (sq.type === 'judge' && (!sq.options || sq.options.length === 0)) sq.options = ['正确', '错误'];
     var optsHtml = '';
@@ -2281,12 +2301,12 @@ function renderReview() {
       </div>
       <div class="toolbar-right-col">
         <div class="toolbar-row">
-          <button class="btn btn-danger btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="clearAllWrong()">🗑️ 剔除</button>
-          <button class="btn btn-outline btn-small" onclick="exportWrongToPrint()">🖨️ 导出</button>
+          <button class="btn btn-danger-ghost btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="clearAllWrong()">🗑️ 剔除</button>
+          <button class="btn btn-outline btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="exportWrongToPrint()">🖨️ 导出</button>
         </div>
         <div class="toolbar-row">
-          <button class="btn btn-outline btn-small" onclick="toggleReviewBrowse()">📄 翻页</button>
-          <button class="btn btn-outline btn-small" onclick="openReviewSheet()">答题卡</button>
+          <button class="btn btn-outline btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="toggleReviewBrowse()">📄 翻页</button>
+          <button class="btn btn-outline btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="openReviewSheet()">答题卡</button>
         </div>
       </div>
     </div>`;
@@ -2420,12 +2440,12 @@ function renderReview() {
       </div>
       <div class="toolbar-right-col">
         <div class="toolbar-row">
-          <button class="btn btn-danger btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="clearAllWrong()">🗑️ 剔除</button>
-          <button class="btn btn-outline btn-small" onclick="exportWrongToPrint()">🖨️ 导出</button>
+          <button class="btn btn-danger-ghost btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="clearAllWrong()">🗑️ 剔除</button>
+          <button class="btn btn-outline btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="exportWrongToPrint()">🖨️ 导出</button>
         </div>
         <div class="toolbar-row">
-          <button class="btn btn-outline btn-small" onclick="toggleReviewBrowse()">📄 翻页</button>
-          <button class="btn btn-outline btn-small" onclick="openReviewSheet()">答题卡</button>
+          <button class="btn btn-outline btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="toggleReviewBrowse()">📄 翻页</button>
+          <button class="btn btn-outline btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="openReviewSheet()">答题卡</button>
         </div>
       </div>
     </div>`;
@@ -2550,6 +2570,7 @@ function renderExamSetup() {
   for (var i=0; i<qs.length; i++) { if (count[qs[i].type] !== undefined) count[qs[i].type]++; }
   var types = ['single','multiple','judge','fill','short','essay'].filter(function(t){ return count[t] > 0; });
 
+      // 题型配置映射
       // 题型配置映射
       var numMap = { single:'numSingle', multiple:'numMultiple', judge:'numJudge', fill:'numFill', short:'numShort', essay:'numEssay' };
       var scoreMap = { single:'scoreSingle', multiple:'scoreMultiple', judge:'scoreJudge', fill:'scoreFill', short:'scoreShort', essay:'scoreEssay' };
@@ -3535,21 +3556,9 @@ function toggleRandomOptions(isChecked) {
 function toggleEyeCareMode(isChecked) {
   isEyeCareMode = isChecked;
   localStorage.setItem('xjt_eye_care', isChecked ? '1' : '0');
-  if (isChecked) {
-    document.documentElement.style.setProperty('--bg-color', '#C7EDCC');
-    document.documentElement.style.setProperty('--card-bg', '#e0f2e9');
-    document.documentElement.style.setProperty('--input-bg', '#d1e7dd');
-    document.documentElement.style.setProperty('--text-main', '#1e293b');
-    document.documentElement.style.setProperty('--border-color', '#b0c4b1');
-    showToast('已开启护眼模式');
-  } else {
-    document.documentElement.style.setProperty('--bg-color', '#f0f4f8');
-    document.documentElement.style.setProperty('--card-bg', '#ffffff');
-    document.documentElement.style.setProperty('--input-bg', '#f8fafc');
-    document.documentElement.style.setProperty('--text-main', '#1e293b');
-    document.documentElement.style.setProperty('--border-color', '#e2e8f0');
-    showToast('已关闭护眼模式');
-  }
+  applyEyeCareVars(isChecked);
+  document.body.classList.toggle('eye-care-mode', isChecked);
+  showToast(isChecked ? '已开启护眼模式' : '已关闭护眼模式');
 }
 // ================= 存档备份与恢复 =================
 function exportUserData() {
@@ -3620,9 +3629,6 @@ function doImportData() {
     showToast('导入失败：备份代码有误或被截断', true);
   }
 }
-// ================= 护眼模式全局变量 =================
-var isEyeCareMode = localStorage.getItem('xjt_eye_care') === '1';
-var manualThemeSet = false; // 顺便把夜间模式的变量也放这，防止冲突
 // ================= 错题查看：翻页模式渲染 =================
 function renderReviewPage() {
   try {
@@ -3656,11 +3662,15 @@ function renderReviewPage() {
           <button class="btn btn-outline" style="padding:6px 12px;font-size:0.85rem;" onclick="currentMode='home';render()">⬅ 返回</button>
           <div class="q-progress" style="font-size:0.9rem; white-space:nowrap;">错题本 (${currentWrong.length})</div>
         </div>
-        <div style="display:flex; gap:6px; align-items:center;">
-		<button class="btn btn-danger btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="clearAllWrong()">🗑️ 剔除</button>
-          <button class="btn btn-outline btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="exportWrongToPrint()">🖨️ 导出</button>
-          <button class="btn btn-outline btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="toggleReviewBrowse()">📜 滑动</button>
-          <button class="btn btn-outline btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="openReviewSheet()">答题卡</button>
+        <div class="toolbar-right-col">
+          <div class="toolbar-row">
+            <button class="btn btn-danger-ghost btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="clearAllWrong()">🗑️ 剔除</button>
+            <button class="btn btn-outline btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="exportWrongToPrint()">🖨️ 导出</button>
+          </div>
+          <div class="toolbar-row">
+            <button class="btn btn-outline btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="toggleReviewBrowse()">📜 滑动</button>
+            <button class="btn btn-outline btn-small" style="padding:6px 8px;font-size:0.75rem;" onclick="openReviewSheet()">答题卡</button>
+          </div>
         </div>
       </div>
       <div class="card">
@@ -3693,6 +3703,61 @@ function nextReviewPage() {
   var currentWrong = window.tempReviewWrong || wrongBook.filter(function(w){ return w.bankId === activeBankId; });
   if (window.reviewPageIndex < currentWrong.length - 1) { window.reviewPageIndex++; renderReviewPage(); } else { currentMode = 'home'; render(); } 
 }
+/* ================= 导出 PDF 通用保存 ================= */
+function sanitizeFileName(name) {
+  return String(name || '未命名').replace(/[\\/:*?"<>|\r\n]+/g, '_').replace(/\s+/g, ' ').trim();
+}
+
+// 5+ App 环境：把 Blob 写入本地文件；浏览器环境：走 a[download] 下载
+function savePdfBlob(blob, fileName, onDone, onFail) {
+  if (typeof plus !== 'undefined' && plus.io && plus.io.resolveLocalFileSystemURL) {
+    function writeToEntry(dirEntry) {
+      dirEntry.getFile(fileName, { create: true, exclusive: false }, function(fileEntry) {
+        var writer = fileEntry.createWriter();
+        writer.onwrite = function() { onDone(fileEntry.fullPath || fileName); };
+        writer.onerror = function(e) { onFail(e); };
+        writer.write(blob);
+      }, onFail);
+    }
+    function fallbackPrivate() {
+      plus.io.resolveLocalFileSystemURL('_doc/', function(root) {
+        root.getDirectory('铁途学练导出', { create: true }, function(dirEntry) {
+          writeToEntry(dirEntry);
+        }, onFail);
+      }, onFail);
+    }
+    try {
+      var downloadsUrl = plus.io.PUBLIC_DOWNLOADS || '_downloads/';
+      plus.io.resolveLocalFileSystemURL(downloadsUrl, function(dirEntry) {
+        writeToEntry(dirEntry);
+      }, fallbackPrivate);
+    } catch (e) { onFail(e); }
+  } else {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = fileName;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 5000);
+    onDone(fileName);
+  }
+}
+
+// 统一收尾：水印已加在 pdf 上，按环境落盘并提示导出状态
+function finalizePdfExport(pdf, fileName, element, successMsg) {
+  function cleanup() { if (element && element.parentNode) document.body.removeChild(element); }
+  var blob;
+  try { blob = pdf.output('blob'); } catch (e) { cleanup(); showToast('生成 PDF 失败，请重试', true); console.error(e); return; }
+  savePdfBlob(blob, fileName, function(path) {
+    cleanup();
+    var inApp = (typeof plus !== 'undefined' && plus.io);
+    showToast(successMsg || (inApp ? '导出成功，已保存到下载目录' : '导出成功，请保存或打印'));
+  }, function(err) {
+    cleanup();
+    showToast('保存文件失败，请重试', true);
+    console.error(err);
+  });
+}
+
 function exportWrongToPrint() {
   var currentWrong = wrongBook.filter(function(w){ return w.bankId === activeBankId; });
   if (currentWrong.length === 0) return showToast('当前没有错题可导出', true);
@@ -3791,14 +3856,20 @@ function exportWrongToPrint() {
   ctx.fillText("铁途学练", 0, 0);
   var wmDataUrl = wmCanvas.toDataURL('image/png');
 
+  var fileName = sanitizeFileName(bankName + ' - 错题打印版.pdf');
   var opt = {
     margin:       10,
-    filename:     bankName + ' - 错题打印版.pdf',
+    filename:     fileName,
     image:        { type: 'jpeg', quality: 0.98 },
     html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
     pagebreak:    { mode: ['css', 'legacy'], avoid: '.question-block' }
   };
+
+  if (typeof html2pdf === 'undefined') {
+    document.body.removeChild(element);
+    return showToast('导出组件未加载，请联网后重试', true);
+  }
 
   html2pdf().set(opt).from(element).toPdf().get('pdf').then(function(pdf) {
     var totalPages = pdf.internal.getNumberOfPages();
@@ -3806,9 +3877,7 @@ function exportWrongToPrint() {
       pdf.setPage(i);
       pdf.addImage(wmDataUrl, 'PNG', 0, 0, 210, 297);
     }
-  }).save().then(function() {
-    document.body.removeChild(element);
-    showToast('导出成功，请保存或打印');
+    finalizePdfExport(pdf, fileName, element, '导出成功，请保存或打印');
   }).catch(function(err) {
     document.body.removeChild(element);
     showToast('生成 PDF 失败，请重试', true);
@@ -3827,6 +3896,8 @@ function exportExamToWord(isPreview) {
   }
   
   if (qs.length === 0) return showToast('当前没有题目可导出', true);
+
+  showToast('正在生成 PDF，请稍候...');
 
   var groups = { single: [], multiple: [], judge: [], fill: [], short: [], essay: [] };
   for (var i = 0; i < qs.length; i++) {
@@ -3924,14 +3995,20 @@ function exportExamToWord(isPreview) {
   ctx.fillText("铁途学练", 0, 0);
   var wmDataUrl = wmCanvas.toDataURL('image/png');
 
+  var fileName = sanitizeFileName(bankName + (isPreview ? ' - 导出试题.pdf' : ' - 模拟试卷.pdf'));
   var opt = {
     margin:       10,
-    filename:     bankName + (isPreview ? ' - 导出试题.pdf' : ' - 模拟试卷.pdf'),
+    filename:     fileName,
     image:        { type: 'jpeg', quality: 0.98 },
     html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
     pagebreak:    { mode: ['css', 'legacy'], avoid: '.question-block' } // 双重保险
   };
+
+  if (typeof html2pdf === 'undefined') {
+    document.body.removeChild(element);
+    return showToast('导出组件未加载，请联网后重试', true);
+  }
 
   html2pdf().set(opt).from(element).toPdf().get('pdf').then(function(pdf) {
     var totalPages = pdf.internal.getNumberOfPages();
@@ -3939,8 +4016,7 @@ function exportExamToWord(isPreview) {
       pdf.setPage(i);
       pdf.addImage(wmDataUrl, 'PNG', 0, 0, 210, 297);
     }
-  }).save().then(function() {
-    document.body.removeChild(element);
+    finalizePdfExport(pdf, fileName, element, '导出成功，请保存或打印');
   }).catch(function(err) {
     document.body.removeChild(element);
     showToast('生成 PDF 失败，请重试', true);
@@ -4641,6 +4717,34 @@ var tomatoTimeLeft = 25 * 60; // 25分钟（单位秒）
 var tomatoIsRunning = false;
 var tomatoTotalTime = 25 * 60;
 
+// 存档当前专注状态，刷新后可恢复
+function saveTomatoState() {
+  try {
+    localStorage.setItem('xjt_tomato', JSON.stringify({
+      running: tomatoIsRunning,
+      timeLeft: tomatoTimeLeft,
+      savedAt: Date.now()
+    }));
+  } catch (e) {}
+}
+
+// 启动时从存档恢复专注倒计时（按离线流逝时间扣减）
+function restoreTomato() {
+  var saved = null;
+  try { saved = JSON.parse(localStorage.getItem('xjt_tomato') || 'null'); } catch (e) {}
+  if (!saved || !saved.running) return;
+  var elapsed = Math.floor((Date.now() - (saved.savedAt || Date.now())) / 1000);
+  var left = (saved.timeLeft || 0) - elapsed;
+  if (left <= 0) {
+    localStorage.removeItem('xjt_tomato');
+    return;
+  }
+  tomatoTimeLeft = left;
+  tomatoIsRunning = true;
+  startTomatoTimer();
+}
+restoreTomato();
+
 // 开关控制逻辑
 function toggleTomatoMode(isChecked) {
   if (typeof isChecked === 'boolean') {
@@ -4659,6 +4763,7 @@ function startTomato() {
   tomatoIsRunning = true;
   tomatoTimeLeft = tomatoTotalTime;
   startTomatoTimer();
+  saveTomatoState();
   showToast('专注模式已开启，离开页面将自动暂停');
   updateTomatoUI();
 }
@@ -4667,6 +4772,7 @@ function stopTomato() {
   clearInterval(tomatoTimer);
   tomatoIsRunning = false;
   tomatoTimeLeft = tomatoTotalTime;
+  saveTomatoState();
   updateTomatoUI();
   showToast('番茄专注已关闭');
 }
@@ -4676,10 +4782,12 @@ function startTomatoTimer() {
   tomatoTimer = setInterval(function() {
     if (tomatoTimeLeft > 0) {
       tomatoTimeLeft--;
+      saveTomatoState();
       updateTomatoUI();
     } else {
       clearInterval(tomatoTimer);
       tomatoIsRunning = false;
+      localStorage.removeItem('xjt_tomato');
       updateTomatoUI();
       showToast('🎉 恭喜完成 25 分钟专注刷题！');
       if (typeof launchFireworks === 'function') launchFireworks(3000);
