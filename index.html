@@ -281,6 +281,117 @@
   gap: 6px;
 }
 
+/* ==================== 视觉刷新 2026：圆角 / 柔和阴影 / 渐变按钮 ==================== */
+:root{
+  --radius-card: 18px;
+  --radius-btn: 14px;
+  --shadow-card: 0 6px 20px rgba(15,23,42,0.06);
+  --shadow-card-strong: 0 10px 28px rgba(15,23,42,0.10);
+  --shadow-btn: 0 6px 16px rgba(183,28,28,0.22);
+}
+body.dark-mode{
+  --shadow-card: 0 8px 24px rgba(0,0,0,0.38);
+  --shadow-card-strong: 0 12px 30px rgba(0,0,0,0.5);
+}
+
+.card{
+  border-radius: var(--radius-card);
+  padding: 18px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: saturate(1.05);
+}
+
+.btn{
+  border-radius: var(--radius-btn);
+  font-weight: 600;
+  letter-spacing: .2px;
+  transition: transform .12s ease, box-shadow .2s ease, background .2s ease;
+}
+.btn:active{ transform: scale(.975); opacity: 1; }
+.btn-primary{ background: linear-gradient(135deg,#c62828,#e53935); box-shadow: 0 6px 16px rgba(198,40,40,.24); }
+.btn-green{ background: linear-gradient(135deg,#0f9d8f,#10b981); box-shadow: 0 6px 16px rgba(16,185,129,.22); }
+.btn-danger{ background: linear-gradient(135deg,#b91c1c,#ef4444); }
+.btn-outline{ background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(15,23,42,.04); }
+.btn-outline:active{ background: var(--input-bg); }
+.btn-small{ border-radius: 10px; font-weight: 600; }
+
+/* 首页菜单：三列紧凑卡片式按钮，最后两行两个大按钮均分 */
+.home-main-menu{ display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 12px; }
+.home-main-menu .menu-btn{
+  min-width: 0; width: 100%; padding: 14px 3px; border-radius: 14px; grid-column: span 2;
+  font-size: 0.78rem; letter-spacing: -0.3px; overflow: hidden;
+  background: var(--card-bg); border: 1px solid var(--border-color);
+  box-shadow: 0 3px 10px rgba(15,23,42,.05);
+  transition: transform .12s ease, box-shadow .2s ease;
+}
+.home-main-menu .menu-btn.wide{ grid-column: span 3; font-size: 0.82rem; padding: 14px 6px; }
+.home-main-menu .menu-btn:active{ transform: scale(.97); box-shadow: 0 1px 4px rgba(15,23,42,.09); }
+
+/* 每日一练大卡 */
+.daily-card{
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px; border-radius: var(--radius-card); margin-bottom: 12px;
+  background: linear-gradient(135deg,#b71c1c 0%,#e53935 55%,#f0703c 100%);
+  color: #fff; cursor: pointer; box-shadow: 0 10px 24px rgba(183,28,28,.28);
+  transition: transform .12s ease;
+}
+.daily-card:active{ transform: scale(.98); }
+.daily-icon{
+  width: 44px; height: 44px; border-radius: 13px; flex: 0 0 44px;
+  background: rgba(255,255,255,.18); display: flex; align-items: center; justify-content: center;
+  font-size: 1.25rem; border: 1px solid rgba(255,255,255,.28);
+}
+.daily-main{ flex: 1; min-width: 0; }
+.daily-title{ font-size: 1rem; font-weight: bold; letter-spacing: .3px; }
+.daily-sub{ font-size: 0.72rem; opacity: .92; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.daily-go{ font-size: 1.15rem; opacity: .9; }
+
+/* 搜索栏 */
+.search-bar{
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 15px; border-radius: 999px; margin-bottom: 14px;
+  background: var(--card-bg); border: 1px solid var(--border-color);
+  box-shadow: 0 2px 10px rgba(15,23,42,.05); cursor: pointer;
+}
+.search-bar .sb-icon{ font-size: 1rem; opacity: .8; }
+.search-bar .sb-ph{ flex: 1; text-align: left; font-size: 0.84rem; color: var(--text-sub); }
+.search-bar .sb-go{ font-size: 0.76rem; color: #b71c1c; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: rgba(183,28,28,.08); }
+
+/* 分组小标题 */
+.group-label{
+  font-size: 0.88rem; color: var(--text-sub); font-weight: 700;
+  letter-spacing: .6px; margin: 6px 0 9px 4px;
+  display: flex; align-items: center; gap: 3px;
+}
+
+/* 统计胶囊 */
+.stat-item{ border-radius: 14px; }
+.type-pill{ border-radius: 12px; }
+.setting-row{ border-radius: 14px; }
+
+/* 折叠头 / 子菜单 / 通用菜单按钮 */
+.fold-header{ border-radius: 14px; padding: 11px 14px; font-size: 0.88rem; margin-bottom: 8px; }
+.sub-menu .btn{ border-radius: 10px; }
+.menu-btn{ border-radius: 14px; }
+
+/* 专项练 / 背题 选择弹窗 */
+.sp-tabs{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sp-tab{
+  text-align: center; padding: 9px 0; font-size: 0.82rem; font-weight: 600;
+  border-radius: 12px; border: 1px solid var(--border-color);
+  background: var(--input-bg); color: var(--text-sub); cursor: pointer;
+  transition: all .18s ease;
+}
+.sp-tab.active{ background: linear-gradient(135deg,#c62828,#e53935); color:#fff; border-color: transparent; box-shadow: 0 6px 14px rgba(198,40,40,.22); }
+.sp-type{
+  text-align: center; padding: 11px 4px; border-radius: 12px;
+  border: 1px solid var(--border-color); background: var(--input-bg);
+  font-size: 0.82rem; font-weight: 600; color: var(--text-main); cursor: pointer;
+}
+.sp-type:active{ background: var(--card-bg); }
+.sp-num{ font-size: 0.68rem; color: var(--text-sub); font-weight: 400; margin-top: 3px; }
+
 </style>
 <body>
 
@@ -409,6 +520,215 @@ function addDoneQuestion(qid) {
 var foldState = JSON.parse(localStorage.getItem('xjt_fold_state') || '{}');
 var qFontSize = parseFloat(localStorage.getItem('xjt_font_size')) || 1.05;
 document.documentElement.style.setProperty('--q-font-size', qFontSize + 'rem');
+
+/* ================= 首页新版交互（与 App 正式版一致） ================= */
+function openFuncSettingsModal() {
+  var old = document.getElementById('funcSetMask');
+  if (old) old.remove();
+  var mask = document.createElement('div');
+  mask.id = 'funcSetMask';
+  mask.className = 'app-mask';
+  mask.style.cssText = 'z-index:99998;display:flex;align-items:center;justify-content:center;';
+  mask.innerHTML = `<div style="background:var(--card-bg,#fff);color:var(--text-main);border-radius:14px;padding:16px;width:82%;max-width:360px;box-sizing:border-box;">
+    <div style="font-size:0.95rem;font-weight:bold;">⚙️ 功能设置</div>
+    <div style="font-size:0.72rem;color:var(--text-sub);margin:4px 0 12px;">显示相关</div>
+    <div class="setting-row" style="margin:0 0 8px;padding:10px 12px;gap:8px;border:1px solid var(--border-color);border-radius:10px;">
+      <span style="font-size:0.82rem;white-space:nowrap;">👁️ 护眼模式</span>
+      <label class="switch" style="transform:scale(0.78);margin:0;">
+        <input type="checkbox" id="toggleEyeCare" ${isEyeCareMode ? 'checked' : ''} onchange="toggleEyeCareMode(this.checked)">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="setting-row" style="margin:0;padding:10px 12px;gap:8px;border:1px solid var(--border-color);border-radius:10px;">
+      <span style="font-size:0.82rem;white-space:nowrap;">🌙 夜间模式</span>
+      <label class="switch" style="transform:scale(0.78);margin:0;">
+        <input type="checkbox" id="toggleDark" ${document.body.classList.contains('dark-mode') ? 'checked' : ''} onchange="toggleDarkModeBySwitch(this.checked)">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <button class="btn btn-outline" style="width:100%;margin-top:12px;padding:9px;font-size:0.82rem;" onclick="document.getElementById('funcSetMask').remove()">关闭</button>
+  </div>`;
+  mask.addEventListener('click', function (e) { if (e.target === mask) mask.remove(); });
+  document.body.appendChild(mask);
+}
+
+/* 专项练 / 背题：先选模式再选题型 */
+function openSpecialPicker(initMode) {
+  var old = document.getElementById('specialPickMask'); if (old) old.remove();
+  var qs = (activeBankId && allBanks[activeBankId]) ? allBanks[activeBankId].questions : [];
+  var cnt = { single:0, multiple:0, judge:0, fill:0, short:0, essay:0 };
+  for (var i = 0; i < qs.length; i++) { if (cnt[qs[i].type] !== undefined) cnt[qs[i].type]++; }
+  window._spTypeCounts = cnt;
+  window._spMode = initMode === 'recite' ? 'recite' : 'practice';
+  var mask = document.createElement('div');
+  mask.id = 'specialPickMask';
+  mask.className = 'app-mask';
+  mask.innerHTML = `<div style="background:var(--card-bg,#fff);color:var(--text-main);border-radius:16px;padding:16px;width:86%;max-width:380px;box-sizing:border-box;">
+    <div style="font-size:0.95rem;font-weight:bold;">📚 专项练 / 背题</div>
+    <div style="font-size:0.72rem;color:var(--text-sub);margin:4px 0 12px;">先选模式，再点题型即可开始</div>
+    <div class="sp-tabs" id="spTabs">
+      <div class="sp-tab ${window._spMode==='practice'?'active':''}" data-mode="practice" onclick="setSpecialMode('practice')">✏️ 练习模式</div>
+      <div class="sp-tab ${window._spMode==='recite'?'active':''}" data-mode="recite" onclick="setSpecialMode('recite')">👁️ 背题模式</div>
+    </div>
+    <div id="spTypes" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;"></div>
+    <button class="btn btn-outline" style="width:100%;margin-top:14px;padding:9px;font-size:0.82rem;" onclick="document.getElementById('specialPickMask').remove()">取消</button>
+  </div>`;
+  mask.addEventListener('click', function (e) { if (e.target === mask) mask.remove(); });
+  document.body.appendChild(mask);
+  renderSpecialTypes();
+}
+function setSpecialMode(m) {
+  window._spMode = m;
+  var tabs = document.querySelectorAll('#spTabs .sp-tab');
+  for (var i = 0; i < tabs.length; i++) { tabs[i].classList.toggle('active', tabs[i].getAttribute('data-mode') === m); }
+  renderSpecialTypes();
+}
+function renderSpecialTypes() {
+  var box = document.getElementById('spTypes'); if (!box) return;
+  var cnt = window._spTypeCounts || {};
+  var labels = { single:'单选题', multiple:'多选题', judge:'判断题', fill:'填空题', short:'简答题', essay:'论述题' };
+  var html = '';
+  Object.keys(labels).forEach(function (k) {
+    if (!cnt[k]) return;
+    html += '<div class="sp-type" onclick="startSpecialType(\'' + k + '\')">' + labels[k] + '<div class="sp-num">' + cnt[k] + ' 题</div></div>';
+  });
+  if (!html) html = '<div style="grid-column:1/-1;font-size:0.8rem;color:var(--text-sub);text-align:center;padding:10px;">当前题库暂无可练习的题型</div>';
+  box.innerHTML = html;
+}
+function startSpecialType(type) {
+  var mode = window._spMode || 'practice';
+  var m = document.getElementById('specialPickMask'); if (m) m.remove();
+  if (mode === 'recite') { startRecite(type); } else { startPractice(type); }
+}
+
+/* 打乱选项：整块按钮开关，开启后淡黄填充 */
+function toggleRandomOptionsFlag() {
+  randomOptionsMode = !randomOptionsMode;
+  localStorage.setItem('xjt_random_options', randomOptionsMode ? '1' : '0');
+  render();
+  showToast(randomOptionsMode ? '已开启：选项顺序随机' : '已关闭：选项按原顺序');
+}
+
+/* 番茄专注：整块按钮开关，开启后淡红填充 */
+function toggleTomatoFlag() {
+  toggleTomatoMode();
+  render();
+}
+
+/* 每日一练 */
+function startDailyPractice(n) {
+  if (!guardGate()) return;
+  var qs = activeBankId ? allBanks[activeBankId].questions : [];
+  if (!qs.length) return showToast('题库为空', true);
+  var wrongStreak = {};
+  wrongBook.filter(function (w) { return w.bankId === activeBankId; }).forEach(function (w) { wrongStreak[qFavKey(w)] = w.streak || 0; });
+  var tier0 = [], tier1 = [], tier2 = [];
+  qs.forEach(function (q) {
+    var k = qFavKey(q);
+    if (wrongStreak.hasOwnProperty(k)) tier0.push(q);
+    else if (!q.isAnswered) tier1.push(q);
+    else tier2.push(q);
+  });
+  function shuf(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  var want = Math.min(n, qs.length);
+  var picked = [];
+  [shuf(tier0), shuf(tier1), shuf(tier2)].forEach(function (list) {
+    for (var i = 0; i < list.length && picked.length < want; i++) picked.push(list[i]);
+  });
+  picked = shuf(picked);
+  practiceQuestions = picked;
+  practiceSource = 'daily';
+  practiceIndex = 0; practiceSelections = [];
+  picked.forEach(function (q) { if (q.streak === undefined) q.streak = 0; });
+  currentMode = 'practice';
+  if (typeof installBackGuard === 'function') installBackGuard();
+  render();
+  var fromWrong = picked.filter(function (q) { return wrongStreak.hasOwnProperty(qFavKey(q)); }).length;
+  showToast('每日一练 ' + picked.length + ' 题' + (fromWrong ? '，含 ' + fromWrong + ' 道错题' : ''));
+}
+
+function openDailyPicker() {
+  if (!guardGate()) return;
+  var mask = document.createElement('div');
+  mask.className = 'app-mask';
+  mask.style.zIndex = '99998';
+  mask.innerHTML = `<div style="background:var(--card-bg,#fff);color:var(--text-main);border-radius:14px;padding:18px;width:84%;max-width:420px;box-sizing:border-box;margin:auto;">
+    <div style="font-size:1rem;font-weight:bold;margin-bottom:6px;">📅 每日一练</div>
+    <div style="font-size:0.78rem;color:var(--text-sub);line-height:1.6;margin-bottom:14px;">优先抽错题和还没做过的题，剩下的随机补齐。一天一组，比一口气刷几百道更容易坚持。</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <button class="btn btn-primary" data-n="10" style="padding:12px;line-height:1.4;">10 题<br><span style="font-size:0.68rem;opacity:.85;">约 5 分钟</span></button>
+      <button class="btn btn-outline" data-n="20" style="padding:12px;line-height:1.4;">20 题<br><span style="font-size:0.68rem;color:var(--text-sub);">约 10 分钟</span></button>
+    </div>
+    <button class="btn btn-outline" data-n="0" style="width:100%;margin-top:10px;padding:9px;font-size:0.8rem;">取消</button>
+  </div>`;
+  mask.style.display = 'flex';
+  mask.style.alignItems = 'center';
+  mask.style.justifyContent = 'center';
+  mask.addEventListener('click', function (e) {
+    var n = e.target && e.target.dataset ? e.target.dataset.n : null;
+    if (e.target === mask || n === '0') { mask.remove(); return; }
+    if (n === '10' || n === '20') { mask.remove(); startDailyPractice(parseInt(n, 10)); }
+  });
+  document.body.appendChild(mask);
+}
+
+/* 薄弱专练：按分题型正确率最低的题型抽 20 题 */
+function startWeakPractice(targetType) {
+  if (!guardGate()) return;
+  if (!activeBankId || !allBanks[activeBankId]) return showToast('请先选择题库', true);
+  var wqs = allBanks[activeBankId].questions || [];
+  if (wqs.length === 0) return showToast('题库为空', true);
+
+  var wTypeStats = JSON.parse(localStorage.getItem('xjt_type_stats') || '{}');
+  var wOrder = ['single', 'multiple', 'judge', 'fill', 'short', 'essay'];
+  var wCands = [];
+  wOrder.forEach(function (tp) {
+    var s = wTypeStats[tp];
+    if (!s || !s.done) return;
+    var hasQ = false;
+    for (var i = 0; i < wqs.length; i++) { if (wqs[i].type === tp) { hasQ = true; break; } }
+    if (!hasQ) return;
+    wCands.push({ tp: tp, acc: Math.round(s.correct / s.done * 100), done: s.done });
+  });
+  if (wCands.length === 0) return showToast('还没有足够的答题记录，先做几套再看', true);
+
+  var pickType = targetType;
+  if (!pickType) {
+    wCands.sort(function (a, b) { return a.acc - b.acc; });
+    pickType = wCands[0].tp;
+  }
+  var wPool = wqs.filter(function (q) { return q.type === pickType; });
+  if (wPool.length === 0) return showToast('当前题库没有该题型', true);
+
+  var wWrongMap = {};
+  wrongBook.filter(function (w) { return w.bankId === activeBankId; }).forEach(function (w) {
+    wWrongMap[qFavKey(w)] = (w.streak || 0);
+  });
+  var wWeak = [], wOthers = [];
+  wPool.forEach(function (q) {
+    var k = qFavKey(q);
+    if (wWrongMap.hasOwnProperty(k)) wWeak.push(q); else wOthers.push(q);
+  });
+  wWeak.sort(function (a, b) { return (wWrongMap[qFavKey(a)] || 0) - (wWrongMap[qFavKey(b)] || 0); });
+  wOthers.sort(function () { return 0.5 - Math.random(); });
+
+  practiceQuestions = wWeak.concat(wOthers).slice(0, 20);
+  var wStat = null;
+  wCands.forEach(function (c) { if (c.tp === pickType) wStat = c; });
+  var wTname = TYPE_NAMES[pickType] || pickType;
+  practiceSource = 'weak_' + pickType;
+  practiceIndex = 0; practiceSelections = []; isWrongPracticeMode = false;
+  for (var j = 0; j < practiceQuestions.length; j++) {
+    practiceQuestions[j].isAnswered = isSubjective(practiceQuestions[j].type);
+    if (practiceQuestions[j].streak === undefined) practiceQuestions[j].streak = 0;
+  }
+  if (wStat) showToast('🎯 ' + wTname + ' 正确率 ' + wStat.acc + '%，专练 ' + practiceQuestions.length + ' 题');
+  else showToast('🎯 薄弱专练 ' + practiceQuestions.length + ' 题');
+  currentMode = 'practice';
+  if (typeof savePracticeProgress === 'function') savePracticeProgress();
+  if (typeof installBackGuard === 'function') installBackGuard();
+  render();
+}
 
 function toggleFold(key) {
   foldState[key] = !foldState[key];
@@ -1159,7 +1479,8 @@ function renderLogin() {
     device: '<b>当前设备未授权</b><br>请把下方设备码发给客服，获取本机专属激活码。',
     expired: '<b>授权已到期</b><br>续费或购买永久授权请联系客服，输入新激活码即可继续使用。',
     trial: '<b>免费体验已结束</b><br>体验期为 2 天。请输入激活码继续使用。',
-    tamper: '<b>授权记录异常</b><br>检测到本地记录被修改，请重新输入激活码。'
+    tamper: '<b>授权记录异常</b><br>检测到本地记录被修改，请重新输入激活码。',
+    env: '<b>请从钉钉工作台进入</b><br>本应用只支持钉钉客户端访问，请在钉钉里点开“铁途学练”，不要复制链接到浏览器。'
   };
 
   if (authLockReason && tips[authLockReason]) {
@@ -1541,102 +1862,87 @@ var tomatoHtml = `
 `;
     html += `
       <div class="card">
-        <div class="title">当前训练：${allBanks[activeBankId].name}</div>
-        <div class="stats">
-          <div class="stat-item"><div class="stat-num" style="color:#b71c1c;">${qs.length}</div><div class="stat-label">总题量</div></div>
-          <div class="stat-item"><div class="stat-num">${count.single}</div><div class="stat-label">单选</div></div>
-          <div class="stat-item"><div class="stat-num">${count.multiple}</div><div class="stat-label">多选</div></div>
-          <div class="stat-item"><div class="stat-num">${count.judge}</div><div class="stat-label">判断</div></div>
-          <div class="stat-item"><div class="stat-num">${count.fill}</div><div class="stat-label">填空</div></div>
-          <div class="stat-item"><div class="stat-num">${count.short}</div><div class="stat-label">简答</div></div>
-          <div class="stat-item"><div class="stat-num">${count.essay}</div><div class="stat-label">论述</div></div>
-          <div class="stat-item stat-wrong" style="background:#fef2f2;"><div class="stat-num" style="color:#ef4444;">${wrongBook.filter(function(w){ return w.bankId === activeBankId; }).length}</div><div class="stat-label" style="color:#b91c1c;">错题数</div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;border-left:4px solid #b71c1c;padding-left:8px;">
+          <div style="min-width:0;">
+            <div style="font-size:0.7rem;color:var(--text-sub);line-height:1.2;margin-bottom:2px;">当前训练</div>
+            <div style="font-size:0.9rem;font-weight:bold;line-height:1.3;word-break:break-word;">${allBanks[activeBankId].name}</div>
+          </div>
+          <button class="btn btn-outline" style="flex:0 0 auto;padding:5px 10px;font-size:0.72rem;white-space:nowrap;" onclick="openFuncSettingsModal()">⚙️ 功能设置</button>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:center; gap:8px; background:var(--input-bg); border-radius:12px; padding:8px 2px; margin-bottom:8px; font-size:0.82rem; height:40px; box-sizing:border-box; color:var(--text-main);">
+          <span style="white-space:nowrap;">总题量 <b style="color:#b71c1c; font-size:0.95rem;">${qs.length}</b></span>
+          <span style="color:var(--border-color); font-size:0.8rem;">|</span>
+          <span style="white-space:nowrap;">错题数 <b style="color:#ef4444; font-size:0.95rem;">${wrongBook.filter(function(w){ return w.bankId === activeBankId; }).length}</b></span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:6px; margin-bottom:15px;">
+          <div style="background:var(--input-bg); border-radius:12px; padding:8px 2px; text-align:center;">
+            <div style="font-size:0.95rem; font-weight:bold; color:${count.single > 0 ? '#0d47a1' : '#94a3b8'};">${count.single}</div>
+            <div style="font-size:0.68rem; color:var(--text-sub); margin-top:2px;">单选</div>
+          </div>
+          <div style="background:var(--input-bg); border-radius:12px; padding:8px 2px; text-align:center;">
+            <div style="font-size:0.95rem; font-weight:bold; color:${count.multiple > 0 ? '#0d47a1' : '#94a3b8'};">${count.multiple}</div>
+            <div style="font-size:0.68rem; color:var(--text-sub); margin-top:2px;">多选</div>
+          </div>
+          <div style="background:var(--input-bg); border-radius:12px; padding:8px 2px; text-align:center;">
+            <div style="font-size:0.95rem; font-weight:bold; color:${count.judge > 0 ? '#0d47a1' : '#94a3b8'};">${count.judge}</div>
+            <div style="font-size:0.68rem; color:var(--text-sub); margin-top:2px;">判断</div>
+          </div>
+          <div style="background:var(--input-bg); border-radius:12px; padding:8px 2px; text-align:center;">
+            <div style="font-size:0.95rem; font-weight:bold; color:${count.fill > 0 ? '#0d47a1' : '#94a3b8'};">${count.fill}</div>
+            <div style="font-size:0.68rem; color:var(--text-sub); margin-top:2px;">填空</div>
+          </div>
+          <div style="background:var(--input-bg); border-radius:12px; padding:8px 2px; text-align:center;">
+            <div style="font-size:0.95rem; font-weight:bold; color:${count.short > 0 ? '#0d47a1' : '#94a3b8'};">${count.short}</div>
+            <div style="font-size:0.68rem; color:var(--text-sub); margin-top:2px;">简答</div>
+          </div>
+          <div style="background:var(--input-bg); border-radius:12px; padding:8px 2px; text-align:center;">
+            <div style="font-size:0.95rem; font-weight:bold; color:${count.essay > 0 ? '#0d47a1' : '#94a3b8'};">${count.essay}</div>
+            <div style="font-size:0.68rem; color:var(--text-sub); margin-top:2px;">论述</div>
+          </div>
         </div>
         ${reviewBanner}
 
-                               <!-- ★ 三列开关：打乱选项 / 护眼模式 / 番茄专注 -->
-                               <div style="display:flex; gap:8px; margin-bottom:15px;">
-                                 <div class="setting-row" style="flex:1; margin:0; padding:8px 5px; border:1px solid var(--border-color); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:5px;">
-                                   <span style="font-size:0.75rem;">🔀打乱选项</span>
-                                   <label class="switch" style="transform:scale(0.7); margin:0;">
-                                     <input type="checkbox" id="toggleRandomOpt" ${randomOptionsMode ? 'checked' : ''} onchange="toggleRandomOptions(this.checked)">
-                                     <span class="slider"></span>
-                                   </label>
-                                 </div>
-                                 
-                                 <div class="setting-row" style="flex:1; margin:0; padding:8px 5px; border:1px solid var(--border-color); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:5px;">
-                                   <span style="font-size:0.75rem;">👁️护眼模式</span>
-                                   <label class="switch" style="transform:scale(0.7); margin:0;">
-                                     <input type="checkbox" id="toggleEyeCare" ${isEyeCareMode ? 'checked' : ''} onchange="toggleEyeCareMode(this.checked)">
-                                     <span class="slider"></span>
-                                   </label>
-                                 </div>
-
-                                 <div class="setting-row" style="flex:1; margin:0; padding:8px 5px; border:1px solid var(--border-color); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:5px;">
-                                   <span style="font-size:0.75rem;">🌙夜间</span>
-                                   <label class="switch" style="transform:scale(0.7); margin:0;">
-                                     <input type="checkbox" id="toggleDark" ${document.body.classList.contains('dark-mode') ? 'checked' : ''} onchange="toggleDarkModeBySwitch(this.checked)">
-                                     <span class="slider"></span>
-                                   </label>
-                                 </div>
-
-                                 <div class="setting-row" style="flex:1; margin:0; padding:8px 5px; border:1px solid var(--border-color); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:5px;">
-                                   <span style="font-size:0.75rem;">🍅番茄专注</span>
-                                   <label class="switch" style="transform:scale(0.7); margin:0;">
-                                     <input type="checkbox" id="toggleTomato" onchange="toggleTomatoMode(this.checked)" ${tomatoIsRunning ? 'checked' : ''}>
-                                     <span class="slider"></span>
-                                   </label>
-                                 </div>
+                               <!-- ★ 打乱选项 / 番茄专注（整块按钮，开启后淡色填充） -->
+                               <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+                                 <div class="menu-btn" style="padding:9px 6px; font-size:0.76rem; font-weight:600; ${randomOptionsMode ? 'background:#fef9c3; border-color:#fde68a; color:#8a6d00;' : ''}" onclick="toggleRandomOptionsFlag()">🔀 打乱选项${randomOptionsMode ? ' · 已开' : ''}</div>
+                                 <div class="menu-btn" style="padding:9px 6px; font-size:0.76rem; font-weight:600; ${tomatoIsRunning ? 'background:#fee2e2; border-color:#fecaca; color:#b91c1c;' : ''}" onclick="toggleTomatoFlag()">🍅 番茄专注${tomatoIsRunning ? ' · 已开' : ''}</div>
                                </div>
-        
-                <div class="menu">
+
+                <div class="daily-card" onclick="openDailyPicker()">
+                  <div class="daily-icon">📅</div>
+                  <div class="daily-main">
+                    <div class="daily-title">每日一练</div>
+                    <div class="daily-sub">随机 10 / 20 题 · 错题优先，一天一组更好坚持</div>
+                  </div>
+                  <div class="daily-go">›</div>
+                </div>
+                <div class="search-bar" onclick="openSearch()">
+                  <span class="sb-icon">🔍</span>
+                  <span class="sb-ph">搜索题干、选项、解析…</span>
+                  <span class="sb-go">搜题</span>
+                </div>
+                <div class="group-label">⚡ 今日开练</div>
+                <div class="menu home-main-menu">
                   <div class="menu-btn" onclick="startPractice('all')">📖 顺序练习</div>
                   <div class="menu-btn" onclick="startPractice('random')">🎲 随机练习</div>
                   <div class="menu-btn" onclick="startRecite('all')">👁️ 背题模式</div>
                   <div class="menu-btn" onclick="startExamSetup()">📝 模拟考试</div>
                   <div class="menu-btn" onclick="startPractice('wrong')">🔥 错题集训</div>
                   <div class="menu-btn" onclick="openReview()">📑 错题查看</div>
-				  <div class="menu-btn" onclick="openCompareView()">⚖️ 易混题对比本</div>
-                  <div class="menu-btn" onclick="startPractice('fav')">⭐ 收藏集训</div>
-                  <div class="menu-btn" onclick="openFavReview()">🔖 收藏查看</div>
-                  <div class="menu-btn" onclick="openStudyStats()">📈 学习数据</div>
-                  <div class="menu-btn" onclick="startTrapPractice()">🎯 陷阱词突击</div>
-                  <div class="menu-btn" onclick="openSearch()" style="flex:1 1 50%; background:#f0f9ff; color:#0369a1; border-color:#bae6fd;">🔍 全局搜题</div>
+                  <div class="menu-btn wide" onclick="openCompareView()">⚖️ 易混题对比本</div>
+                  <div class="menu-btn wide" onclick="openSpecialPicker()">📚 专项练/背题</div>
+                  <div class="menu-btn wide" onclick="startPractice('fav')">⭐ 收藏集训</div>
+                  <div class="menu-btn wide" onclick="openFavReview()">🔖 收藏查看</div>
                 </div>
-        
-                <div class="fold-header ${foldPractice}" onclick="toggleFold('practice_sub')">
-                  <span>专项练习</span>
-                  <span class="fold-icon">▼</span>
-                </div>
-                <div class="panel-content ${foldPractice}" id="fold_practice_sub">
-                  <div class="sub-menu" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
-                    ${count.single > 0 ? `<button class="btn btn-outline" onclick="startPractice('single')">单选</button>` : ''}
-                    ${count.multiple > 0 ? `<button class="btn btn-outline" onclick="startPractice('multiple')">多选</button>` : ''}
-                    ${count.judge > 0 ? `<button class="btn btn-outline" onclick="startPractice('judge')">判断</button>` : ''}
-                    ${count.fill > 0 ? `<button class="btn btn-outline" onclick="startPractice('fill')">填空</button>` : ''}
-                    ${count.short > 0 ? `<button class="btn btn-outline" onclick="startPractice('short')">简答</button>` : ''}
-                    ${count.essay > 0 ? `<button class="btn btn-outline" onclick="startPractice('essay')">论述</button>` : ''}
-                  </div>
-                </div>
-        
-                <div class="fold-header ${foldRecite}" onclick="toggleFold('recite_sub')">
-                  <span>专项背题</span>
-                  <span class="fold-icon">▼</span>
-                </div>
-                <div class="panel-content ${foldRecite}" id="fold_recite_sub">
-                  <div class="sub-menu" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
-                    ${count.single > 0 ? `<button class="btn btn-outline" onclick="startRecite('single')">单选</button>` : ''}
-                    ${count.multiple > 0 ? `<button class="btn btn-outline" onclick="startRecite('multiple')">多选</button>` : ''}
-                    ${count.judge > 0 ? `<button class="btn btn-outline" onclick="startRecite('judge')">判断</button>` : ''}
-                    ${count.fill > 0 ? `<button class="btn btn-outline" onclick="startRecite('fill')">填空</button>` : ''}
-                    ${count.short > 0 ? `<button class="btn btn-outline" onclick="startRecite('short')">简答</button>` : ''}
-                    ${count.essay > 0 ? `<button class="btn btn-outline" onclick="startRecite('essay')">论述</button>` : ''}
-                  </div>
+                <div class="group-label">🎯 专项与数据</div>
+                <div style="display:flex; gap:10px; margin-bottom:12px;">
+                  <div class="menu-btn" onclick="startTrapPractice()" style="flex:1; min-width:0;">🎯 陷阱词突击</div>
+                  <div class="menu-btn" onclick="startWeakPractice()" style="flex:1; min-width:0;">💪 薄弱专练</div>
+                  <div class="menu-btn" onclick="openStudyStats()" style="flex:1; min-width:0;">📈 学习数据</div>
                 </div>
               </div>
             `;
           }
-        
           var foldMyBanks = foldState['mybanks'] ? 'collapsed' : '';
           html += `<div class="card"><div class="fold-header ${foldMyBanks}" onclick="toggleFold('mybanks')" style="border-radius:8px;margin-bottom:6px;"><span>📚 我的题库</span><span style="display:flex;align-items:center;gap:10px;"><button onclick="event.stopPropagation();clearAllBanks()" style="padding:3px 8px;font-size:0.72rem;border:1px solid #c32a1e;background:transparent;color:#c32a1e;border-radius:6px;cursor:pointer;">🗑️ 清空全部</button><span class="fold-icon">▼</span></span></div>`;
           html += `<div class="panel-content ${foldMyBanks}" id="fold_mybanks" style="padding-left:0;padding-right:0;">`;
@@ -2992,19 +3298,19 @@ function renderExamSetup() {
       // 题型配置映射
       var numMap = { single:'numSingle', multiple:'numMultiple', judge:'numJudge', fill:'numFill', short:'numShort', essay:'numEssay' };
       var scoreMap = { single:'scoreSingle', multiple:'scoreMultiple', judge:'scoreJudge', fill:'scoreFill', short:'scoreShort', essay:'scoreEssay' };
-      var inputStyle = 'width:46px;padding:5px 4px;text-align:center;border:1px solid var(--border-color);border-radius:4px;background:var(--card-bg);color:var(--text-main);font-size:0.9rem;';
+      var inputStyle = 'width:38px;padding:5px 2px;text-align:center;border:1px solid var(--border-color);border-radius:4px;background:var(--card-bg);color:var(--text-main);font-size:0.82rem;';
     
       var typeHtml = types.map(function(t){
         var currentNum = examConfig[numMap[t]] || 0;
         var currentScore = examConfig[scoreMap[t]];
         return `<div style="background:var(--input-bg);border:1px solid var(--border-color);border-radius:8px;padding:10px 12px;">
           <div style="font-size:0.9rem;font-weight:bold;margin-bottom:8px;color:var(--text-main);">${TYPE_NAMES[t]} <span style="font-weight:normal;font-size:0.75rem;color:var(--text-sub);">题库${count[t]}题</span></div>
-          <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
-            <label style="display:flex;align-items:center;gap:4px;font-size:0.8rem;color:var(--text-sub);">
-              数量 <input type="number" id="num_${t}" min="0" value="${currentNum}" style="${inputStyle}"> 题
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center;">
+            <label style="display:flex;align-items:center;justify-content:flex-start;gap:5px;font-size:0.75rem;color:var(--text-sub);min-width:0;white-space:nowrap;">
+              <span>数量</span><input type="number" id="num_${t}" min="0" value="${currentNum}" style="${inputStyle}"><span>题</span>
             </label>
-            <label style="display:flex;align-items:center;gap:4px;font-size:0.8rem;color:var(--text-sub);">
-              分值 <input type="number" id="sc_${t}" min="0.5" step="0.5" value="${currentScore}" style="${inputStyle}"> 分
+            <label style="display:flex;align-items:center;justify-content:flex-start;gap:5px;font-size:0.75rem;color:var(--text-sub);min-width:0;white-space:nowrap;">
+              <span>分值</span><input type="number" id="sc_${t}" min="0.5" step="0.5" value="${currentScore}" style="${inputStyle}"><span>分</span>
             </label>
           </div>
         </div>`;
@@ -3012,6 +3318,10 @@ function renderExamSetup() {
 
 function sw(id, checked, label, onChangeFn){
   return `<div class="setting-row" style="margin:0; padding:10px 12px; flex:1;"><span style="font-size:0.85rem;">${label}</span><label class="switch" style="transform:scale(0.85); transform-origin:right center;"><input type="checkbox" id="${id}" ${checked?'checked':''} onchange="${onChangeFn}"><span class="slider"></span></label></div>`;
+}
+
+function swC(id, checked, label, onChangeFn){
+  return `<div style="display:flex; align-items:center; justify-content:space-between; gap:2px; background:var(--input-bg); border:1px solid var(--border-color); border-radius:8px; padding:9px 8px; min-width:0;"><span style="font-size:0.74rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${label}</span><label class="switch" style="transform:scale(0.7); transform-origin:right center; flex:0 0 auto;"><input type="checkbox" id="${id}" ${checked?'checked':''} onchange="${onChangeFn}"><span class="slider"></span></label></div>`;
 }
 
   // 生成题库占比输入界面
@@ -3056,20 +3366,19 @@ function sw(id, checked, label, onChangeFn){
       <div style="font-weight:bold;font-size:0.95rem;margin:14px 0 10px;color:var(--text-main);">各题型题量与分值</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:15px;">${typeHtml}</div>
 
-      <div class="setting-row" style="margin-bottom:10px;"><span>考试时间 (分钟)</span>
-        <input type="number" id="ex_time" value="${examConfig.timeLimit || 60}" min="1" max="300" style="width:60px;padding:4px;text-align:center;border:1px solid var(--border-color);border-radius:4px;background:var(--card-bg);color:var(--text-main);"></div>
-
-      <div class="setting-row" style="margin-bottom:10px;"><span>合格分数线 (分)</span>
-        <input type="number" id="ex_pass" value="${passVal}" placeholder="不设置" min="0" style="width:70px;padding:4px;text-align:center;border:1px solid var(--border-color);border-radius:4px;background:var(--card-bg);color:var(--text-main);"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;background:var(--input-bg);border:1px solid var(--border-color);border-radius:8px;padding:10px 12px;min-width:0;"><span style="font-size:0.8rem;color:var(--text-sub);white-space:nowrap;">考试时间(分钟)</span>
+          <input type="number" id="ex_time" value="${examConfig.timeLimit || 60}" min="1" max="300" style="width:56px;padding:4px;text-align:center;border:1px solid var(--border-color);border-radius:4px;background:var(--card-bg);color:var(--text-main);"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;background:var(--input-bg);border:1px solid var(--border-color);border-radius:8px;padding:10px 12px;min-width:0;"><span style="font-size:0.8rem;color:var(--text-sub);white-space:nowrap;">合格线(分)</span>
+          <input type="number" id="ex_pass" value="${passVal}" placeholder="不设置" min="0" style="width:60px;padding:4px;text-align:center;border:1px solid var(--border-color);border-radius:4px;background:var(--card-bg);color:var(--text-main);"></div>
+      </div>
       <div class="rule-tip" style="margin-bottom:15px;">留空 = 不检查合格线。填写后：答题过程中若"已得分 + 剩余题满分 &lt; 合格线"，将立即终止答卷。</div>
 
       <div style="font-weight:bold;font-size:0.95rem;margin:14px 0 10px;">考试规则</div>
-      <div style="display:flex; gap:10px; margin-bottom:10px;">
-        ${sw('ex_instant', examInstantFeedback, '答题即时反馈', 'toggleExamInstantFeedback(this.checked)')}
-        ${sw('ex_preferWrong', examPreferWrong, '错题优先', 'toggleExamPreferWrong(this.checked)')}
-      </div>
-      <div style="display:flex; gap:10px; margin-bottom:15px;">
-        ${sw('ex_preferUndone', examPreferUndone, '未做题优先', 'toggleExamPreferUndone(this.checked)')}
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:15px;">
+        ${swC('ex_instant', examInstantFeedback, '答题即时反馈', 'toggleExamInstantFeedback(this.checked)')}
+        ${swC('ex_preferWrong', examPreferWrong, '错题优先', 'toggleExamPreferWrong(this.checked)')}
+        ${swC('ex_preferUndone', examPreferUndone, '未做题优先', 'toggleExamPreferUndone(this.checked)')}
       </div>
       
       <div style="display:flex; gap:10px; margin-top:10px;">
@@ -3099,6 +3408,45 @@ function toggleCrossBankMode() {
   localStorage.setItem('xjt_cross_bank', crossBankExamMode ? '1' : '0');
   renderExamSetup();
 }
+
+function buildExamPaper() {
+  var order = ['single','multiple','judge','fill','short','essay'];
+  var numKeys = { single:'numSingle', multiple:'numMultiple', judge:'numJudge', fill:'numFill', short:'numShort', essay:'numEssay' };
+  var scoreKeys = { single:'scoreSingle', multiple:'scoreMultiple', judge:'scoreJudge', fill:'scoreFill', short:'scoreShort', essay:'scoreEssay' };
+  for (var i = 0; i < order.length; i++) {
+    var t = order[i];
+    var nEl = document.getElementById('num_' + t);
+    if (nEl) { var nv = parseInt(nEl.value); examConfig[numKeys[t]] = isNaN(nv) ? 0 : Math.max(0, nv); }
+    var sEl = document.getElementById('sc_' + t);
+    if (sEl) { var sv = parseFloat(sEl.value); if (!isNaN(sv) && sv > 0) examConfig[scoreKeys[t]] = sv; }
+  }
+  var totalPool = [];
+  var tEl = document.getElementById('ex_time');
+  if (tEl) { var tv = parseInt(tEl.value); if (!isNaN(tv) && tv > 0) examConfig.timeLimit = tv; }
+  if (crossBankExamMode && window.selectedBankIds && window.selectedBankIds.length > 0) {
+    for (var k = 0; k < window.selectedBankIds.length; k++) {
+      var bId = window.selectedBankIds[k];
+      var pct = (window.bankPercents && window.bankPercents[bId]) || 0;
+      if (pct <= 0 || !allBanks[bId]) continue;
+      var bp = allBanks[bId].questions.slice();
+      var take = Math.round(bp.length * (pct / 100)); if (take === 0) take = 1;
+      bp.sort(function(){ return 0.5 - Math.random(); });
+      totalPool = totalPool.concat(bp.slice(0, take));
+    }
+  } else {
+    totalPool = (activeBankId && allBanks[activeBankId]) ? allBanks[activeBankId].questions.slice() : [];
+  }
+  var paper = [];
+  for (var j = 0; j < order.length; j++) {
+    var tt = order[j];
+    var pool = totalPool.filter(function(q){ return q.type === tt; });
+    pool.sort(function(){ return 0.5 - Math.random(); });
+    var need = examConfig[numKeys[tt]] || 0;
+    if (need > 0) paper = paper.concat(pool.slice(0, Math.min(pool.length, need)));
+  }
+  return paper;
+}
+
 
 function startExam() {
   if (!guardGate()) return;
@@ -4222,77 +4570,73 @@ function exportWrongToPrint() {
   var typeNames = { single: '单选题', multiple: '多选题', judge: '判断题', fill: '填空题', short: '简答题', essay: '论述题' };
   var typeOrder = ['single', 'multiple', 'judge', 'fill', 'short', 'essay'];
   var chineseNumbers = ['一', '二', '三', '四', '五', '六'];
-
-  var html = `
-    <style>
-      .question-block { page-break-inside: avoid; break-inside: avoid; }
-      .force-break { page-break-before: always; break-before: page; }
-    </style>
-    <div style="font-family:'SimSun','宋体',serif; font-size:13pt; line-height:1.6; color:#000; background:#fff; padding:15px;">
-      <h1 style="text-align:center; font-size:22pt; margin-bottom:10px; font-weight:bold;">${bankName} - 错题本</h1>
-      <div style="text-align:center; font-size:12pt; margin-bottom:15px;">共计：${currentWrong.length} 题</div>
-      <hr style="border:1px solid #000; margin-bottom:15px;">
-  `;
-
   var sectionIndex = 0;
-  var currentHeight = 0; 
-  var MAX_PAGE_HEIGHT = 850;
+
+  var PAGE_W_MM = 190;
+  var PAGE_H_PX = 1047;
+  var MAX_H = 1000;
+
+  var pagesWrap = document.createElement('div');
+  pagesWrap.style.cssText = 'width:' + PAGE_W_MM + 'mm; margin:0 auto; padding:0 15px; box-sizing:border-box; background:#fff; font-family:"SimSun","宋体",serif; font-size:13pt; line-height:1.6; color:#000;';
+  document.body.appendChild(pagesWrap);
+
+  var curInner = null;
+  function newPageInner() {
+    var pageDiv = document.createElement('div');
+    pageDiv.className = 'pdf-page';
+    pageDiv.style.cssText = 'width:100%; height:' + PAGE_H_PX + 'px; box-sizing:border-box; overflow:hidden; background:#fff;';
+    var inner = document.createElement('div');
+    pageDiv.appendChild(inner);
+    pagesWrap.appendChild(pageDiv);
+    curInner = inner;
+    return inner;
+  }
+  function addBlock(blockHtml) {
+    if (!curInner) newPageInner();
+    var tmp = document.createElement('div');
+    tmp.innerHTML = blockHtml;
+    var node = tmp.firstElementChild;
+    if (!node) return;
+    curInner.appendChild(node);
+    if (curInner.getBoundingClientRect().height > MAX_H && curInner.childElementCount > 1) {
+      curInner.removeChild(node);
+      newPageInner();
+      curInner.appendChild(node);
+    }
+  }
+
+  // 卷头
+  addBlock(`<div style="text-align:center;"><h1 style="font-size:22pt; margin:0 0 10px; font-weight:bold;">${bankName} - 错题本</h1><div style="font-size:12pt; padding-bottom:10px;">共计：${currentWrong.length} 题</div><hr style="border:1px solid #000; margin:0 0 14px;"></div>`);
 
   for (var t = 0; t < typeOrder.length; t++) {
     var type = typeOrder[t];
     var tQs = groups[type];
     if (!tQs || tQs.length === 0) continue;
 
-    var titleHtml = `<div style="font-weight:bold; font-size:14pt; margin-top:16px; margin-bottom:10px;">${chineseNumbers[sectionIndex]}、${typeNames[type]}（共 ${tQs.length} 题）</div>`;
-    html += titleHtml;
-    currentHeight += 40;
+    var secTitle = chineseNumbers[sectionIndex] || String(sectionIndex + 1);
     sectionIndex++;
+    addBlock(`<div style="font-weight:bold; font-size:14pt; padding:14px 0 10px;">${secTitle}、${typeNames[type]}（共 ${tQs.length} 题）</div>`);
 
     for (var j = 0; j < tQs.length; j++) {
       var qq = tQs[j];
-      
-      var qTextLen = qq.question.length;
-      var qHeight = Math.ceil(qTextLen / 25) * 20 + 30;
-      
       var optsHtml = '';
       if (qq.type === 'judge') {
-        optsHtml += `<div style="margin-left:20pt; margin-bottom:2px;">A. 正确 &nbsp;&nbsp;&nbsp;&nbsp; B. 错误</div>`;
-        qHeight += 25;
+        optsHtml += `<div style="margin-left:20pt; padding-bottom:2px;">A. 正确 &nbsp;&nbsp;&nbsp;&nbsp; B. 错误</div>`;
       } else if (qq.type !== 'fill' && qq.type !== 'short' && qq.type !== 'essay' && qq.options) {
         for (var k = 0; k < qq.options.length; k++) {
-          var optText = qq.options[k];
-          optsHtml += `<div style="margin-left:20pt; margin-bottom:2px;">${String.fromCharCode(65 + k)}. ${optText}</div>`;
-          qHeight += Math.ceil(optText.length / 30) * 20 + 5;
+          optsHtml += `<div style="margin-left:20pt; padding-bottom:2px;">${String.fromCharCode(65 + k)}. ${qq.options[k]}</div>`;
         }
       } else {
-        optsHtml += `<div style="height:50pt; border-bottom:1px dotted #000; margin-top:8pt; margin-bottom:8pt;"></div>`;
+        optsHtml += `<div style="height:50pt; border-bottom:1px dotted #000; margin-top:8pt;"></div>`;
         if (qq.type === 'short' || qq.type === 'essay') {
-          optsHtml += `<div style="height:50pt; border-bottom:1px dotted #000; margin-top:8pt; margin-bottom:8pt;"></div>`;
+          optsHtml += `<div style="height:50pt; border-bottom:1px dotted #000; margin-top:8pt;"></div>`;
         }
-        qHeight += 120;
       }
-
-      qHeight += 20;
-
-      if (currentHeight + qHeight > MAX_PAGE_HEIGHT) {
-        html += `<div class="force-break"></div>`;
-        currentHeight = 0;
-      }
-
-      html += `<div class="question-block">`;
-      html += `<div style="font-weight:normal; margin-top:8px; margin-bottom:4px;">${j + 1}. ${qq.question}</div>`;
-      html += optsHtml;
-      html += `</div>`;
-      
-      currentHeight += qHeight;
+      addBlock(`<div style="padding-top:8px;"><div style="padding-bottom:4px;">${j + 1}. ${qq.question}</div>${optsHtml}</div>`);
     }
   }
 
-  html += `</div>`;
-
-  var element = document.createElement('div');
-  element.innerHTML = html;
-  document.body.appendChild(element);
+  var element = pagesWrap;
 
   var wmCanvas = document.createElement('canvas');
   wmCanvas.width = 1200; wmCanvas.height = 1600;
@@ -4312,7 +4656,7 @@ function exportWrongToPrint() {
     image:        { type: 'jpeg', quality: 0.98 },
     html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak:    { mode: ['css', 'legacy'], avoid: '.question-block' }
+    pagebreak:    { mode: ['css', 'legacy'] }
   };
 
   if (typeof html2pdf === 'undefined') {
@@ -4338,10 +4682,11 @@ function exportExamToWord(isPreview) {
   
   var qs = [];
   if (isPreview === true) {
-    var pool = activeBankId ? allBanks[activeBankId].questions : [];
-    qs = pool;
+    // 设置页“导出试题”：按当前组卷设置（各题型题量、分值、跨库抽题）生成一套试卷再导出
+    qs = buildExamPaper();
+    if (qs.length === 0) return showToast('当前组不出试卷：请检查各题型数量与跨题库占比设置', true);
   } else {
-    qs = examQuestions;
+    qs = (examQuestions && examQuestions.length > 0) ? examQuestions : buildExamPaper();
   }
   
   if (qs.length === 0) return showToast('当前没有题目可导出', true);
@@ -4357,81 +4702,77 @@ function exportExamToWord(isPreview) {
   var typeNames = { single: '单选题', multiple: '多选题', judge: '判断题', fill: '填空题', short: '简答题', essay: '论述题' };
   var typeOrder = ['single', 'multiple', 'judge', 'fill', 'short', 'essay'];
 
-  var html = `
-    <style>
-      .question-block { page-break-inside: avoid; break-inside: avoid; }
-      .force-break { page-break-before: always; break-before: page; }
-    </style>
-    <div style="font-family:'SimSun','宋体',serif; font-size:13pt; line-height:1.6; color:#000; background:#fff; padding:15px;">
-      <h1 style="text-align:center; font-size:22pt; margin-bottom:10px; font-weight:bold;">${bankName} - 模拟试卷</h1>
-      <div style="text-align:center; font-size:12pt; margin-bottom:10px;">考试时长：${examConfig.timeLimit || 60}分钟</div>
-      <hr style="border:1px solid #000; margin-bottom:15px;">
-  `;
-
   var chineseNumbers = ['一', '二', '三', '四', '五', '六'];
   var sectionIndex = 0;
-  
-  // 高度估算累加器（A4纸转换到像素大约可用高度是 950px，留点余量设为 850px）
-  var currentHeight = 0; 
-  var MAX_PAGE_HEIGHT = 850; 
+
+  /* ★ 真实测量分页：每页固定 A4 可用高度，逐题测量是否放得下，放不下就换页
+     旧方案靠“估算高度 + 强制分页”，估不准就会把题目切断（页面顶部出现半截字），还会产生空白页 */
+  var PAGE_W_MM = 190;          // A4 210mm 减去左右各 10mm 页边距
+  var PAGE_H_PX = 1047;         // 277mm 可用高度，按 96dpi 折成 px
+  var MAX_H = 1000;             // 内容安全线，留 47px 余量，绝不越界
+
+  var pagesWrap = document.createElement('div');
+  pagesWrap.style.cssText = 'width:' + PAGE_W_MM + 'mm; margin:0 auto; padding:0 15px; box-sizing:border-box; background:#fff; font-family:"SimSun","宋体",serif; font-size:13pt; line-height:1.6; color:#000;';
+  document.body.appendChild(pagesWrap);
+
+  var curInner = null;
+  function newPageInner() {
+    var pageDiv = document.createElement('div');
+    pageDiv.className = 'pdf-page';
+    pageDiv.style.cssText = 'width:100%; height:' + PAGE_H_PX + 'px; box-sizing:border-box; overflow:hidden; background:#fff;';
+    var inner = document.createElement('div');
+    pageDiv.appendChild(inner);
+    pagesWrap.appendChild(pageDiv);
+    curInner = inner;
+    return inner;
+  }
+  function addBlock(blockHtml) {
+    if (!curInner) newPageInner();
+    var tmp = document.createElement('div');
+    tmp.innerHTML = blockHtml;
+    var node = tmp.firstElementChild;
+    if (!node) return;
+    curInner.appendChild(node);
+    if (curInner.getBoundingClientRect().height > MAX_H && curInner.childElementCount > 1) {
+      curInner.removeChild(node);
+      newPageInner();
+      curInner.appendChild(node);
+    }
+  }
+
+  // 卷头
+  addBlock(`<div style="text-align:center;"><h1 style="font-size:22pt; margin:0 0 10px; font-weight:bold;">${bankName} - 模拟试卷</h1><div style="font-size:12pt; padding-bottom:10px;">考试时长：${examConfig.timeLimit || 60}分钟</div><hr style="border:1px solid #000; margin:0 0 14px;"></div>`);
 
   for (var t = 0; t < typeOrder.length; t++) {
     var type = typeOrder[t];
     var tQs = groups[type];
     if (!tQs || tQs.length === 0) continue;
 
-    var titleHtml = `<div style="font-weight:bold; font-size:14pt; margin-top:16px; margin-bottom:10px;">${chineseNumbers[sectionIndex]}、${typeNames[type]}（共 ${tQs.length} 题）</div>`;
-    html += titleHtml;
-    currentHeight += 40; // 大标题占用高度
+    var secTitle = chineseNumbers[sectionIndex] || String(sectionIndex + 1);
     sectionIndex++;
+    addBlock(`<div style="font-weight:bold; font-size:14pt; padding:14px 0 10px;">${secTitle}、${typeNames[type]}（共 ${tQs.length} 题）</div>`);
 
     for (var j = 0; j < tQs.length; j++) {
       var qq = tQs[j];
-      
-      // 预估当前题目的高度
-      var qTextLen = qq.question.length;
-      var qHeight = Math.ceil(qTextLen / 25) * 20 + 30; // 题干高度估算
-      
       var optsHtml = '';
       if (qq.type === 'judge') {
-        optsHtml += `<div style="margin-left:20pt; margin-bottom:2px;">A. 正确 &nbsp;&nbsp;&nbsp;&nbsp; B. 错误</div>`;
-        qHeight += 25;
+        optsHtml += `<div style="margin-left:20pt; padding-bottom:2px;">A. 正确 &nbsp;&nbsp;&nbsp;&nbsp; B. 错误</div>`;
       } else if (qq.type !== 'fill' && qq.type !== 'short' && qq.type !== 'essay' && qq.options) {
         for (var k = 0; k < qq.options.length; k++) {
-          var optText = qq.options[k];
-          optsHtml += `<div style="margin-left:20pt; margin-bottom:2px;">${String.fromCharCode(65 + k)}. ${optText}</div>`;
-          qHeight += Math.ceil(optText.length / 30) * 20 + 5; // 选项高度估算
+          optsHtml += `<div style="margin-left:20pt; padding-bottom:2px;">${String.fromCharCode(65 + k)}. ${qq.options[k]}</div>`;
         }
       } else {
-        optsHtml += `<div style="height:50pt; border-bottom:1px dotted #000; margin-top:8pt; margin-bottom:8pt;"></div>`;
+        optsHtml += `<div style="height:50pt; border-bottom:1px dotted #000; margin-top:8pt;"></div>`;
         if (qq.type === 'essay' || qq.type === 'short') {
-          optsHtml += `<div style="height:50pt; border-bottom:1px dotted #000; margin-top:8pt; margin-bottom:8pt;"></div>`;
+          optsHtml += `<div style="height:50pt; border-bottom:1px dotted #000; margin-top:8pt;"></div>`;
         }
-        qHeight += 120; // 主观题留白高度
       }
-
-      qHeight += 20; // 题目间距
-
-      // ★ 核心：如果加上这道题会超出页面，则强制分页
-      if (currentHeight + qHeight > MAX_PAGE_HEIGHT) {
-        html += `<div class="force-break"></div>`;
-        currentHeight = 0; // 新页面，重置高度
-      }
-
-      html += `<div class="question-block">`;
-      html += `<div style="font-weight:normal; margin-top:8px; margin-bottom:4px;">${j + 1}. ${qq.question}</div>`;
-      html += optsHtml;
-      html += `</div>`;
-      
-      currentHeight += qHeight; // 累加当前题目高度
+      // 每道题一个不可分割的块，避免被切成半行
+      addBlock(`<div style="padding-top:8px;"><div style="padding-bottom:4px;">${j + 1}. ${qq.question}</div>${optsHtml}</div>`);
     }
   }
 
-  html += `</div>`;
-
-  var element = document.createElement('div');
-  element.innerHTML = html;
-  document.body.appendChild(element);
+  var element = pagesWrap;
 
   var wmCanvas = document.createElement('canvas');
   wmCanvas.width = 1200; wmCanvas.height = 1600;
@@ -4451,7 +4792,7 @@ function exportExamToWord(isPreview) {
     image:        { type: 'jpeg', quality: 0.98 },
     html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak:    { mode: ['css', 'legacy'], avoid: '.question-block' } // 双重保险
+    pagebreak:    { mode: ['css', 'legacy'] }
   };
 
   if (typeof html2pdf === 'undefined') {
