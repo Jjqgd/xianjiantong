@@ -3436,6 +3436,13 @@ function buildExamPaper() {
   } else {
     totalPool = (activeBankId && allBanks[activeBankId]) ? allBanks[activeBankId].questions.slice() : [];
   }
+  /* M_pool_fallback: 跨题库占比未填(全为0)时，回退用选中题库全量，再兜底当前题库，避免组卷 0 题 */
+  if (totalPool.length === 0) {
+    if (crossBankExamMode && window.selectedBankIds && window.selectedBankIds.length > 0) {
+      for (var m = 0; m < window.selectedBankIds.length; m++) { var bm = allBanks[window.selectedBankIds[m]]; if (bm && bm.questions) totalPool = totalPool.concat(bm.questions); }
+    }
+    if (totalPool.length === 0 && activeBankId && allBanks[activeBankId]) { totalPool = allBanks[activeBankId].questions.slice(); }
+  }
   var paper = [];
   for (var j = 0; j < order.length; j++) {
     var tt = order[j];
