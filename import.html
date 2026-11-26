@@ -186,18 +186,42 @@ function parseExcelContent(arrayBuffer, fileName) {
             return showToast('文件内没有工作表');
         }
 
-        var sheet = wb.Sheets[wb.SheetNames[0]];
-        var rows = XLSX.utils.sheet_to_json(sheet, {header:1, blankrows:false, defval:''});
-        log("工作表转换为二维数组，总行数: " + rows.length);
-        
-        if(rows.length === 0){
-            return showToast('解析失败：数据为空');
+        log("检测到工作表数量: " + wb.SheetNames.length + "（" + wb.SheetNames.join('、') + "）");
+
+        var merged = [];
+        var sheetInfo = [];
+        for (var si = 0; si < wb.SheetNames.length; si++) {
+            var sName = wb.SheetNames[si];
+            var sheet = wb.Sheets[sName];
+            if (!sheet) { log("工作表【" + sName + "】不存在，跳过"); continue; }
+            var rows = XLSX.utils.sheet_to_json(sheet, {header:1, blankrows:false, defval:''});
+            if (!rows || rows.length === 0) { log("工作表【" + sName + "】为空，跳过"); continue; }
+            log("工作表【" + sName + "】转换为二维数组，总行数: " + rows.length);
+            var items = parseGrid(rows);
+            if (!items || items.length === 0) { log("工作表【" + sName + "】未识别到题目，跳过"); continue; }
+            merged = merged.concat(items);
+            sheetInfo.push(sName + ' ' + items.length + '题');
+            log("工作表【" + sName + "】识别出 " + items.length + " 条数据");
         }
 
-        appState.tempRaw = parseGrid(rows);
+        if (merged.length === 0) {
+            return showToast('解析失败：所有工作表都没有识别到题目');
+        }
+
+        // 多个工作表之间题号可能重复，统一去重
+        var seenId = {};
+        merged.forEach(function(q, i) {
+            if (!q) return;
+            var base = q.id ? String(q.id) : ('q_' + i);
+            if (seenId[base]) { base = base + '_m' + i; }
+            seenId[base] = 1;
+            q.id = base;
+        });
+
+        appState.tempRaw = merged;
         document.getElementById('fileNameDisplay').style.color = 'var(--success)';
         document.getElementById('fileNameDisplay').style.fontWeight = 'bold';
-        document.getElementById('fileNameDisplay').textContent = '✅ 已选文件：' + fileName + '（共识别出 ' + appState.tempRaw.length + ' 条数据）';
+        document.getElementById('fileNameDisplay').textContent = '✅ 已选文件：' + fileName + '（' + (sheetInfo.length > 1 ? sheetInfo.length + ' 个工作表，' : '') + '共识别出 ' + appState.tempRaw.length + ' 条数据）';
         switchMode('file');
         showToast('文件读取成功！请点击「解析并校验」');
         
