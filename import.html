@@ -119,6 +119,7 @@ body{background:var(--bg);color:var(--text);font-size:14px;padding:10px}
 
   <!-- ======== 补全缺失的解析结果区 ======== -->
   <div class="result-box" id="resultBox">
+    <div id="headerDiagBox" style="display:none;margin-bottom:10px;"></div>
     <div class="stat-line">
       <span class="ok" id="sucCount">成功 0 条</span>
       <span class="fail" id="failCount">失败 0 条</span>
@@ -134,7 +135,7 @@ body{background:var(--bg);color:var(--text);font-size:14px;padding:10px}
 
 <script>
 /* ================= 全局状态 ================= */
-var appState = { mode:'file', tempRaw:[], finalParsed:[], failErrors:[], debugLogs:[] };
+var appState = { mode:'file', tempRaw:[], finalParsed:[], failErrors:[], debugLogs:[], headerDiags:[] };
 
 function showToast(msg){
     var d = document.getElementById('toast');
@@ -181,7 +182,7 @@ window.switchMode = function(mode){
 function parseExcelContent(arrayBuffer, fileName) {
     log("开始解析 Excel...");
     try {
-        var wb = XLSX.read(new Uint8Array(arrayBuffer), {type:'array'});
+        var wb = XLSX.read(new Uint8Array(arrayBuffer), {type:'array', cellNF:true});
         if(!wb.SheetNames || wb.SheetNames.length === 0){
             return showToast('文件内没有工作表');
         }
@@ -190,14 +191,17 @@ function parseExcelContent(arrayBuffer, fileName) {
 
         var merged = [];
         var sheetInfo = [];
+        var headerDiagList = [];
         for (var si = 0; si < wb.SheetNames.length; si++) {
             var sName = wb.SheetNames[si];
             var sheet = wb.Sheets[sName];
             if (!sheet) { log("工作表【" + sName + "】不存在，跳过"); continue; }
+            normalizeDateCells(sheet);
             var rows = XLSX.utils.sheet_to_json(sheet, {header:1, blankrows:false, defval:''});
             if (!rows || rows.length === 0) { log("工作表【" + sName + "】为空，跳过"); continue; }
             log("工作表【" + sName + "】转换为二维数组，总行数: " + rows.length);
             var items = parseGrid(rows);
+            if (parseGrid.diag) { parseGrid.diag.sheet = sName; headerDiagList.push(parseGrid.diag); }
             if (!items || items.length === 0) { log("工作表【" + sName + "】未识别到题目，跳过"); continue; }
             merged = merged.concat(items);
             sheetInfo.push(sName + ' ' + items.length + '题');
@@ -205,7 +209,9 @@ function parseExcelContent(arrayBuffer, fileName) {
         }
 
         if (merged.length === 0) {
-            return showToast('解析失败：所有工作表都没有识别到题目');
+            appState.tempRaw = [];
+            appState.headerDiags = headerDiagList;
+            return showToast('解析失败：所有工作表都没有识别到题目，请查看下方表头诊断');
         }
 
         // 多个工作表之间题号可能重复，统一去重
@@ -219,6 +225,7 @@ function parseExcelContent(arrayBuffer, fileName) {
         });
 
         appState.tempRaw = merged;
+        appState.headerDiags = headerDiagList;
         document.getElementById('fileNameDisplay').style.color = 'var(--success)';
         document.getElementById('fileNameDisplay').style.fontWeight = 'bold';
         document.getElementById('fileNameDisplay').textContent = '✅ 已选文件：' + fileName + '（' + (sheetInfo.length > 1 ? sheetInfo.length + ' 个工作表，' : '') + '共识别出 ' + appState.tempRaw.length + ' 条数据）';
@@ -286,60 +293,346 @@ document.addEventListener('plusready', function() {
     });
 });
 
-function parseGrid(grid){
-    if(!grid || !grid.length) return [];
-    var cc = function(c){ return String(c==null?'':c).trim(); };
+function isDateStyle(z){
+    if(!z) return false;
+    var s = String(z).replace(/"[^"]*"/g, '').replace(/\[[^\]]*\]/g, '').toLowerCase().trim();
+    if(!s || s === 'general' || s === '@') return false;
+    if(/[0#?]/.test(s)) return false;          // 带数字占位符的是数字/货币格式，不是日期
+    if(!/[dmye]/.test(s)) return false;
+    // 只允许日期时间相关字符，排除 general、文本这类格式
+    return /^[ymdhs\s\/\-.,:@年月日]+$/.test(s);
+}
 
-    var headIdx = -1;
-    for(var i=0;i<Math.min(10,grid.length);i++){
-        var s = grid[i].map(cc).join('').toLowerCase();
-        if(s.indexOf('题目')>-1||s.indexOf('题干')>-1||s.indexOf('选项')>-1||s.indexOf('题型')>-1){
-            headIdx=i; break;
+// 没有格式串时，看显示文本是否长得像日期（SheetJS 会生成 cell.w）
+function looksLikeDateText(s){
+    if(!s) return false;
+    return /^\d{2,4}\s*[-/.年]\s*\d{1,2}\s*[-/.月](\s*\d{1,2}\s*[日号])?/.test(String(s).trim());
+}
+
+// 格式里带年（y 或 e）才输出年份；"每年"这类只写月日的表格保持不带年
+function styleHasYear(z){
+    if(!z) return false;
+    var s = String(z).replace(/"[^"]*"/g, '').replace(/\[[^\]]*\]/g, '').toLowerCase();
+    return /[ye]/.test(s);
+}
+
+function serialToText(n, withYear){
+    // 25569 = 1970-01-01 在 Excel 序列号里的值；用 UTC 计算，不受本机时区影响
+    var d = new Date(Math.round((n - 25569) * 86400000));
+    var md = (d.getUTCMonth() + 1) + '月' + d.getUTCDate() + '日';
+    return withYear ? (d.getUTCFullYear() + '年' + md) : md;
+}
+
+function normalizeDateCells(sheet){
+    if(!sheet) return;
+    Object.keys(sheet).forEach(function(key){
+        if(key.charAt(0) === '!') return;
+        var cell = sheet[key];
+        if(!cell) return;
+        if(cell.t === 'd' && cell.v instanceof Date){
+            cell.v = cell.v.getFullYear() + '年' + (cell.v.getMonth() + 1) + '月' + cell.v.getDate() + '日';
+            cell.t = 's'; cell.z = undefined; return;
         }
-    }
-    log("表头行索引: " + headIdx);
+        var isDateCell = (cell.z && isDateStyle(cell.z)) || looksLikeDateText(cell.w);
+        if(cell.t === 'n' && typeof cell.v === 'number' && isDateCell && cell.v > 1 && cell.v < 2958466){
+            var withYear = cell.z ? styleHasYear(cell.z) : /^\d{4}/.test(String(cell.w || '').trim());
+            cell.v = serialToText(cell.v, withYear);
+            cell.t = 's'; cell.z = undefined; cell.w = undefined;
+        }
+    });
+}
 
-    var cols = {type:-1,stem:-1,ans:-1,ana:-1,code:-1,opt:[]};
-    if(headIdx>-1){
-        grid[headIdx].map(cc).forEach(function(cell,idx){
-            var c = cell.toLowerCase();
-            if(cols.type<0&&c.indexOf('题型')>-1) cols.type=idx;
-            if(cols.stem<0&&(c.indexOf('题目')>-1||c.indexOf('题干')>-1||c==='内容')) cols.stem=idx;
-            if(cols.ans<0&&(c.indexOf('答案')>-1||c==='answer')) cols.ans=idx;
-            if(cols.ana<0&&(c.indexOf('解析')>-1||c.indexOf('answer analysis')>-1||c==='analysis')) cols.ana=idx;
-            if(cols.code<0&&(c.indexOf('编码')>-1||c.indexOf('编号')>-1||c.indexOf('id')>-1)) cols.code=idx;
-            var m = c.match(/选项\s*([a-h])/);
-            if(m) cols.opt.push(idx); else if(/^[a-h][\.、．]/.test(cell)) cols.opt.push(idx);
+/* ============ 表头识别（通用版） ============ */
+/* 不同来源的题库表头写法差别很大（题目/题干/试题、选项A/A选项/选项1/单独的A……）。
+   这里改成"先给每列打角色分，再按优先级分配"，最后对数据做体检：
+   列认错了就直接报出来，而不是悄悄导进一堆错题。 */
+
+function cleanHeaderCell(s){
+    return String(s == null ? '' : s)
+        .replace(/（[^）]*）/g, '')       // 中文括号里的说明文字
+        .replace(/\([^)]*\)/g, '')       // 英文括号
+        .replace(/【[^】]*】/g, '')
+        .replace(/\[[^\]]*\]/g, '')
+        .replace(/[\s:：\-_\/|、.。]+/g, '')
+        .toLowerCase();
+}
+
+function optCharIndex(ch){
+    if(/^[a-h]$/.test(ch)) return ch.charCodeAt(0) - 97;
+    if(/^[1-8]$/.test(ch)) return parseInt(ch, 10) - 1;
+    return -1;
+}
+
+function optIndexOf(t){
+    var m;
+    if((m = t.match(/^(?:第)?([a-h1-8])(?:选项|项)$/))) return optCharIndex(m[1]);
+    if((m = t.match(/^选项([a-h1-8])$/))) return optCharIndex(m[1]);
+    if((m = t.match(/^([a-h1-8])$/))) return optCharIndex(m[1]);
+    if((m = t.match(/^第([1-8])选项$/))) return parseInt(m[1], 10) - 1;
+    return -1;
+}
+
+function roleScore(title){
+    var t = cleanHeaderCell(title);
+    if(!t) return null;
+
+    var oi = optIndexOf(t);
+    if(oi >= 0) return {role:'opt', index:oi, score:100};
+
+    if(/题目类型|试题类型|题型|题类|类型|类别|分类/.test(t) && !/答案|解析|选项/.test(t)){
+        return {role:'type', score:100};
+    }
+    if(/答案|正确选项/.test(t) && !/解析/.test(t)) return {role:'ans', score:100};
+    if(t === '答' || t === 'answer' || t === 'key') return {role:'ans', score:100};
+    if(/解析|分析|考点说明|试题说明/.test(t)) return {role:'ana', score:90};
+    if(/^(题号|编号|序号|编码|id|题目编号|题目序号|题目id|试题编号)$/.test(t)) return {role:'code', score:90};
+
+    var score = 0;
+    if(/题干/.test(t)) score = 100;
+    else if(/题目内容|试题内容|题干内容|试题|题目|问题|提问|小题/.test(t) || t === '内容') score = 80;
+    if(score && !/答案|解析|选项|难度|分值|编号|序号|题号|编码|id|类型|题型|类别/.test(t)){
+        return {role:'stem', score:score};
+    }
+    return null;
+}
+
+// 在前 20 行里找最像表头的一行（能自动跳过顶部的标题行/说明行）
+function detectHeader(grid){
+    var cc = function(c){ return String(c == null ? '' : c).trim(); };
+    var limit = Math.min(20, grid.length);
+    var best = {row:-1, roles:[], score:0};
+    for(var i = 0; i < limit; i++){
+        var row = grid[i] || [];
+        var roles = [], optCount = 0, hasStem = false, hasAns = false, hasType = false;
+        for(var c = 0; c < row.length; c++){
+            var r = roleScore(row[c]);
+            if(!r) continue;
+            r.idx = c;
+            r.title = cc(row[c]);
+            roles.push(r);
+            if(r.role === 'opt') optCount++;
+            else if(r.role === 'stem') hasStem = true;
+            else if(r.role === 'ans') hasAns = true;
+            else if(r.role === 'type') hasType = true;
+        }
+        var score = (hasStem ? 3 : 0) + optCount * 2 + (hasAns ? 1 : 0) + (hasType ? 1 : 0);
+        if(score > best.score) best = {row:i, roles:roles, score:score};
+    }
+    if(!best.roles.length || best.score < 3) return null;
+    return best;
+}
+
+// 一列只允许承担一个角色，冲突时按分数让位
+function assignColumns(roles){
+    var cols = {type:-1, stem:-1, ans:-1, ana:-1, code:-1, opt:[]};
+    var used = {};
+    var stemBest = null;
+    roles.forEach(function(r){
+        if(r.role !== 'stem') return;
+        if(!stemBest || r.score > stemBest.score) stemBest = r;
+    });
+    if(stemBest){ cols.stem = stemBest.idx; used[stemBest.idx] = 1; }
+
+    var optMap = {};
+    roles.forEach(function(r){
+        if(r.role !== 'opt') return;
+        if(used[r.idx]) return;
+        if(optMap[r.index] !== undefined) return;
+        optMap[r.index] = r.idx;
+    });
+    cols.opt = Object.keys(optMap)
+        .map(function(k){ return parseInt(k, 10); })
+        .sort(function(a, b){ return a - b; })
+        .map(function(k){ return optMap[k]; });
+
+    ['type', 'ans', 'ana', 'code'].forEach(function(role){
+        var best = null;
+        roles.forEach(function(r){
+            if(r.role !== role) return;
+            if(used[r.idx]) return;
+            if(!best || r.score > best.score) best = r;
+        });
+        if(best){ cols[role] = best.idx; used[best.idx] = 1; }
+    });
+    return cols;
+}
+
+// 没有表头时，按内容猜列：题干=最长文本列，其余短列当选项，只有单一取值且短的列当答案
+function guessColumnsByContent(rows){
+    var cc = function(c){ return String(c == null ? '' : c).trim(); };
+    var sample = [];
+    for(var i = 0; i < Math.min(rows.length, 30); i++) sample.push((rows[i] || []).map(cc));
+    var colCount = 0;
+    sample.forEach(function(r){ if(r.length > colCount) colCount = r.length; });
+    if(!colCount) return null;
+
+    var stats = [];
+    for(var c = 0; c < colCount; c++){
+        var vals = [];
+        sample.forEach(function(r){ if(r[c]) vals.push(r[c]); });
+        var uniqMap = {};
+        vals.forEach(function(v){ uniqMap[v] = 1; });
+        stats.push({
+            idx:c,
+            count:vals.length,
+            uniq:Object.keys(uniqMap).length,
+            maxLen: vals.length ? Math.max.apply(null, vals.map(function(v){ return v.length; })) : 0
         });
     }
-    log("解析到的列结构: " + JSON.stringify(cols));
+    var stem = null;
+    stats.forEach(function(s){ if(!stem || s.maxLen > stem.maxLen) stem = s; });
+    if(!stem || stem.maxLen < 8) return null;
 
-    var headerLocated = headIdx>-1 && (cols.stem>-1 || cols.opt.length>0);
-    if(!headerLocated){
-        log("未找到标准表头，使用默认兜底格式推断...");
-        cols.stem = 1; 
-        cols.ans = (grid[0] || []).length - 2; 
-        headIdx = 0; 
+    var opts = [], ans = -1;
+    stats.forEach(function(s){
+        if(s.idx === stem.idx || !s.count) return;
+        if(s.uniq <= 1 && s.maxLen <= 12){ ans = s.idx; return; }
+        if(s.maxLen <= 14) opts.push(s.idx);
+    });
+    opts.sort(function(a, b){ return a - b; });
+    return {stem:stem.idx, type:-1, ans:ans, ana:-1, code:-1, opt:opts.slice(0, 6)};
+}
+
+// 数据体检：题干列到底是不是题干、还缺哪些列、跳过了几行
+function diagnoseHeader(grid, headIdx, cols, usedFallback){
+    var cc = function(c){ return String(c == null ? '' : c).trim(); };
+    var diag = {ok:true, headerRow:usedFallback ? 0 : headIdx + 1, columns:[], warnings:[], errors:[], skipped:0, skippedRows:[], fallback:!!usedFallback};
+
+    var roleMap = {};
+    if(cols.stem > -1) roleMap[cols.stem] = '题干';
+    if(cols.type > -1) roleMap[cols.type] = '题型';
+    if(cols.ans > -1) roleMap[cols.ans] = '答案';
+    if(cols.ana > -1) roleMap[cols.ana] = '解析';
+    if(cols.code > -1) roleMap[cols.code] = '编号';
+    cols.opt.forEach(function(idx, i){ roleMap[idx] = '选项' + String.fromCharCode(65 + i); });
+
+    var maxCol = 0;
+    for(var i = 0; i <= Math.min(headIdx, grid.length - 1); i++){
+        if((grid[i] || []).length > maxCol) maxCol = (grid[i] || []).length;
     }
-    
-    cols.opt = cols.opt.filter(function(v,i,a){return a.indexOf(v)===i;}).sort(function(a,b){return a-b;});
-    var startRow = headIdx > -1 ? headIdx + 1 : 1;
+    for(var c = 0; c < maxCol; c++){
+        diag.columns.push({
+            col:String.fromCharCode(65 + c),
+            title:usedFallback ? '' : cc(((grid[headIdx] || [])[c])),
+            role:roleMap[c] || ''
+        });
+    }
+
+    if(!usedFallback){
+        if(cols.stem < 0) diag.errors.push('没找到题干列：表头里需要有「题干」或「题目」这一类字样。');
+        if(cols.type < 0) diag.warnings.push('没识别到题型列（建议表头写「题型」或「类型」），将按选项和答案自动判断题型。');
+        if(cols.ans < 0) diag.warnings.push('没识别到答案列（建议表头写「答案」），导入后答案会是空的。');
+        if(cols.opt.length === 0){
+            diag.warnings.push('这张表没有选项列，已按「题干 + 答案」处理，适合判断题/填空题/简答题。');
+        } else if(cols.opt.length === 1){
+            diag.warnings.push('只识别到 1 个选项列，选择题可能会被当成填空/简答题。');
+        }
+    } else {
+        diag.warnings.push('没找到标准表头行，已按内容自动猜列：第 ' + (cols.stem + 1) + ' 列作题干'
+            + (cols.opt.length ? '，第 ' + cols.opt.map(function(i){ return i + 1; }).join('、') + ' 列作选项' : '')
+            + (cols.ans > -1 ? '，第 ' + (cols.ans + 1) + ' 列作答案' : '') + '，请核对结果。');
+    }
+
+    var rows = grid.slice(headIdx + 1);
+    var stems = [];
+    for(var r = 0; r < rows.length; r++){
+        var row = (rows[r] || []).map(cc);
+        if(!row.some(function(x){ return x; })) continue;
+        var s = cols.stem > -1 ? (row[cols.stem] || '') : '';
+        if(!s){
+            diag.skipped++;
+            if(diag.skippedRows.length < 10) diag.skippedRows.push(r + headIdx + 2);
+        } else {
+            stems.push(s);
+        }
+    }
+
+    if(stems.length){
+        var totalLen = stems.reduce(function(a, b){ return a + b.length; }, 0);
+        var avg = totalLen / stems.length;
+        var uniqMap = {};
+        stems.forEach(function(s){ uniqMap[s] = 1; });
+        var uniqRate = Object.keys(uniqMap).length / stems.length;
+        var typeWordRate = stems.filter(function(s){
+            return /^(单选题|多选题|判断题|填空题|简答题|论述题|单选|多选|判断|填空|简答|论述)$/.test(s);
+        }).length / stems.length;
+
+        if(typeWordRate > 0.6){
+            diag.errors.push('题干列里 ' + Math.round(typeWordRate * 100) + '% 的内容是「单选题/多选题/判断题」这类题型词，说明题干列被认到了题型那一列。');
+        } else if(uniqRate < 0.5){
+            diag.errors.push('题干列有 ' + Math.round((1 - uniqRate) * 100) + '% 的行内容重复，疑似认错了列。');
+        } else if(avg < 6){
+            diag.errors.push('题干列平均只有 ' + avg.toFixed(1) + ' 个字，不像题干内容。');
+        }
+    } else if(cols.stem > -1 && !diag.skipped){
+        diag.errors.push('没有读到任何数据行。');
+    }
+
+    diag.ok = diag.errors.length === 0;
+    return diag;
+}
+
+function parseGrid(grid){
+    if(!grid || !grid.length){ parseGrid.diag = null; return []; }
+    var cc = function(c){ return String(c == null ? '' : c).trim(); };
+
+    var hdr = detectHeader(grid);
+    var cols, startRow, usedFallback = false;
+    if(hdr){
+        cols = assignColumns(hdr.roles);
+        startRow = hdr.row + 1;
+        log('表头定位: 第 ' + (hdr.row + 1) + ' 行，列结构: ' + JSON.stringify(cols));
+    } else {
+        cols = guessColumnsByContent(grid);
+        usedFallback = true;
+        if(!cols){
+            log('未识别到表头，也无法按内容猜列');
+            parseGrid.diag = {ok:false, headerRow:0, columns:[], warnings:[], errors:['表格里既没有表头（题干/题目、选项A-D、答案），也猜不出哪一列是题干。请确认文件不是空的，或表格不在第一个工作表里。'], skipped:0, skippedRows:[], fallback:true};
+            return [];
+        }
+        startRow = 0;
+        log('未找到表头，按内容猜列: ' + JSON.stringify(cols));
+    }
+
+    // 表头写了选项列但整列没数据的（比如选项E、F），不计入选项
+    var droppedOpts = [];
+    if(cols.opt.length){
+        var keepOpt = [];
+        cols.opt.forEach(function(idx){
+            var has = false;
+            for(var k = startRow; k < grid.length; k++){
+                var cellVal = (grid[k] || [])[idx];
+                var vv = String(cellVal == null ? '' : cellVal).trim();
+                if(vv && vv !== '-' && vv !== '--' && vv !== '无'){ has = true; break; }
+            }
+            if(has) keepOpt.push(idx); else droppedOpts.push(idx);
+        });
+        cols.opt = keepOpt;
+    }
 
     var out = [];
-    for(var r=startRow;r<grid.length;r++){
+    for(var r = startRow; r < grid.length; r++){
         var row = grid[r].map(cc);
-        if(!row.some(function(x){return x;})) continue;
-        var stem = row[cols.stem]||'';
-        if(!stem) continue; 
-        
-        var code = cols.code>-1?(row[cols.code]||''):'';
-        var typeText = row[cols.type]||'';
-        var ansRaw = (cols.ans>-1?row[cols.ans]:'')||'';
-        var ana = (cols.ana>-1?row[cols.ana]:'')||'';
+        if(!row.some(function(x){ return x; })) continue;
+        var stem = cols.stem > -1 ? (row[cols.stem] || '') : '';
+        if(!stem) continue;
+
+        var code = cols.code > -1 ? (row[cols.code] || '') : '';
+        var typeText = cols.type > -1 ? (row[cols.type] || '') : '';
+        var ansRaw = (cols.ans > -1 ? row[cols.ans] : '') || '';
+        var ana = (cols.ana > -1 ? row[cols.ana] : '') || '';
         var optTexts = [];
-        for(var j=0;j<cols.opt.length;j++){ var v=row[cols.opt[j]]||''; if(v&&v!=='-'&&v!=='--'&&v!=='无') optTexts.push(v); }
-        var id = code?String(code):('q_'+r+'_'+stem.substring(0,6));
-        out.push(buildQuestion(id,typeText,stem,optTexts,ansRaw,ana));
+        for(var j = 0; j < cols.opt.length; j++){
+            var v = row[cols.opt[j]] || '';
+            if(v && v !== '-' && v !== '--' && v !== '无') optTexts.push(v);
+        }
+        var id = code ? String(code) : ('q_' + r + '_' + stem.substring(0, 6));
+        out.push(buildQuestion(id, typeText, stem, optTexts, ansRaw, ana));
+    }
+
+    parseGrid.diag = diagnoseHeader(grid, hdr ? hdr.row : 0, cols, usedFallback);
+    if(droppedOpts.length){
+        parseGrid.diag.warnings.push('表头的 ' + droppedOpts.map(function(i){ return '第' + (i + 1) + '列'; }).join('、') + ' 标了选项名，但整列没有数据，已忽略。');
     }
     return out;
 }
@@ -475,6 +768,50 @@ function lettersToIndex(ansRaw,optCount){
     return idx;
 }
 
+// 表头诊断面板：把每列被识别成什么、哪里有问题，直接摊给用户看
+function renderHeaderDiag(diags){
+    var box = document.getElementById('headerDiagBox');
+    if(!box) return;
+    if(!diags || !diags.length){ box.style.display = 'none'; box.innerHTML = ''; return; }
+    var html = '';
+    diags.forEach(function(d){
+        if(!d) return;
+        var bad = d.errors && d.errors.length;
+        var color = bad ? '#b91c1c' : '#15803d';
+        var bg = bad ? '#fef2f2' : '#f0fdf4';
+        var bd = bad ? '#fecaca' : '#bbf7d0';
+        var cols = '';
+        (d.columns || []).forEach(function(c){
+            if(!c.title && !c.role) return;
+            cols += '<div style="display:flex;gap:8px;padding:2px 0;font-size:12px;line-height:1.5;max-width:520px;">'
+                + '<span style="flex:0 0 22px;color:#64748b;">' + c.col + '</span>'
+                + '<span style="flex:1;min-width:0;word-break:break-all;color:#334155;">' + esc(c.title || '（空）') + '</span>'
+                + '<span style="flex:0 0 auto;font-weight:600;color:' + (c.role ? '#0d47a1' : '#94a3b8') + ';">' + (c.role || '未使用') + '</span>'
+                + '</div>';
+        });
+        var msgs = '';
+        (d.errors || []).forEach(function(e){
+            msgs += '<div style="font-size:12.5px;color:#b91c1c;margin-top:5px;line-height:1.6;">✕ ' + esc(e) + '</div>';
+        });
+        (d.warnings || []).forEach(function(w){
+            msgs += '<div style="font-size:12.5px;color:#b45309;margin-top:5px;line-height:1.6;">! ' + esc(w) + '</div>';
+        });
+        if(d.skipped){
+            msgs += '<div style="font-size:12px;color:#64748b;margin-top:5px;">因缺题干跳过了 ' + d.skipped + ' 行'
+                + (d.skippedRows && d.skippedRows.length ? '（第 ' + d.skippedRows.join('、') + ' 行）' : '') + '</div>';
+        }
+        html += '<div style="border:1px solid ' + bd + ';background:' + bg + ';border-radius:8px;padding:10px 12px;margin-bottom:8px;">'
+            + '<div style="font-size:13px;font-weight:bold;color:' + color + ';">'
+            + (bad ? '表头识别有问题，导入的题目可能不对' : '表头识别正常')
+            + (d.sheet ? '（工作表：' + esc(d.sheet) + '）' : '')
+            + (d.headerRow ? '　表头在第 ' + d.headerRow + ' 行' : '') + '</div>'
+            + (cols ? '<div style="margin-top:6px;padding-top:6px;border-top:1px dashed #e2e8f0;">' + cols + '</div>' : '')
+            + msgs + '</div>';
+    });
+    box.innerHTML = html;
+    box.style.display = 'block';
+}
+
 window.startParse = function(){
     appState.finalParsed=[];appState.failErrors=[];
     var data=[];
@@ -490,6 +827,7 @@ window.startParse = function(){
             return showToast('请先粘贴数据');
         }
         data=parseGrid(text.split(/\r?\n/).map(function(l){return l.split('\t');}));
+        appState.headerDiags = parseGrid.diag ? [parseGrid.diag] : [];
     }
     
     data.forEach(function(q,i){
@@ -498,6 +836,7 @@ window.startParse = function(){
     });
     
     document.getElementById('resultBox').style.display='block';
+    renderHeaderDiag(appState.headerDiags);
     document.getElementById('sucCount').textContent='成功 '+appState.finalParsed.length+' 条';
     document.getElementById('failCount').textContent='失败 '+appState.failErrors.length+' 条';
     
@@ -571,6 +910,12 @@ window.startParse = function(){
 
 window.confirmImport = function(){
     if(!appState.finalParsed.length){showToast('请先解析题库');return;}
+
+    var badDiags = (appState.headerDiags || []).filter(function(d){ return d && d.errors && d.errors.length; });
+    if(badDiags.length){
+        var tip = '表头识别有问题：\n' + badDiags[0].errors[0] + '\n\n导入的题目内容很可能不对，确定继续吗？';
+        if(!window.confirm(tip)) return;
+    }
     
     // ★ 1. 前置查重逻辑
     var seenKeys = {}; // 用于记录已经存在的题目特征
